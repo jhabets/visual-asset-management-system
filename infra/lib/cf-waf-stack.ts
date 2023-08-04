@@ -20,6 +20,7 @@ import * as cdk from "aws-cdk-lib";
 interface EnvProps {
     env?: cdk.Environment;
     stackName: string;
+    wafScope?: WAFScope;
 }
 
 export class CfWafStack extends cdk.Stack {
@@ -36,7 +37,7 @@ export class CfWafStack extends cdk.Stack {
 
         const wafv2CF = new Wafv2BasicConstruct(this, "Wafv2CF", {
             ...props,
-            wafScope: WAFScope.CLOUDFRONT,
+            wafScope: props.wafScope,
         });
 
         new cdk.aws_ssm.StringParameter(this, "waf_acl_arn", {

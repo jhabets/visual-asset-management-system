@@ -196,7 +196,7 @@ export class CloudFrontS3WebSiteConstruct extends Construct {
         });
 
         // export any cf outputs
-        new cdk.CfnOutput(this, "SiteBucket", { value: siteBucket.bucketName });
+        new cdk.CfnOutput(this, "WebAppBucket", { value: siteBucket.bucketName });
         new cdk.CfnOutput(this, "CloudFrontDistributionId", {
             value: cloudFrontDistribution.distributionId,
         });

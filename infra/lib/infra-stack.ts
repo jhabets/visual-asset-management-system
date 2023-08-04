@@ -14,6 +14,8 @@ import {
     AmplifyConfigLambdaConstructProps,
 } from "./constructs/amplify-config-lambda-construct";
 import { CloudFrontS3WebSiteConstruct } from "./constructs/cloudfront-s3-website-construct";
+import { VpcGatewayGovCloudConstruct } from "./constructs/vpc-gateway-govcloudDeploy-construct";
+import { AlbS3WebsiteGovCloudDeployConstruct } from "./constructs/alb-s3-website-govCloudDeploy-construct";
 import {
     CognitoWebNativeConstruct,
     CognitoWebNativeConstructProps,
@@ -25,6 +27,7 @@ import { CustomCognitoConfigConstruct } from "./constructs/custom-cognito-config
 import { samlEnabled, samlSettings } from "./saml-config";
 import { LocationServiceConstruct } from "./constructs/location-service-construct";
 import { streamsBuilder } from "./streams-builder";
+import * as apigwv2 from "@aws-cdk/aws-apigatewayv2-alpha";
 
 interface EnvProps {
     prod: boolean; //ToDo: replace with env
@@ -34,6 +37,9 @@ interface EnvProps {
     ssmWafArnParameterRegion: string;
     ssmWafArn: string;
     stagingBucket?: string;
+    govCloudDeployment: boolean;
+    govCloudDeploymentPublicAccess: boolean; //Primarily used to test VAMS GovCloud settings on commercial cloud with a public deployment (see instructions for additional setup requirements)
+    govCloudDeploymentHostDomain: string; //Host Domain needed for ALB and SSL Certs
 }
 
 export class VAMS extends cdk.Stack {
@@ -51,6 +57,19 @@ export class VAMS extends cdk.Stack {
                 "Email address for login and where your password is sent to. You wil be sent a temporary password for the turbine to authenticate to Cognito.",
             default: providedAdminEmailAddress,
         });
+
+        ///Setup optional configurations
+        const govCloudDeployment_CDKParam = new cdk.CfnParameter(
+            this,
+            "govCloudDeployment",
+            {
+                type: "String",
+                description:
+                    "Parameter for whether VAMS is deployed to a GovCloud environment",
+                default: props.govCloudDeployment,
+            }
+        );
+
 
         const webAppBuildPath = "../web/build";
 
@@ -100,60 +119,176 @@ export class VAMS extends cdk.Stack {
             }
         );
         userGroupAttachment.addDependency(cognitoUser);
-        // initialize api gateway and bind it to /api route of cloudfront
+
+        // initialize api gateway
         const api = new ApiGatewayV2CloudFrontConstruct(this, "api", {
             ...props,
             userPool: cognitoResources.userPool,
             userPoolClient: cognitoResources.webClientUserPool,
         });
 
-        const website = new CloudFrontS3WebSiteConstruct(this, "WebApp", {
-            ...props,
-            webSiteBuildPath: webAppBuildPath,
-            webAcl: props.ssmWafArn,
-            apiUrl: api.apiUrl,
-            assetBucketUrl: storageResources.s3.assetBucket.bucketRegionalDomainName,
-            cognitoDomain: samlEnabled
-                ? `https://${samlSettings.cognitoDomainPrefix}.auth.${region}.amazoncognito.com`
-                : "",
-        });
 
-        api.addBehaviorToCloudFrontDistribution(website.cloudFrontDistribution);
+        //Deploy website distribution infrastructure and authentication tie-ins
+        if(!props.govCloudDeployment) {
+            //Deploy through CloudFront (default)
 
-        /**
-         * When using federated identities, this list of callback urls must include
-         * the set of names that VAMSAuth.tsx will resolve when it calls
-         * window.location.origin for the redirectSignIn and redirectSignout callback urls.
-         */
-        const callbackUrls = [
-            "http://localhost:3000",
-            "http://localhost:3000/",
-            `https://${website.cloudFrontDistribution.domainName}/`,
-            `https://${website.cloudFrontDistribution.domainName}`,
-        ];
-        /**
-         * Propagate Base CloudFront URL to Cognito User Pool Callback and Logout URLs
-         * if SAML is enabled.
-         */
-        if (samlEnabled) {
-            const customCognitoWebClientConfig = new CustomCognitoConfigConstruct(
+            const website = new CloudFrontS3WebSiteConstruct(this, "WebApp", {
+                ...props,
+                webSiteBuildPath: webAppBuildPath,
+                webAcl: props.ssmWafArn,
+                apiUrl: api.apiUrl,
+                assetBucketUrl: storageResources.s3.assetBucket.bucketRegionalDomainName,
+                cognitoDomain: samlEnabled
+                    ? `https://${samlSettings.cognitoDomainPrefix}.auth.${region}.amazoncognito.com`
+                    : "",
+            });
+
+            // Bind API Gaeway to /api route of cloudfront
+            api.addBehaviorToCloudFrontDistribution(website.cloudFrontDistribution);
+
+            /**
+             * When using federated identities, this list of callback urls must include
+             * the set of names that VAMSAuth.tsx will resolve when it calls
+             * window.location.origin for the redirectSignIn and redirectSignout callback urls.
+             */
+            const callbackUrls = [
+                "http://localhost:3000",
+                "http://localhost:3000/",
+                `https://${website.cloudFrontDistribution.domainName}/`,
+                `https://${website.cloudFrontDistribution.domainName}`,
+            ];
+
+            /**
+             * Propagate Base CloudFront URL to Cognito User Pool Callback and Logout URLs
+             * if SAML is enabled.
+             */
+            if (samlEnabled) {
+                const customCognitoWebClientConfig = new CustomCognitoConfigConstruct(
+                    this,
+                    "CustomCognitoWebClientConfig",
+                    {
+                        name: "Web",
+                        clientId: cognitoResources.webClientId,
+                        userPoolId: cognitoResources.userPoolId,
+                        callbackUrls: callbackUrls,
+                        logoutUrls: callbackUrls,
+                        identityProviders: ["COGNITO", samlSettings.name],
+                    }
+                );
+                customCognitoWebClientConfig.node.addDependency(website);
+            }
+
+            NagSuppressions.addResourceSuppressionsByPath(
                 this,
-                "CustomCognitoWebClientConfig",
-                {
-                    name: "Web",
-                    clientId: cognitoResources.webClientId,
-                    userPoolId: cognitoResources.userPoolId,
-                    callbackUrls: callbackUrls,
-                    logoutUrls: callbackUrls,
-                    identityProviders: ["COGNITO", samlSettings.name],
-                }
+                `/${props.stackName}/WebApp/WebAppDistribution/Resource`,
+                [
+                    {
+                        id: "AwsSolutions-CFR4",
+                        reason: "This requires use of a custom viewer certificate which should be provided by customers.",
+                    },
+                ],
+                true
             );
-            customCognitoWebClientConfig.node.addDependency(website);
+
+        }
+        else {
+            //Deploy for GovCloud (aka, use ALB->VPCEndpoint->S3 as path for web deployment)
+            const webAppDistroNetwork =
+                new VpcGatewayGovCloudConstruct(
+                    this,
+                    "WebAppDistroNetwork",
+                    {
+                        ...props,
+                        setupPublicAccess: props.govCloudDeploymentPublicAccess
+                    }
+                );
+                
+            const website = new AlbS3WebsiteGovCloudDeployConstruct(this, "WebApp", {
+                ...props,
+                domainHostName: props.govCloudDeploymentHostDomain,
+                webSiteBuildPath: webAppBuildPath,
+                webAcl: props.ssmWafArn,
+                apiUrl: api.apiUrl,
+                assetBucketUrl: storageResources.s3.assetBucket.bucketRegionalDomainName,
+                cognitoDomain: samlEnabled
+                    ? `https://${samlSettings.cognitoDomainPrefix}.auth.${region}.amazoncognito.com`
+                    : "",
+                vpc: webAppDistroNetwork.vpc,
+                subnets: webAppDistroNetwork.subnets.webApp,
+                securityGroups: [webAppDistroNetwork.securityGroups.webApp],
+                s3Endpoint: webAppDistroNetwork.s3Endpoint,
+                setupPublicAccess: props.govCloudDeploymentPublicAccess,
+            });
+
+            /**
+             * When using federated identities, this list of callback urls must include
+             * the set of names that VAMSAuth.tsx will resolve when it calls
+             * window.location.origin for the redirectSignIn and redirectSignout callback urls.
+             */
+            const callbackUrls = [
+                "http://localhost:3000",
+                "http://localhost:3000/",
+                website.websiteUrl,
+            ];
+
+            /**
+             * Propagate Base CloudFront URL to Cognito User Pool Callback and Logout URLs
+             * if SAML is enabled.
+             */
+            if (samlEnabled) {
+                const customCognitoWebClientConfig = new CustomCognitoConfigConstruct(
+                    this,
+                    "CustomCognitoWebClientConfig",
+                    {
+                        name: "Web",
+                        clientId: cognitoResources.webClientId,
+                        userPoolId: cognitoResources.userPoolId,
+                        callbackUrls: callbackUrls,
+                        logoutUrls: callbackUrls,
+                        identityProviders: ["COGNITO", samlSettings.name],
+                    }
+                );
+                customCognitoWebClientConfig.node.addDependency(website);
+            }
+
+
+            // NagSuppressions.addResourceSuppressionsByPath(
+            //     this,
+            //     `/${props.stackName}/WebApp/WebAppDistribution/CloudWatchRole/Resource`,
+            //     [
+            //         {
+            //             id: "AwsSolutions-IAM4",
+            //             reason: "CloudFrontApiGatewayS3WebSiteConstruct requires AWS Managed Policies for Cloudwatch logs",
+            //             appliesTo: [
+            //                 "Policy::arn:<AWS::Partition>:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs",
+            //             ],
+            //         },
+            //     ],
+            //     true
+            // );
+
+            // NagSuppressions.addResourceSuppressionsByPath(
+            //     this,
+            //     `/${props.stackName}/WebApp/WebAppDistribution/Resource`,
+            //     [
+            //         {
+            //             id: "AwsSolutions-APIG2",
+            //             reason: "Request validator on individual method routes.",
+            //         },
+            //     ],
+            //     true
+            // );
+        }
+        
+        //Deploy Backend API framework
+        apiBuilder(this, api.apiGatewayV2, storageResources);
+
+        //Deploy OpenSearch Serverless
+        //Note: OpenSearch Serverless not currently supported in GovCloud
+        if(!props.govCloudDeployment) {
+            streamsBuilder(this, cognitoResources, api.apiGatewayV2, storageResources);
         }
 
-        apiBuilder(this, api, storageResources);
-
-        streamsBuilder(this, cognitoResources, api, storageResources);
 
         // required by AWS internal accounts.  Can be removed in customer Accounts
         // const wafv2Regional = new Wafv2BasicConstruct(this, "Wafv2Regional", {
@@ -161,9 +296,13 @@ export class VAMS extends cdk.Stack {
         //     wafScope: WAFScope.REGIONAL,
         // });
 
-        const location = new LocationServiceConstruct(this, "LocationService", {
-            role: cognitoResources.authenticatedRole,
-        });
+        //Deploy Location Services
+        //Note: Location Services currently not supported in GovCloud
+        if(!props.govCloudDeployment) {
+            const location = new LocationServiceConstruct(this, "LocationService", {
+                role: cognitoResources.authenticatedRole,
+            });
+        }
 
         const amplifyConfigProps: AmplifyConfigLambdaConstructProps = {
             ...props,
@@ -243,17 +382,6 @@ export class VAMS extends cdk.Stack {
             true
         );
 
-        NagSuppressions.addResourceSuppressionsByPath(
-            this,
-            `/${props.stackName}/WebApp/WebAppDistribution/Resource`,
-            [
-                {
-                    id: "AwsSolutions-CFR4",
-                    reason: "This requires use of a custom viewer certificate which should be provided by customers.",
-                },
-            ],
-            true
-        );
 
         const refactorPaths = [
             `/${props.stackName}/VAMSWorkflowIAMRole/Resource`,
@@ -261,14 +389,18 @@ export class VAMS extends cdk.Stack {
             `/${props.stackName}/pipelineService`,
             `/${props.stackName}/workflowService`,
             `/${props.stackName}/listExecutions`,
-            `/${props.stackName}/idxa`,
-            `/${props.stackName}/idxm`,
         ];
+
+        if(!props.govCloudDeployment) {
+            refactorPaths.concat(`/${props.stackName}/idxa`);
+            refactorPaths.concat(`/${props.stackName}/idxm`);
+        }
+
         for (const path of refactorPaths) {
             const reason = `Intention is to refactor this model away moving forward 
-                 so that this type of access is not required within the stack.
-                 Customers are advised to isolate VAMS to its own account in test and prod
-                 as a substitute to tighter resource access.`;
+            so that this type of access is not required within the stack.
+            Customers are advised to isolate VAMS to its own account in test and prod
+            as a substitute to tighter resource access.`;
             NagSuppressions.addResourceSuppressionsByPath(
                 this,
                 path,

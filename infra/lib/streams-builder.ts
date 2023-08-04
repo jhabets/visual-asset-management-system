@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ApiGatewayV2CloudFrontConstruct } from "./constructs/apigatewayv2-cloudfront-construct";
 import { storageResources } from "./storage-builder";
 import { buildMetadataIndexingFunction } from "./lambdaBuilder/metadataFunctions";
 import * as eventsources from "aws-cdk-lib/aws-lambda-event-sources";
@@ -21,7 +20,7 @@ import * as apigwv2 from "@aws-cdk/aws-apigatewayv2-alpha";
 export function streamsBuilder(
     scope: Stack,
     cognitoResources: CognitoWebNativeConstruct,
-    api: ApiGatewayV2CloudFrontConstruct,
+    api: apigwv2.HttpApi,
     storage: storageResources
 ) {
     const aoss = new OpensearchServerlessConstruct(scope, "AOSS", {
@@ -70,12 +69,12 @@ export function streamsBuilder(
     attachFunctionToApi(scope, searchFun, {
         routePath: "/search",
         method: apigwv2.HttpMethod.POST,
-        api: api.apiGatewayV2,
+        api: api,
     });
     attachFunctionToApi(scope, searchFun, {
         routePath: "/search",
         method: apigwv2.HttpMethod.GET,
-        api: api.apiGatewayV2,
+        api: api,
     });
 
     NagSuppressions.addResourceSuppressions(

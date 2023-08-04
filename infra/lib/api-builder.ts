@@ -72,7 +72,7 @@ export function attachFunctionToApi(
 
 export function apiBuilder(
     scope: Construct,
-    api: ApiGatewayV2CloudFrontConstruct,
+    api: apigwv2.HttpApi,
     storageResources: storageResources
 ) {
     //config resources
@@ -81,7 +81,7 @@ export function apiBuilder(
     attachFunctionToApi(scope, createConfigFunction, {
         routePath: "/secure-config",
         method: apigwv2.HttpMethod.GET,
-        api: api.apiGatewayV2,
+        api: api,
     });
 
     //Database Resources
@@ -92,7 +92,7 @@ export function apiBuilder(
     attachFunctionToApi(scope, createDatabaseFunction, {
         routePath: "/databases",
         method: apigwv2.HttpMethod.PUT,
-        api: api.apiGatewayV2,
+        api: api,
     });
 
     const databaseService = buildDatabaseService(
@@ -105,17 +105,17 @@ export function apiBuilder(
     attachFunctionToApi(scope, databaseService, {
         routePath: "/databases",
         method: apigwv2.HttpMethod.GET,
-        api: api.apiGatewayV2,
+        api: api,
     });
     attachFunctionToApi(scope, databaseService, {
         routePath: "/databases/{databaseId}",
         method: apigwv2.HttpMethod.GET,
-        api: api.apiGatewayV2,
+        api: api,
     });
     attachFunctionToApi(scope, databaseService, {
         routePath: "/databases/{databaseId}",
         method: apigwv2.HttpMethod.DELETE,
-        api: api.apiGatewayV2,
+        api: api,
     });
 
     //Asset Resources
@@ -128,22 +128,22 @@ export function apiBuilder(
     attachFunctionToApi(scope, assetService, {
         routePath: "/database/{databaseId}/assets",
         method: apigwv2.HttpMethod.GET,
-        api: api.apiGatewayV2,
+        api: api,
     });
     attachFunctionToApi(scope, assetService, {
         routePath: "/database/{databaseId}/assets/{assetId}",
         method: apigwv2.HttpMethod.GET,
-        api: api.apiGatewayV2,
+        api: api,
     });
     attachFunctionToApi(scope, assetService, {
         routePath: "/database/{databaseId}/assets/{assetId}",
         method: apigwv2.HttpMethod.DELETE,
-        api: api.apiGatewayV2,
+        api: api,
     });
     attachFunctionToApi(scope, assetService, {
         routePath: "/assets",
         method: apigwv2.HttpMethod.GET,
-        api: api.apiGatewayV2,
+        api: api,
     });
 
     const listAssetFiles = buildAssetFiles(
@@ -155,7 +155,7 @@ export function apiBuilder(
     attachFunctionToApi(scope, listAssetFiles, {
         routePath: "/database/{databaseId}/assets/{assetId}/listFiles",
         method: apigwv2.HttpMethod.GET,
-        api: api.apiGatewayV2,
+        api: api,
     });
 
     const assetMetadataFunction = buildAssetMetadataFunction(
@@ -166,7 +166,7 @@ export function apiBuilder(
     attachFunctionToApi(scope, assetMetadataFunction, {
         routePath: "/database/{databaseId}/assets/{assetId}/metadata",
         method: apigwv2.HttpMethod.GET,
-        api: api.apiGatewayV2,
+        api: api,
     });
 
     const assetColumnsFunction = buildAssetColumnsFunction(
@@ -177,7 +177,7 @@ export function apiBuilder(
     attachFunctionToApi(scope, assetColumnsFunction, {
         routePath: "/database/{databaseId}/assets/{assetId}/columns",
         method: apigwv2.HttpMethod.GET,
-        api: api.apiGatewayV2,
+        api: api,
     });
 
     const uploadAssetFunction = buildUploadAssetFunction(
@@ -189,7 +189,7 @@ export function apiBuilder(
     attachFunctionToApi(scope, uploadAssetFunction, {
         routePath: "/assets",
         method: apigwv2.HttpMethod.PUT,
-        api: api.apiGatewayV2,
+        api: api,
     });
 
     const uploadAllAssetFunction = buildUploadAllAssetsFunction(
@@ -203,7 +203,7 @@ export function apiBuilder(
     attachFunctionToApi(scope, uploadAllAssetFunction, {
         routePath: "/assets/all",
         method: apigwv2.HttpMethod.PUT,
-        api: api.apiGatewayV2,
+        api: api,
     });
 
     const assetDownloadFunction = buildDownloadAssetFunction(
@@ -214,7 +214,7 @@ export function apiBuilder(
     attachFunctionToApi(scope, assetDownloadFunction, {
         routePath: "/database/{databaseId}/assets/{assetId}/download",
         method: apigwv2.HttpMethod.POST,
-        api: api.apiGatewayV2,
+        api: api,
     });
 
     const assetRevertFunction = buildRevertAssetFunction(
@@ -226,7 +226,7 @@ export function apiBuilder(
     attachFunctionToApi(scope, assetRevertFunction, {
         routePath: "/database/{databaseId}/assets/{assetId}/revert",
         method: apigwv2.HttpMethod.POST,
-        api: api.apiGatewayV2,
+        api: api,
     });
 
     //Pipeline Resources
@@ -246,29 +246,29 @@ export function apiBuilder(
     attachFunctionToApi(scope, createPipelineFunction, {
         routePath: "/pipelines",
         method: apigwv2.HttpMethod.PUT,
-        api: api.apiGatewayV2,
+        api: api,
     });
 
     const pipelineService = buildPipelineService(scope, storageResources);
     attachFunctionToApi(scope, pipelineService, {
         routePath: "/database/{databaseId}/pipelines",
         method: apigwv2.HttpMethod.GET,
-        api: api.apiGatewayV2,
+        api: api,
     });
     attachFunctionToApi(scope, pipelineService, {
         routePath: "/database/{databaseId}/pipelines/{pipelineId}",
         method: apigwv2.HttpMethod.GET,
-        api: api.apiGatewayV2,
+        api: api,
     });
     attachFunctionToApi(scope, pipelineService, {
         routePath: "/database/{databaseId}/pipelines/{pipelineId}",
         method: apigwv2.HttpMethod.DELETE,
-        api: api.apiGatewayV2,
+        api: api,
     });
     attachFunctionToApi(scope, pipelineService, {
         routePath: "/pipelines",
         method: apigwv2.HttpMethod.GET,
-        api: api.apiGatewayV2,
+        api: api,
     });
 
     //Workflows
@@ -276,22 +276,22 @@ export function apiBuilder(
     attachFunctionToApi(scope, workflowService, {
         routePath: "/database/{databaseId}/workflows",
         method: apigwv2.HttpMethod.GET,
-        api: api.apiGatewayV2,
+        api: api,
     });
     attachFunctionToApi(scope, workflowService, {
         routePath: "/database/{databaseId}/workflows/{workflowId}",
         method: apigwv2.HttpMethod.GET,
-        api: api.apiGatewayV2,
+        api: api,
     });
     attachFunctionToApi(scope, workflowService, {
         routePath: "/database/{databaseId}/workflows/{workflowId}",
         method: apigwv2.HttpMethod.DELETE,
-        api: api.apiGatewayV2,
+        api: api,
     });
     attachFunctionToApi(scope, workflowService, {
         routePath: "/workflows",
         method: apigwv2.HttpMethod.GET,
-        api: api.apiGatewayV2,
+        api: api,
     });
 
     const listWorkflowExecutionsFunction = buildListlWorkflowExecutionsFunction(
@@ -301,7 +301,7 @@ export function apiBuilder(
     attachFunctionToApi(scope, listWorkflowExecutionsFunction, {
         routePath: "/database/{databaseId}/assets/{assetId}/workflows/{workflowId}/executions",
         method: apigwv2.HttpMethod.GET,
-        api: api.apiGatewayV2,
+        api: api,
     });
 
     const createWorkflowFunction = buildCreateWorkflowFunction(
@@ -313,7 +313,7 @@ export function apiBuilder(
     attachFunctionToApi(scope, createWorkflowFunction, {
         routePath: "/workflows",
         method: apigwv2.HttpMethod.PUT,
-        api: api.apiGatewayV2,
+        api: api,
     });
 
     const runWorkflowFunction = buildRunWorkflowFunction(
@@ -327,7 +327,7 @@ export function apiBuilder(
     attachFunctionToApi(scope, runWorkflowFunction, {
         routePath: "/database/{databaseId}/assets/{assetId}/workflows/{workflowId}",
         method: apigwv2.HttpMethod.POST,
-        api: api.apiGatewayV2,
+        api: api,
     });
     //Enabling API Gateway Access Logging: Currently the only way to do this is via V1 constructs
     //https://github.com/aws/aws-cdk/issues/11100#issuecomment-904627081
@@ -344,7 +344,7 @@ export function apiBuilder(
         attachFunctionToApi(scope, metadataCrudFunctions[i], {
             routePath: "/metadata/{databaseId}/{assetId}",
             method: methods[i],
-            api: api.apiGatewayV2,
+            api: api,
         });
     }
 
@@ -359,13 +359,13 @@ export function apiBuilder(
         attachFunctionToApi(scope, metadataSchemaFunctions, {
             routePath: "/metadataschema/{databaseId}",
             method: methods[i],
-            api: api.apiGatewayV2,
+            api: api,
         });
     }
     attachFunctionToApi(scope, metadataSchemaFunctions, {
         routePath: "/metadataschema/{databaseId}/{field}",
         method: apigwv2.HttpMethod.DELETE,
-        api: api.apiGatewayV2,
+        api: api,
     });
 
     const uploadAssetWorkflowStateMachine = buildUploadAssetWorkflow(
@@ -389,33 +389,33 @@ export function apiBuilder(
     attachFunctionToApi(scope, uploadAssetWorkflowFunction, {
         routePath: "/assets/uploadAssetWorkflow",
         method: apigwv2.HttpMethod.POST,
-        api: api.apiGatewayV2,
+        api: api,
     });
 
     const authFunctions = buildAuthFunctions(scope, storageResources);
     attachFunctionToApi(scope, authFunctions.groups, {
         routePath: "/auth/groups",
         method: apigwv2.HttpMethod.GET,
-        api: api.apiGatewayV2,
+        api: api,
     });
 
     attachFunctionToApi(scope, authFunctions.constraints, {
         routePath: "/auth/constraints",
         method: apigwv2.HttpMethod.GET,
-        api: api.apiGatewayV2,
+        api: api,
     });
     for (let i = 0; i < methods.length; i++) {
         attachFunctionToApi(scope, authFunctions.constraints, {
             routePath: "/auth/constraints/{constraintId}",
             method: methods[i],
-            api: api.apiGatewayV2,
+            api: api,
         });
     }
 
     //Enabling API Gateway Access Logging: Currently the only way to do this is via V1 constructs
     //https://github.com/aws/aws-cdk/issues/11100#issuecomment-904627081
     const accessLogs = new logs.LogGroup(scope, "VAMS-API-AccessLogs");
-    const stage = api.apiGatewayV2.defaultStage?.node.defaultChild as apigateway.CfnStage;
+    const stage = api.defaultStage?.node.defaultChild as apigateway.CfnStage;
     stage.accessLogSettings = {
         destinationArn: accessLogs.logGroupArn,
         format: JSON.stringify({

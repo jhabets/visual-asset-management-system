@@ -104,9 +104,9 @@ export class VpcGatewayGovCloudConstruct extends Construct {
         // Create VPC interface endpoint for S3 (Needed for ALB<->S3)
         this.s3Endpoint = new ec2.InterfaceVpcEndpoint(this, "S3InterfaceVPCEndpoint", {
             vpc: this.vpc,
-            //privateDnsEnabled: true, 
+            privateDnsEnabled: false, 
             service: ec2.InterfaceVpcEndpointAwsService.S3,
-            subnets: { subnetType: props.setupPublicAccess? ec2.SubnetType.PUBLIC : ec2.SubnetType.PRIVATE_ISOLATED },
+            subnets: { subnetType: props.setupPublicAccess? ec2.SubnetType.PUBLIC : undefined},
             securityGroups: [webAppecurityGroup],
         });
 
@@ -118,5 +118,20 @@ export class VpcGatewayGovCloudConstruct extends Construct {
             value: this.vpc.vpcId,
         });
 
+        //Nag Supressions
+        NagSuppressions.addResourceSuppressionsByPath(
+            Stack.of(this),
+            `/${this.toString()}/WepAppDistroSecurityGroup/Resource`,
+            [
+                {
+                    id: "AwsSolutions-EC23",
+                    reason: "Web App Security Group is restricted to VPC cidr range on ports 443 and 53",
+                },
+                {
+                    id: "CdkNagValidationFailure",
+                    reason: "Validation failure due to inherent nature of CDK Nag Validations of CIDR ranges", //https://github.com/cdklabs/cdk-nag/issues/817
+                },
+            ]
+        );
     }
 }

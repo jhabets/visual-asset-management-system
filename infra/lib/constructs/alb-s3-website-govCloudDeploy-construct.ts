@@ -15,11 +15,11 @@ import { Duration, Stack } from "aws-cdk-lib";
 import { Construct } from "constructs";
 import * as iam from "aws-cdk-lib/aws-iam";
 import { requireTLSAddToResourcePolicy } from "../security";
-//import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as logs from 'aws-cdk-lib/aws-logs';
 //import { NagSuppressions } from "cdk-nag";
 import { aws_wafv2 as wafv2 } from 'aws-cdk-lib';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
+import { CfnLoadBalancer } from 'aws-cdk-lib/aws-elasticloadbalancingv2';
 import * as elbv2 from 'aws-cdk-lib/aws-elasticloadbalancingv2';
 import * as elbv2_targets from 'aws-cdk-lib/aws-elasticloadbalancingv2-targets';
 import customResources = require('aws-cdk-lib/custom-resources');
@@ -74,7 +74,7 @@ export class AlbS3WebsiteGovCloudDeployConstruct extends Construct {
 
         const accessLogsBucket = new s3.Bucket(this, "AccessLogsBucket", {
             encryption: s3.BucketEncryption.S3_MANAGED,
-            serverAccessLogsPrefix: "web-app-access-log-bucket-logs/",
+            serverAccessLogsPrefix: "web-app-access-log-S3bucket-logs/",
             versioned: true,
             blockPublicAccess: BlockPublicAccess.BLOCK_ALL,
             objectOwnership: s3.ObjectOwnership.OBJECT_WRITER,
@@ -88,8 +88,8 @@ export class AlbS3WebsiteGovCloudDeployConstruct extends Construct {
 
         //Setup S3 WebApp bucket with the name that matches the deployed domain hostname (in order to work with the ALB/Endpoint)
         const webAppBucket = new s3.Bucket(this, "WebAppBucket", {
-            websiteIndexDocument: "index.html",
-            websiteErrorDocument: "index.html",
+            //websiteIndexDocument: "index.html",
+            //websiteErrorDocument: "index.html",
             bucketName: props.domainHostName,
             encryption: s3.BucketEncryption.S3_MANAGED,
             autoDeleteObjects: true,
@@ -120,9 +120,23 @@ export class AlbS3WebsiteGovCloudDeployConstruct extends Construct {
             loadBalancerName: `${props.stackName}-WebAppALB`,
             internetFacing: props.setupPublicAccess,
             vpc: props.vpc,
-            vpcSubnets: { subnets: props.subnets},
+            //vpcSubnets: { subnets: props.subnets},
             securityGroup: props.securityGroups[0],
+
         });
+
+        //Add a L1 construct to add access logging on the ALB (currently not supported in CDK L2)
+        const cfnLoadBalancer = alb.node.defaultChild as CfnLoadBalancer;
+        cfnLoadBalancer.loadBalancerAttributes = [{
+            key: 'access_logs.s3.enabled',
+            value: 'true',
+          },{
+            key: 'access_logs.s3.bucket',
+            value: accessLogsBucket.bucketName,
+          },{
+            key: 'access_logs.s3.prefix',
+            value: "web-app-access-log-alb-logs",
+          }];
 
         // Add a listener to the ALB
         const listener = alb.addListener('WebAppDistroALBListener', {
@@ -183,6 +197,7 @@ export class AlbS3WebsiteGovCloudDeployConstruct extends Construct {
         //https://repost.aws/questions/QUjISNyk6aTA6jZgZQwKWf4Q/how-to-connect-a-load-balancer-and-an-interface-vpc-endpoint-together-using-cdk 
         for (let index = 0; index < props.vpc.availabilityZones.length; index++) {
             const getEndpointIp = new customResources.AwsCustomResource(this, `WebAppGetEndpointIP${index}`, {
+                installLatestAwsSdk: false,
                 onCreate: {
                     service: "EC2",
                     action: "describeNetworkInterfaces",
@@ -211,7 +226,6 @@ export class AlbS3WebsiteGovCloudDeployConstruct extends Construct {
 
         listener.addTargetGroups("WebAppTargetGroup1", {
             targetGroups: [targetGroup1],
-            priority: 3,
         })
 
 
@@ -221,8 +235,7 @@ export class AlbS3WebsiteGovCloudDeployConstruct extends Construct {
             priority: 1,
             action: elbv2.ListenerAction.redirect({
                 host: `${props.apiUrl}`,
-                permanent: true
-                
+                permanent: true,
             }),
             conditions: [elbv2.ListenerCondition.pathPatterns(['/api/*'])],
         });
@@ -233,8 +246,7 @@ export class AlbS3WebsiteGovCloudDeployConstruct extends Construct {
             priority: 2,
             action: elbv2.ListenerAction.redirect({
                 path: "/#{path}index.html",
-                permanent: false
-                
+                permanent: false,
             }),
             conditions: [elbv2.ListenerCondition.pathPatterns(['*/'])],
         });
@@ -352,11 +364,13 @@ export class AlbS3WebsiteGovCloudDeployConstruct extends Construct {
         // webAclArn: props.webAcl,
         // });
 
+        //Associate WAF to ALB
         const cfnWebACLAssociation = new wafv2.CfnWebACLAssociation(this,'WebAppWAFAssociation', {
         resourceArn: alb.loadBalancerArn,
         webAclArn: props.webAcl,
         });
 
+        //Deploy website to Bucket
         new s3deployment.BucketDeployment(this, "DeployWithInvalidation", {
             sources: [s3deployment.Source.asset(props.webSiteBuildPath)],
             destinationBucket: webAppBucket,

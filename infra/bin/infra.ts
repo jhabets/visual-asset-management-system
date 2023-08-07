@@ -23,11 +23,10 @@ const enableCdkNag = true;
 const stagingBucket = process.env.STAGING_BUCKET || app.node.tryGetContext("staging-bucket");
 
 ///Setup optional configurations
-//Deploy VAMS on GovCloud (swap out Cloudfront, use FIPS end-points, etc.)
+//Deploy VAMS on GovCloud (swap out Cloudfront for an ALB, use FIPS end-points, exclude other non-govcloud services/features)
 const govCloudDeployment = (process.env.GOVCLOUD_DEPLOYMENT || app.node.tryGetContext("govCloudDeployment")) === "true";
-const govCloudDeploymentHostDomain = (process.env.GOVCLOUD_DEPLOYMENT_HOSTDOMAIN || app.node.tryGetContext("govCloudDeploymentHostDomain"));
+const govCloudDeploymentHostDomain = (process.env.GOVCLOUD_DEPLOYMENT_HOSTDOMAIN || app.node.tryGetContext("govCloudDeploymentHostDomain") || `vams.${stackName}.com`);
 const govCloudDeploymentPublicAccess = (process.env.GOVCLOUD_DEPLOYMENT_PUBLICACCESS || app.node.tryGetContext("govCloudDeploymentPublicAccess")) === "true";
-
 
 
 console.log("CDK_NAG_ENABLED 👉", enableCdkNag);

@@ -10,7 +10,7 @@ import * as cdk from "aws-cdk-lib";
 import { VAMS } from "../lib/infra-stack";
 import { CfWafStack } from "../lib/cf-waf-stack";
 import { AwsSolutionsChecks } from "cdk-nag";
-import { Aspects } from "aws-cdk-lib";
+import { Aspects, Annotations } from "aws-cdk-lib";
 import { WAFScope } from "../lib/constructs/wafv2-basic-construct";
 
 const app = new cdk.App();
@@ -25,9 +25,16 @@ const stagingBucket = process.env.STAGING_BUCKET || app.node.tryGetContext("stag
 ///Setup optional configurations
 //Deploy VAMS on GovCloud (swap out Cloudfront for an ALB, use FIPS end-points, exclude other non-govcloud services/features)
 const govCloudDeployment = (process.env.GOVCLOUD_DEPLOYMENT || app.node.tryGetContext("govCloudDeployment")) === "true";
-const govCloudDeploymentHostDomain = (process.env.GOVCLOUD_DEPLOYMENT_HOSTDOMAIN || app.node.tryGetContext("govCloudDeploymentHostDomain") || `vams.${stackName}.com`);
+const govCloudDeploymentDomainHostName = (process.env.GOVCLOUD_DEPLOYMENT_DOMAIN_HOSTNAME || app.node.tryGetContext("govCloudDeploymentDomainHostName") || "UNDEFINED");
+const govCloudDeploymentACMCertARN = (process.env.GOVCLOUD_DEPLOYMENT_ACMCERT_ARN || app.node.tryGetContext("govCloudDeploymentACMCertARN") || "UNDEFINED");
+const govCloudDeploymentHostedZoneId = (process.env.GOVCLOUD_DEPLOYMENT_HOSTEDZONEID || app.node.tryGetContext("govCloudDeploymentHostedZoneId") || "UNDEFINED");
 const govCloudDeploymentPublicAccess = (process.env.GOVCLOUD_DEPLOYMENT_PUBLICACCESS || app.node.tryGetContext("govCloudDeploymentPublicAccess")) === "true";
 
+if(govCloudDeployment && (govCloudDeploymentACMCertARN == "UNDEFINED" || govCloudDeploymentDomainHostName == "UNDEFINED"))
+{
+    Annotations.of(app).addError("Cannot use GovCloud deployment without specifying a valid domain hostname and a ACM Certificate ARN to use for SSL/TLS security!");
+    //TODO: Implement validation error throwing: https://dev.to/aws-builders/validation-with-aws-cdk-addvalidation-20lo 
+}
 
 console.log("CDK_NAG_ENABLED 👉", enableCdkNag);
 console.log("STACK_NAME 👉", stackName);
@@ -69,8 +76,10 @@ const vamsStack = new VAMS(app, `vams-${stackName || process.env.DEMO_LABEL || "
     ssmWafArn: cfWafStack.wafArn,
     stagingBucket: stagingBucket,
     govCloudDeployment: govCloudDeployment,
+    govCloudDeploymentDomainHostName: govCloudDeploymentDomainHostName,
     govCloudDeploymentPublicAccess: govCloudDeploymentPublicAccess,
-    govCloudDeploymentHostDomain: govCloudDeploymentHostDomain 
+    govCloudDeploymentACMCertARN: govCloudDeploymentACMCertARN,
+    govCloudDeploymentHostedZoneId: govCloudDeploymentHostedZoneId 
 });
 
 vamsStack.addDependency(cfWafStack);

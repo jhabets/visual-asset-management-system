@@ -8,7 +8,7 @@ import * as cdk from "aws-cdk-lib";
 import * as cognito from "aws-cdk-lib/aws-cognito";
 import * as cloudTrail from "aws-cdk-lib/aws-cloudtrail";
 import { apiBuilder } from "./api-builder";
-import { storageResources, storageResourcesBuilder } from "./storage-builder";
+import { storageResourcesBuilder } from "./storage-builder";
 import {
     AmplifyConfigLambdaConstruct,
     AmplifyConfigLambdaConstructProps,
@@ -27,7 +27,6 @@ import { CustomCognitoConfigConstruct } from "./constructs/custom-cognito-config
 import { samlEnabled, samlSettings } from "./saml-config";
 import { LocationServiceConstruct } from "./constructs/location-service-construct";
 import { streamsBuilder } from "./streams-builder";
-import * as apigwv2 from "@aws-cdk/aws-apigatewayv2-alpha";
 
 interface EnvProps {
     prod: boolean; //ToDo: replace with env
@@ -38,8 +37,10 @@ interface EnvProps {
     ssmWafArn: string;
     stagingBucket?: string;
     govCloudDeployment: boolean;
+    govCloudDeploymentDomainHostName: string; //Domain name associated with ACM Certificate and S3 bucket name for WebApp Distro ALB pass-through
     govCloudDeploymentPublicAccess: boolean; //Primarily used to test VAMS GovCloud settings on commercial cloud with a public deployment (see instructions for additional setup requirements)
-    govCloudDeploymentHostDomain: string; //Host Domain needed for ALB and SSL Certs
+    govCloudDeploymentACMCertARN: string; //ACM Certificate ARN to use for GovCloud Deployment (see instructions as additional seutp is still required with the Domain/DNS name of the ALB WebApp endpoint)
+    govCloudDeploymentHostedZoneId: string; //Optional Route 53 Hosted zone to add a alias to the GovCloud created ALB based on provided Domain Host Name
 }
 
 export class VAMS extends cdk.Stack {
@@ -70,10 +71,12 @@ export class VAMS extends cdk.Stack {
             }
         );
 
-
         const webAppBuildPath = "../web/build";
 
+
+
         const storageResources = storageResourcesBuilder(this, props.stagingBucket);
+
         const trail = new cloudTrail.Trail(this, "CloudTrail-VAMS", {
             isMultiRegionTrail: false,
             bucket: storageResources.s3.accessLogsBucket,
@@ -205,19 +208,15 @@ export class VAMS extends cdk.Stack {
                 
             const website = new AlbS3WebsiteGovCloudDeployConstruct(this, "WebApp", {
                 ...props,
-                domainHostName: props.govCloudDeploymentHostDomain,
+                domainHostName: props.govCloudDeploymentDomainHostName,
                 webSiteBuildPath: webAppBuildPath,
                 webAcl: props.ssmWafArn,
                 apiUrl: api.apiUrl,
-                assetBucketUrl: storageResources.s3.assetBucket.bucketRegionalDomainName,
-                cognitoDomain: samlEnabled
-                    ? `https://${samlSettings.cognitoDomainPrefix}.auth.${region}.amazoncognito.com`
-                    : "",
                 vpc: webAppDistroNetwork.vpc,
                 subnets: webAppDistroNetwork.subnets.webApp,
-                securityGroups: [webAppDistroNetwork.securityGroups.webApp],
-                s3Endpoint: webAppDistroNetwork.s3Endpoint,
                 setupPublicAccess: props.govCloudDeploymentPublicAccess,
+                acmCertARN: props.govCloudDeploymentACMCertARN,
+                optionalHostedZoneId: props.govCloudDeploymentHostedZoneId
             });
 
             /**
@@ -228,7 +227,8 @@ export class VAMS extends cdk.Stack {
             const callbackUrls = [
                 "http://localhost:3000",
                 "http://localhost:3000/",
-                website.websiteUrl,
+                `${website.websiteUrl}`,
+                `${website.websiteUrl}/`,
             ];
 
             /**
@@ -251,32 +251,31 @@ export class VAMS extends cdk.Stack {
                 customCognitoWebClientConfig.node.addDependency(website);
             }
 
-
+            // //Nag Supressions
             // NagSuppressions.addResourceSuppressionsByPath(
-            //     this,
-            //     `/${props.stackName}/WebApp/WebAppDistribution/CloudWatchRole/Resource`,
+            //     this,//Stack.of(this),
+            //     `/${this.toString()}/WepAppDistroVPCS3EndpointSecurityGroup/Resource`,
             //     [
             //         {
-            //             id: "AwsSolutions-IAM4",
-            //             reason: "CloudFrontApiGatewayS3WebSiteConstruct requires AWS Managed Policies for Cloudwatch logs",
-            //             appliesTo: [
-            //                 "Policy::arn:<AWS::Partition>:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs",
-            //             ],
+            //             id: "AwsSolutions-EC23",
+            //             reason: "Web App VPC Endpoint Security Group is restricted to ALB on ports 443 and 80. Ingress rules are added later on after ALB created.",
             //         },
-            //     ],
-            //     true
+            //         {
+            //             id: "CdkNagValidationFailure",
+            //             reason: "Validation failure due to inherent nature of CDK Nag Validations of CIDR ranges", //https://github.com/cdklabs/cdk-nag/issues/817
+            //         },
+            //     ]
             // );
 
             // NagSuppressions.addResourceSuppressionsByPath(
             //     this,
-            //     `/${props.stackName}/WebApp/WebAppDistribution/Resource`,
+            //     `/${props.stackName}/WebApp/WepAppDistroALBSecurityGroup/Resource]`,
             //     [
             //         {
-            //             id: "AwsSolutions-APIG2",
-            //             reason: "Request validator on individual method routes.",
-            //         },
-            //     ],
-            //     true
+            //             id: "AwsSolutions-EC23",
+            //             reason: "Web App ALB Security Group is purposely left open to any IP (0.0.0.0) on port 443 and 80 as this is the public website entry point",
+            //         }
+            //     ]
             // );
         }
         

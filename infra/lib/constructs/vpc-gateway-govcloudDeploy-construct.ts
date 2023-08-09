@@ -28,10 +28,6 @@ export class VpcGatewayGovCloudConstruct extends Construct {
     readonly subnets: {
         webApp: ec2.ISubnet[];
     };
-    readonly securityGroups: {
-        webApp: ec2.SecurityGroup;
-    };
-    readonly s3Endpoint: ec2.InterfaceVpcEndpoint;
 
     constructor(
         parent: Construct,
@@ -71,67 +67,10 @@ export class VpcGatewayGovCloudConstruct extends Construct {
         };
 
         /**
-         * Security Groups
-         */
-        const webAppecurityGroup = new ec2.SecurityGroup(
-            this,
-            "WepAppDistroSecurityGroup",
-            {
-                vpc: this.vpc,
-                allowAllOutbound: true,
-                description: "Web Application Distribution Security Group",
-            }
-        );
-
-        // add ingress rules to allow for HTTP/HTTPS access
-        webAppecurityGroup.addIngressRule(
-            ec2.Peer.ipv4(this.vpc.vpcCidrBlock),
-            ec2.Port.tcp(443),
-            "Allow HTTPS for HTTPS Access"
-        );
-        webAppecurityGroup.addIngressRule(
-            ec2.Peer.ipv4(this.vpc.vpcCidrBlock),
-            ec2.Port.tcp(80),
-            "Allow TCP for HTTP Access"
-        );
-        this.securityGroups = {
-            webApp: webAppecurityGroup,
-        };
-
-        /**
-         * VPC Endpoints
-         */
-        // Create VPC interface endpoint for S3 (Needed for ALB<->S3)
-        this.s3Endpoint = new ec2.InterfaceVpcEndpoint(this, "S3InterfaceVPCEndpoint", {
-            vpc: this.vpc,
-            privateDnsEnabled: false, 
-            service: ec2.InterfaceVpcEndpointAwsService.S3,
-            subnets: { subnetType: props.setupPublicAccess? ec2.SubnetType.PUBLIC : undefined},
-            securityGroups: [webAppecurityGroup],
-        });
-
-
-        /**
          * Outputs
          */
         new CfnOutput(this, "WebDistroVpcId", {
             value: this.vpc.vpcId,
         });
-
-        //Nag Supressions
-        NagSuppressions.addResourceSuppressionsByPath(
-            Stack.of(this),
-            `/${this.toString()}/WepAppDistroSecurityGroup/Resource`,
-            [
-                {
-                    id: "AwsSolutions-EC23",
-                    reason: "Web App Security Group is restricted to VPC cidr range on ports 443 and 53",
-                },
-                {
-                    id: "CdkNagValidationFailure",
-                    reason: "Validation failure due to inherent nature of CDK Nag Validations of CIDR ranges", //https://github.com/cdklabs/cdk-nag/issues/817
-                },
-            ]
-        );
     }
 }

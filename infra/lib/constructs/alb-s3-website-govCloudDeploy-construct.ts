@@ -3,10 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-// import * as apigw from "@aws-cdk/aws-apigatewayv2-alpha";
-// import * as ApiGateway from "aws-cdk-lib/aws-apigateway";
-// import { IHttpRouteAuthorizer } from "@aws-cdk/aws-apigatewayv2-alpha";
-// import * as apigwAuthorizers from "@aws-cdk/aws-apigatewayv2-authorizers-alpha";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import { BlockPublicAccess } from "aws-cdk-lib/aws-s3";
 import * as s3deployment from "aws-cdk-lib/aws-s3-deployment";
@@ -16,7 +12,6 @@ import { Construct } from "constructs";
 import * as iam from "aws-cdk-lib/aws-iam";
 import { requireTLSAddToResourcePolicy } from "../security";
 import * as logs from 'aws-cdk-lib/aws-logs';
-//import { NagSuppressions } from "cdk-nag";
 import { aws_wafv2 as wafv2 } from 'aws-cdk-lib';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import { CfnLoadBalancer } from 'aws-cdk-lib/aws-elasticloadbalancingv2';
@@ -26,6 +21,7 @@ import customResources = require('aws-cdk-lib/custom-resources');
 import * as route53 from "aws-cdk-lib/aws-route53";
 import * as acm from "aws-cdk-lib/aws-certificatemanager";
 import * as route53targets from "aws-cdk-lib/aws-route53-targets";
+import { NagSuppressions } from "cdk-nag";
 
 export interface AlbS3WebsiteGovCloudDeployConstructProps extends cdk.StackProps {
     /**
@@ -36,13 +32,11 @@ export interface AlbS3WebsiteGovCloudDeployConstructProps extends cdk.StackProps
     webSiteBuildPath: string;
     webAcl: string;
     apiUrl: string;
-    assetBucketUrl: string;
-    cognitoDomain: string;
     vpc: ec2.Vpc;
     subnets: ec2.ISubnet[];
-    securityGroups: ec2.SecurityGroup[];
-    s3Endpoint: ec2.InterfaceVpcEndpoint;
     setupPublicAccess: boolean;
+    acmCertARN: string;
+    optionalHostedZoneId: string;
 }
 
 /**
@@ -86,13 +80,12 @@ export class AlbS3WebsiteGovCloudDeployConstruct extends Construct {
             expiration: Duration.days(3650),
         });
 
-        //Setup S3 WebApp bucket with the name that matches the deployed domain hostname (in order to work with the ALB/Endpoint)
+        //Setup S3 WebApp Distro bucket (public website contents) with the name that matches the deployed domain hostname (in order to work with the ALB/Endpoint)
         const webAppBucket = new s3.Bucket(this, "WebAppBucket", {
-            //websiteIndexDocument: "index.html",
-            //websiteErrorDocument: "index.html",
             bucketName: props.domainHostName,
             encryption: s3.BucketEncryption.S3_MANAGED,
             autoDeleteObjects: true,
+            versioned: true,
             removalPolicy: cdk.RemovalPolicy.DESTROY,
             serverAccessLogsBucket: accessLogsBucket,
             serverAccessLogsPrefix: "web-app-access-log-bucket-logs/",
@@ -101,86 +94,42 @@ export class AlbS3WebsiteGovCloudDeployConstruct extends Construct {
         });
         requireTLSAddToResourcePolicy(webAppBucket);
 
+        //Use provided ACM certificate
+        const acmDomainCertificate = acm.Certificate.fromCertificateArn(this, 'DomainCertificateImported', props.acmCertARN);
 
-        // Create the Route 53 Hosted Zone
-        //TODO: create private host zone?
-        const zone = new route53.HostedZone(this, "HostedZone", {
-            zoneName: props.domainHostName,
-            vpcs: [props.vpc],
-        });
-        
-        // Create a new SSL certificate in ACM
-        const cert = new acm.Certificate(this, "Certificate", {
-            domainName: props.domainHostName,
-            validation: acm.CertificateValidation.fromDns(zone),
-        });
+        //Create ALB security group and open to any IP on port 443/80
+        const webAppALBSecurityGroup = new ec2.SecurityGroup(
+            this,
+            "WepAppDistroALBSecurityGroup",
+            {
+                vpc: props.vpc,
+                allowAllOutbound: true,
+                description: "Web Application Distribution for ALB Security Group",
+            }
+        );
+
+        webAppALBSecurityGroup.connections.allowFromAnyIpv4(ec2.Port.tcp(80))
+        webAppALBSecurityGroup.connections.allowFromAnyIpv4(ec2.Port.tcp(443))
 
         // Create an ALB
         const alb = new elbv2.ApplicationLoadBalancer(this, 'WebAppDistroALB', {
             loadBalancerName: `${props.stackName}-WebAppALB`,
             internetFacing: props.setupPublicAccess,
             vpc: props.vpc,
-            //vpcSubnets: { subnets: props.subnets},
-            securityGroup: props.securityGroups[0],
+            securityGroup: webAppALBSecurityGroup,
 
         });
 
-        //Add a L1 construct to add access logging on the ALB (currently not supported in CDK L2)
-        const cfnLoadBalancer = alb.node.defaultChild as CfnLoadBalancer;
-        cfnLoadBalancer.loadBalancerAttributes = [{
-            key: 'access_logs.s3.enabled',
-            value: 'true',
-          },{
-            key: 'access_logs.s3.bucket',
-            value: accessLogsBucket.bucketName,
-          },{
-            key: 'access_logs.s3.prefix',
-            value: "web-app-access-log-alb-logs",
-          }];
+        //Add access logging on ALB
+        alb.logAccessLogs(accessLogsBucket,"web-app-access-log-alb-logs");
+
 
         // Add a listener to the ALB
         const listener = alb.addListener('WebAppDistroALBListener', {
             port: 443, // The port on which the ALB listens
-            certificates: [cert], // The certificate to use for the listener
+            certificates: [acmDomainCertificate], // The certificate to use for the listener
         });
 
-        // //Create custom resource to get IP of Interface Endpoint (CDK doesn't support getting the IP directly)
-        // //https://repost.aws/questions/QUjISNyk6aTA6jZgZQwKWf4Q/how-to-connect-a-load-balancer-and-an-interface-vpc-endpoint-together-using-cdk 
-        // const eni = new customResources.AwsCustomResource(
-        //     this,
-        //     "WebAppGetEndpointIPDescribeNetworkInterfaces",
-        //     {
-        //         onCreate: {
-        //             service: "EC2",
-        //             action: "describeNetworkInterfaces",
-        //             parameters: {
-        //             NetworkInterfaceIds: props.s3Endpoint.vpcEndpointNetworkInterfaceIds,
-        //             },
-        //             physicalResourceId: customResources.PhysicalResourceId.of(Date.now().toString()),
-        //         },
-        //         onUpdate: {
-        //             service: "EC2",
-        //             action: "describeNetworkInterfaces",
-        //             parameters: {
-        //             NetworkInterfaceIds: props.s3Endpoint.vpcEndpointNetworkInterfaceIds,
-        //             },
-        //             physicalResourceId: customResources.PhysicalResourceId.of(Date.now().toString()),
-        //         },
-        //         policy: {
-        //             statements: [
-        //             new iam.PolicyStatement({
-        //                 actions: ["ec2:DescribeNetworkInterfaces"],
-        //                 resources: ["*"],
-        //             }),
-        //             ],
-        //         },
-        //     }
-        // );
-
-        // // note: two ENIs in our endpoint as above (one for each AZ subnet?), so we can get two IPs out of the response
-        // //TODO: Figure out a way to get all IPs if there are more than two?
-        // const ip1 = eni.getResponseField("NetworkInterfaces.0.PrivateIpAddress");
-        // const ip2 = eni.getResponseField("NetworkInterfaces.1.PrivateIpAddress");
 
         //Setup target group to point to VPC Endpoint Interface
         const targetGroup1 = new elbv2.ApplicationTargetGroup(this, 'WebAppALBTargetGroup', {
@@ -193,6 +142,40 @@ export class AlbS3WebsiteGovCloudDeployConstruct extends Construct {
             }
         });
 
+        //Create VPC Endpoint for ALB-<->S3 Comms
+        const webAppVPCESecurityGroup = new ec2.SecurityGroup(
+            this,
+            "WepAppDistroVPCS3EndpointSecurityGroup",
+            {
+                vpc: props.vpc,
+                allowAllOutbound: true,
+                description: "Web Application Distribution for VPC S3 Endpoint Security Group",
+            }
+        );
+
+        //TODO: Figure out why an extra rule is getting added to allow all HTTPS inbound traffic from the VPC CIDR
+        //Add ingress rules (HTTP/HTTPS) to VPC Endpoint security group
+        webAppVPCESecurityGroup.connections.allowFrom(alb, ec2.Port.tcp(443))
+        webAppVPCESecurityGroup.connections.allowFrom(alb, ec2.Port.tcp(80))
+
+        // Create VPC interface endpoint for S3 (Needed for ALB<->S3)
+        const s3VPCEndpoint = new ec2.InterfaceVpcEndpoint(this, "S3InterfaceVPCEndpoint", {
+            vpc: props.vpc,
+            privateDnsEnabled: false, 
+            service: ec2.InterfaceVpcEndpointAwsService.S3,
+            subnets: { subnetType: props.setupPublicAccess? ec2.SubnetType.PUBLIC : undefined},
+            securityGroups: [webAppVPCESecurityGroup],
+        });
+
+        //Add policy to VPC endpoint to only allow access to the specific S3 Bucket
+        s3VPCEndpoint.addToPolicy(new iam.PolicyStatement({
+            resources: [
+            webAppBucket.arnForObjects("*"), 
+            webAppBucket.bucketArn],
+            actions: ["s3:*"],
+            principals: [new iam.AnyPrincipal()],
+        }))
+
         //Create custom resource to get IP of Interface Endpoint (CDK doesn't support getting the IP directly)
         //https://repost.aws/questions/QUjISNyk6aTA6jZgZQwKWf4Q/how-to-connect-a-load-balancer-and-an-interface-vpc-endpoint-together-using-cdk 
         for (let index = 0; index < props.vpc.availabilityZones.length; index++) {
@@ -202,14 +185,14 @@ export class AlbS3WebsiteGovCloudDeployConstruct extends Construct {
                     service: "EC2",
                     action: "describeNetworkInterfaces",
                     outputPaths: [`NetworkInterfaces.${index}.PrivateIpAddress`],
-                    parameters: {NetworkInterfaceIds: props.s3Endpoint.vpcEndpointNetworkInterfaceIds,},
+                    parameters: {NetworkInterfaceIds: s3VPCEndpoint.vpcEndpointNetworkInterfaceIds,},
                     physicalResourceId: customResources.PhysicalResourceId.of(Date.now().toString()),
                 },
                 onUpdate: {
                     service: 'EC2',
                     action: 'describeNetworkInterfaces',
                     outputPaths: [`NetworkInterfaces.${index}.PrivateIpAddress`],
-                    parameters: { NetworkInterfaceIds: props.s3Endpoint.vpcEndpointNetworkInterfaceIds },
+                    parameters: { NetworkInterfaceIds: s3VPCEndpoint.vpcEndpointNetworkInterfaceIds },
                     physicalResourceId: customResources.PhysicalResourceId.of(Date.now().toString()),
                 },
                 policy: {
@@ -228,13 +211,14 @@ export class AlbS3WebsiteGovCloudDeployConstruct extends Construct {
             targetGroups: [targetGroup1],
         })
 
-
         //Setup listener rule to rewrite path to forward to API Gateway for backend API calls
         const applicationListenerRuleBackendAPI= new elbv2.ApplicationListenerRule(this, 'WebAppnListenerRuleBackendAPI', {
             listener: listener,
             priority: 1,
             action: elbv2.ListenerAction.redirect({
                 host: `${props.apiUrl}`,
+                port: "443",
+                protocol: "HTTPS",
                 permanent: true,
             }),
             conditions: [elbv2.ListenerCondition.pathPatterns(['/api/*'])],
@@ -251,118 +235,25 @@ export class AlbS3WebsiteGovCloudDeployConstruct extends Construct {
             conditions: [elbv2.ListenerCondition.pathPatterns(['*/'])],
         });
 
+        // Enable a ALB redirect from port 80 to 443
+        alb.addRedirect()
 
-        // Enable a redirect from port 80 to 443
-        alb.addRedirect();
-
-        // Add a Route 53 alias with the Load Balancer as the target
-        new route53.ARecord(this, "WebAppALBAliasRecord", {
-            zone: zone,
-            target: route53.RecordTarget.fromAlias(
-            new route53targets.LoadBalancerTarget(alb)
-            ),
-        });
-
-        // ALBTargetGroup.addTarget(new elbv2_targets.IpTarget(ip1));
-        // //ALBTargetGroup.addTarget(new elbv2_targets.IpTarget(ip2));
-
-        
-        // listener.addTargetGroups('S3WebAppDistroBucketTargetGroup', {
-        //     targetGroups: [ALBTargetGroup],
-        // });
-
-        // const accessLogs = new logs.LogGroup(this, "VAMS-Web-AccessLogs");
-
-        // // init api gateway RESTAPI for website distribution with cloudfront logging
-        // const apiGatewayWebsite = new ApiGateway.RestApi(this, "WebAppDistribution", {
-        //     restApiName: `${props.stackName}WebDistro`,
-        //     description: "Serves VAMS website assets from the S3 bucket.",
-        //     binaryMediaTypes: ["*/*"],
-        //     cloudWatchRole: true,
-        //     endpointTypes: [ApiGateway.EndpointType.REGIONAL],
-        //     deployOptions: {
-        //         cachingEnabled: true,
-        //         cacheTtl: cdk.Duration.hours(1),
-        //         loggingLevel: ApiGateway.MethodLoggingLevel.INFO,
-        //         dataTraceEnabled: true,
-        //         metricsEnabled: true,
-        //         tracingEnabled: true,     
-        //         accessLogDestination: new ApiGateway.LogGroupLogDestination(accessLogs),
-        //         accessLogFormat: ApiGateway.AccessLogFormat.jsonWithStandardFields(),
-        //     },
-        // });
-
-        // const executeRole = new iam.Role(this, "api-gateway-s3-assume-tole", {
-        // assumedBy: new iam.ServicePrincipal("apigateway.amazonaws.com"),
-        // roleName: "API-Gateway-S3-Integration-Role",
-        // });
-    
-        // executeRole.addToPolicy(
-        // new iam.PolicyStatement({
-        //     resources: [siteBucket.bucketArn],
-        //     actions: ["s3:Get*", "s3:List*"],
-        // })
-        // );
-
-        // siteBucket.grantRead(executeRole);
-
-        // const apiGatewayWebsiteS3Integration_Proxy = new ApiGateway.AwsIntegration({
-        //     service: "s3",
-        //     integrationHttpMethod: "GET",
-        //     path: `${siteBucket.bucketName}/{proxy}`,
-        //     options: {
-        //         credentialsRole: executeRole,
-        //         passthroughBehavior: ApiGateway.PassthroughBehavior.WHEN_NO_MATCH,
-        //         integrationResponses: [
-        //         {
-        //             statusCode: "200",
-        //             responseParameters: {
-        //             "method.response.header.Content-Type": "integration.response.header.Content-Type",
-        //             "method.response.header.Content-Length": "integration.response.header.Content-Length",
-        //             "method.response.header.Timestamp": "integration.response.header.Date",
-        //             },
-        //         },
-        //         ],
-        
-        //         requestParameters: {
-        //             "integration.request.path.proxy": "method.request.path.proxy",
-        //         },
-        //     },
+        // //Optional: Add alias to ALB if hosted zone ID provided (must match domain root of provided domain host)
+        // if(props.optionalHostedZoneId != "UNDEFINED") {
+        //     const zone = route53.HostedZone.fromHostedZoneAttributes(this, 'ExistingRoute53HostedZone', {
+        //         zoneName: props.domainHostName.substring(props.domainHostName.indexOf("."), props.domainHostName.length),
+        //         hostedZoneId: props.optionalHostedZoneId, 
         //     });
 
-
-        // //Add ./{proxy+} route
-        // apiGatewayWebsite.root
-        // .addResource("{proxy+}")
-        // .addMethod("GET", apiGatewayWebsiteS3Integration_Proxy, {
-        //     //authorizer: this.createNoOpAuthorizer("proxy"),
-        //     methodResponses: [
-        //         {
-        //         statusCode: "200",
-        //         responseParameters: {
-        //             "method.response.header.Content-Type": true,
-        //             "method.response.header.Content-Length": true,
-        //             "method.response.header.Timestamp": true,
-        //         },
-        //         },
-        //     ],
-        //     requestParameters: {
-        //         "method.request.path.proxy": false,
-        //         "method.request.header.Content-Type": false,
-        //     },
-        //     requestValidatorOptions: {
-        //         requestValidatorName: "WebAppGETValidator_proxy",
-        //         validateRequestParameters: true,
-        //         validateRequestBody: false,
-        //     },
-        // });
-
-
-        // //Assign WAF
-        // const cfnWebACLAssociation = new wafv2.CfnWebACLAssociation(this,'WebAppWAFAssociation', {
-        // resourceArn:apiGatewayWebsite.deploymentStage.stageArn,
-        // webAclArn: props.webAcl,
-        // });
+        //     // Add a Route 53 alias with the Load Balancer as the target (using sub-domain in provided domain host)
+        //     new route53.ARecord(this, "WebAppALBAliasRecord", {
+        //         zone: zone,
+        //         recordName: props.domainHostName.split('.')[0],
+        //         target: route53.RecordTarget.fromAlias(
+        //         new route53targets.LoadBalancerTarget(alb)
+        //         ),
+        //     });
+        // }
 
         //Associate WAF to ALB
         const cfnWebACLAssociation = new wafv2.CfnWebACLAssociation(this,'WebAppWAFAssociation', {
@@ -377,61 +268,60 @@ export class AlbS3WebsiteGovCloudDeployConstruct extends Construct {
             memoryLimit: 1024,
         });
 
+        //Add Bucket policy to only allow read access from VPC Endpoint
+        const webAppBucketPolicy = new iam.PolicyStatement({
+            resources: [
+            webAppBucket.arnForObjects("*"), 
+            webAppBucket.bucketArn],
+            actions: ["s3:Get*", "s3:List*"],
+            principals: [new iam.AnyPrincipal()]
+        })
+
+        webAppBucketPolicy.addCondition("StringEquals", {
+            "aws:SourceVpce" : s3VPCEndpoint.vpcEndpointId
+        })
+
+        webAppBucket.addToResourcePolicy(webAppBucketPolicy);
+
+
         // assign public properties 
-        // this.websiteUrl = `${apiGatewayWebsite.restApiId}.execute-api.${cdk.Stack.of(this).region}.amazonaws.com`; 
-        this.websiteUrl = `https://${alb.loadBalancerDnsName}`;
+        this.websiteUrl = `https://${props.domainHostName}`;
 
-        // //Export APIGateway specific outputs
-        // new cdk.CfnOutput(this, "APIGatewayDistributionDomainName", {
-        //     value: this.websiteUrl,
-        // });
+        new cdk.CfnOutput(this, "webAppAlbDns", {
+            value: alb.loadBalancerDnsName, 
+        });
 
-        new cdk.CfnOutput(this, "WebDistributionUrl", {
+        new cdk.CfnOutput(this, "webDistributionUrl", {
             value: this.websiteUrl, 
         });
 
-        // // NagSuppressions.addResourceSuppressionsByPath(
-        // //     Stack.of(this),
-        // //     `/${this.toString()}/WebApp/WebAppDistribution/Default/{folder}/{key}/GET/Resource`,
-        // //     [
-        // //         {
-        // //             id: "AwsSolutions-COG4",
-        // //             reason: "This is an open API with a no-op authorizer as it is for fetching the main contents of the static webpage for both authorized and unauthorized users",
-        // //         },
-        // //     ],
-        // //     true
-        // // );
-    
-
         // export any cf outputs
         new cdk.CfnOutput(this, "webAppBucket", { value: webAppBucket.bucketName });
+
+        //Nag Supressions
+        NagSuppressions.addResourceSuppressions(
+            webAppVPCESecurityGroup,
+            [
+                {
+                    id: "AwsSolutions-EC23",
+                    reason: "Web App VPC Endpoint Security Group is restricted to ALB on ports 443 and 80.",
+                },
+                {
+                    id: "CdkNagValidationFailure",
+                    reason: "Validation failure due to inherent nature of CDK Nag Validations of CIDR ranges", //https://github.com/cdklabs/cdk-nag/issues/817
+                },
+            ]
+        );
+
+        NagSuppressions.addResourceSuppressions(
+            webAppALBSecurityGroup,
+            [
+                {
+                    id: "AwsSolutions-EC23",
+                    reason: "Web App ALB Security Group is purposely left open to any IP (0.0.0.0) on port 443 and 80 as this is the public website entry point",
+                }
+            ]
+        );
+
     }
-
-    // private createNoOpAuthorizer(RouteName:String): ApiGateway.IAuthorizer {
-    //     const authorizerFn = new cdk.aws_lambda.Function(this, "WebAppAuthorizerLambda_"+RouteName, {
-    //         runtime: lambda.Runtime.NODEJS_18_X,
-    //         handler: "index.handler",
-    //         code: lambda.Code.fromInline(this.getAuthorizerLambdaCode()),
-    //         timeout: cdk.Duration.seconds(15),
-    //     });
-
-    //     authorizerFn.grantInvoke(new cdk.aws_iam.ServicePrincipal("apigateway.amazonaws.com"));
-
-    //     return new ApiGateway.TokenAuthorizer(this, "CustomRESTAPIAuthorizer_"+RouteName, {
-    //         handler: authorizerFn,
-    //         authorizerName: "WebAppDistroAuthorizer_"+RouteName,
-    //         resultsCacheTtl: cdk.Duration.seconds(3600),
-    //         identitySource: "method.request.header.Accept", //A field that is required to be present in the request although a no-op authorizer is used
-    //       });
-    // }
-
-    // private getAuthorizerLambdaCode(): string {
-    //     return `
-    //         exports.handler = async function(event, context) {
-    //             return {
-    //                 isAuthorized: true
-    //             }
-    //         }
-    //     `;
-    // }
 }

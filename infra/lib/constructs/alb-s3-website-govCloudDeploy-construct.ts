@@ -81,6 +81,7 @@ export class AlbS3WebsiteGovCloudDeployConstruct extends Construct {
         });
 
         //Setup S3 WebApp Distro bucket (public website contents) with the name that matches the deployed domain hostname (in order to work with the ALB/Endpoint)
+        //Note: Bucket name must match final domain name for the ALB/VPCEndpoint architecture to work as ALB does not support host/path rewriting
         const webAppBucket = new s3.Bucket(this, "WebAppBucket", {
             bucketName: props.domainHostName,
             encryption: s3.BucketEncryption.S3_MANAGED,
@@ -167,12 +168,13 @@ export class AlbS3WebsiteGovCloudDeployConstruct extends Construct {
             securityGroups: [webAppVPCESecurityGroup],
         });
 
+        //TODO: Figure out why this policy is not working and still letting requests through for other bucket names (use ALB dns name to test)
         //Add policy to VPC endpoint to only allow access to the specific S3 Bucket
         s3VPCEndpoint.addToPolicy(new iam.PolicyStatement({
             resources: [
             webAppBucket.arnForObjects("*"), 
             webAppBucket.bucketArn],
-            actions: ["s3:*"],
+            actions: ["s3:Get*", "s3:List*"],
             principals: [new iam.AnyPrincipal()],
         }))
 
@@ -239,21 +241,21 @@ export class AlbS3WebsiteGovCloudDeployConstruct extends Construct {
         alb.addRedirect()
 
         // //Optional: Add alias to ALB if hosted zone ID provided (must match domain root of provided domain host)
-        // if(props.optionalHostedZoneId != "UNDEFINED") {
-        //     const zone = route53.HostedZone.fromHostedZoneAttributes(this, 'ExistingRoute53HostedZone', {
-        //         zoneName: props.domainHostName.substring(props.domainHostName.indexOf("."), props.domainHostName.length),
-        //         hostedZoneId: props.optionalHostedZoneId, 
-        //     });
+        if(props.optionalHostedZoneId != "UNDEFINED") {
+            const zone = route53.HostedZone.fromHostedZoneAttributes(this, 'ExistingRoute53HostedZone', {
+                zoneName: props.domainHostName.substring(props.domainHostName.indexOf(".")+1, props.domainHostName.length),
+                hostedZoneId: props.optionalHostedZoneId, 
+            });
 
-        //     // Add a Route 53 alias with the Load Balancer as the target (using sub-domain in provided domain host)
-        //     new route53.ARecord(this, "WebAppALBAliasRecord", {
-        //         zone: zone,
-        //         recordName: props.domainHostName.split('.')[0],
-        //         target: route53.RecordTarget.fromAlias(
-        //         new route53targets.LoadBalancerTarget(alb)
-        //         ),
-        //     });
-        // }
+            // Add a Route 53 alias with the Load Balancer as the target (using sub-domain in provided domain host)
+            new route53.ARecord(this, "WebAppALBAliasRecord", {
+                zone: zone,
+                recordName: `${props.domainHostName}.`,
+                target: route53.RecordTarget.fromAlias(
+                new route53targets.LoadBalancerTarget(alb)
+                ),
+            });
+        }
 
         //Associate WAF to ALB
         const cfnWebACLAssociation = new wafv2.CfnWebACLAssociation(this,'WebAppWAFAssociation', {
@@ -275,6 +277,7 @@ export class AlbS3WebsiteGovCloudDeployConstruct extends Construct {
             webAppBucket.bucketArn],
             actions: ["s3:Get*", "s3:List*"],
             principals: [new iam.AnyPrincipal()]
+            
         })
 
         webAppBucketPolicy.addCondition("StringEquals", {

@@ -24,9 +24,11 @@ import { ApiGatewayV2CloudFrontConstruct } from "./constructs/apigatewayv2-cloud
 import { Construct } from "constructs";
 import { NagSuppressions } from "cdk-nag";
 import { CustomCognitoConfigConstruct } from "./constructs/custom-cognito-config-construct";
+import { CustomFeatureEnabledConfigConstruct } from "./constructs/custom-featureEnabled-config-construct";
 import { samlEnabled, samlSettings } from "./saml-config";
 import { LocationServiceConstruct } from "./constructs/location-service-construct";
 import { streamsBuilder } from "./streams-builder";
+import customResources = require('aws-cdk-lib/custom-resources');
 
 interface EnvProps {
     prod: boolean; //ToDo: replace with env
@@ -46,6 +48,8 @@ interface EnvProps {
 export class VAMS extends cdk.Stack {
     constructor(scope: Construct, id: string, props: EnvProps) {
         super(scope, id, { ...props, crossRegionReferences: true });
+
+        const enabledFeatures: string[] = [];
 
         const region = props.env.region || "us-east-1";
 
@@ -72,8 +76,6 @@ export class VAMS extends cdk.Stack {
         );
 
         const webAppBuildPath = "../web/build";
-
-
 
         const storageResources = storageResourcesBuilder(this, props.stagingBucket);
 
@@ -251,32 +253,7 @@ export class VAMS extends cdk.Stack {
                 customCognitoWebClientConfig.node.addDependency(website);
             }
 
-            // //Nag Supressions
-            // NagSuppressions.addResourceSuppressionsByPath(
-            //     this,//Stack.of(this),
-            //     `/${this.toString()}/WepAppDistroVPCS3EndpointSecurityGroup/Resource`,
-            //     [
-            //         {
-            //             id: "AwsSolutions-EC23",
-            //             reason: "Web App VPC Endpoint Security Group is restricted to ALB on ports 443 and 80. Ingress rules are added later on after ALB created.",
-            //         },
-            //         {
-            //             id: "CdkNagValidationFailure",
-            //             reason: "Validation failure due to inherent nature of CDK Nag Validations of CIDR ranges", //https://github.com/cdklabs/cdk-nag/issues/817
-            //         },
-            //     ]
-            // );
-
-            // NagSuppressions.addResourceSuppressionsByPath(
-            //     this,
-            //     `/${props.stackName}/WebApp/WepAppDistroALBSecurityGroup/Resource]`,
-            //     [
-            //         {
-            //             id: "AwsSolutions-EC23",
-            //             reason: "Web App ALB Security Group is purposely left open to any IP (0.0.0.0) on port 443 and 80 as this is the public website entry point",
-            //         }
-            //     ]
-            // );
+            enabledFeatures.push("GOVCLOUD")
         }
         
         //Deploy Backend API framework
@@ -286,6 +263,7 @@ export class VAMS extends cdk.Stack {
         //Note: OpenSearch Serverless not currently supported in GovCloud
         if(!props.govCloudDeployment) {
             streamsBuilder(this, cognitoResources, api.apiGatewayV2, storageResources);
+            enabledFeatures.push("OPENSEARCH")
         }
 
 
@@ -301,6 +279,7 @@ export class VAMS extends cdk.Stack {
             const location = new LocationServiceConstruct(this, "LocationService", {
                 role: cognitoResources.authenticatedRole,
             });
+            enabledFeatures.push("LOCATIONSERVICE")
         }
 
         const amplifyConfigProps: AmplifyConfigLambdaConstructProps = {
@@ -320,6 +299,7 @@ export class VAMS extends cdk.Stack {
                 // redirectSignIn: callbackUrls[0],
                 // redirectSignOut: callbackUrls[0],
             };
+            enabledFeatures.push("COGNITOSAML")
         }
 
         const amplifyConfigFn = new AmplifyConfigLambdaConstruct(
@@ -328,6 +308,17 @@ export class VAMS extends cdk.Stack {
             amplifyConfigProps
         );
 
+        //Write enabled features to dynamoDB table
+        const customCognitoWebClientConfig = new CustomFeatureEnabledConfigConstruct(
+        this,
+        "CustomFeatureEnabledConfig",
+        {
+            appFeatureEnabledTable: storageResources.dynamo.appFeatureEnabledStorageTable,
+            featuresEnabled: enabledFeatures
+        });
+        customCognitoWebClientConfig.node.addDependency(storageResources);
+
+        //Write outputs
         const assetBucketOutput = new cdk.CfnOutput(this, "AssetBucketNameOutput", {
             value: storageResources.s3.assetBucket.bucketName,
             description: "S3 bucket for asset storage",

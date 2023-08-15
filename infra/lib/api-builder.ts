@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /*
- * Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2023 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -76,7 +76,7 @@ export function apiBuilder(
     storageResources: storageResources
 ) {
     //config resources
-    const createConfigFunction = buildConfigService(scope, storageResources.s3.assetBucket);
+    const createConfigFunction = buildConfigService(scope, storageResources.s3.assetBucket, storageResources.dynamo.appFeatureEnabledStorageTable);
 
     attachFunctionToApi(scope, createConfigFunction, {
         routePath: "/secure-config",

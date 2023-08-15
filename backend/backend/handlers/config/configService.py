@@ -1,8 +1,11 @@
-#  Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#  Copyright 2023 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #  SPDX-License-Identifier: Apache-2.0
 
 import json
 import os
+import boto3
+from boto3.dynamodb.conditions import Key
+from backend.common.validators import validate
 
 response = {
     'statusCode': 200,
@@ -16,12 +19,39 @@ response = {
     }
 }
 
+
 def lambda_handler(event, context):
     try:
-        print("Looking up the requested resource") 
-        bucket = os.getenv("ASSET_STORAGE_BUCKET", None)
+        # Initialize DynamoDB client
+        dynamo_client = boto3.client('dynamodb')
+
+        print("Looking up the requested resource")
+        assetS3Bucket = os.getenv("ASSET_STORAGE_BUCKET", None)
+        appFeatureEnabledDynamoDBTable = os.getenv("APPFEATUREENABLED_STORAGE_TABLE_NAME", None)
+
+        # Specify the column name you want to aggregate
+        appFeatureEnableDynamoDB_feature_column_name = 'featureName'
+        appFeatureEnableDynamoDB_enabled_column_name = 'enabled'
+
+        # Initialize an empty list to store column values
+        appFeatureEnableDynamoDB_column_values = []
+
+        table = dynamo_client.Table(appFeatureEnabledDynamoDBTable)
+        record = table.query(
+            KeyConditionExpression=Key(appFeatureEnableDynamoDB_enabled_column_name).eq("true")
+        )
+
+        # Loop through the query results and fetch the aggregated values
+        while 'Items' in record:
+            appFeatureEnableDynamoDB_column_values.extend(
+                [item[appFeatureEnableDynamoDB_feature_column_name]['S'] for item in response['Items']])
+
+        # Create a concatenated string from the column values
+        appFeatureEnabledconcatenated_string = ','.join(appFeatureEnableDynamoDB_column_values)
+
         response = {
-            "bucket": bucket,
+            "bucket": assetS3Bucket,
+            "featuresEnabled": appFeatureEnabledconcatenated_string,
         }
         print("Success")
         return {
@@ -41,4 +71,3 @@ def lambda_handler(event, context):
             print("Can't Read Error")
             response['body'] = json.dumps({"message": "An unexpected error occurred while executing the request"})
         return response
- 

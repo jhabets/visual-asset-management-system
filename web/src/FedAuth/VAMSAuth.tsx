@@ -58,9 +58,14 @@ interface Config {
      */
     federatedConfig?: AmplifyConfigFederatedIdentityProps;
     /**
-     * bucket
+     * S3 Asset bucket
      */
     bucket?: string;
+
+    /**
+     * VAMS Features that are enabled
+     */
+    featuresEnabled?: string;
 
     stackName: string;
 }
@@ -240,9 +245,10 @@ const VAMSAuth: React.FC<AuthProps> = (props) => {
 
     console.log("useLocal", useLocal);
     useEffect(() => {
-        if (config && !config.bucket && user) {
+        if (config && (!config.bucket || !config.featuresEnable) && user) {
             API.get("api", `secure-config`, {}).then((value) => {
                 config.bucket = value.bucket;
+                config.featuresEnabled = value.featuresEnabled;
                 Cache.setItem("config", config);
                 setConfig(config);
             });

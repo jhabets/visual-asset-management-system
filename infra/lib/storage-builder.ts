@@ -21,6 +21,7 @@ export interface storageResources {
         stagingBucket?: s3.IBucket;
     };
     dynamo: {
+        appFeatureEnabledStorageTable: dynamodb.Table;
         assetStorageTable: dynamodb.Table;
         jobStorageTable: dynamodb.Table;
         pipelineStorageTable: dynamodb.Table;
@@ -119,6 +120,18 @@ export function storageResourcesBuilder(
     new s3deployment.BucketDeployment(scope, "DeployArtefacts", {
         sources: [s3deployment.Source.asset("./lib/artefacts")],
         destinationBucket: artefactsBucket,
+    });
+
+    const appFeatureEnabledStorageTable = new dynamodb.Table(scope, "AppFeatureEnabledStorageTable", {
+        ...dynamodbDefaultProps,
+        partitionKey: {
+            name: "enabled",
+            type: dynamodb.AttributeType.STRING,
+        },
+        sortKey: {
+            name: "featureName",
+            type: dynamodb.AttributeType.STRING,
+        },
     });
 
     const assetStorageTable = new dynamodb.Table(scope, "AssetStorageTable", {
@@ -241,6 +254,7 @@ export function storageResourcesBuilder(
             stagingBucket: stagingBucket,
         },
         dynamo: {
+            appFeatureEnabledStorageTable: appFeatureEnabledStorageTable,
             assetStorageTable: assetStorageTable,
             jobStorageTable: jobStorageTable,
             pipelineStorageTable: pipelineStorageTable,

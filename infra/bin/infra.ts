@@ -28,12 +28,14 @@ const govCloudDeployment = (process.env.GOVCLOUD_DEPLOYMENT || app.node.tryGetCo
 const govCloudDeploymentDomainHostName = (process.env.GOVCLOUD_DEPLOYMENT_DOMAIN_HOSTNAME || app.node.tryGetContext("govCloudDeploymentDomainHostName") || "UNDEFINED");
 const govCloudDeploymentACMCertARN = (process.env.GOVCLOUD_DEPLOYMENT_ACMCERT_ARN || app.node.tryGetContext("govCloudDeploymentACMCertARN") || "UNDEFINED");
 const govCloudDeploymentHostedZoneId = (process.env.GOVCLOUD_DEPLOYMENT_HOSTEDZONEID || app.node.tryGetContext("govCloudDeploymentHostedZoneId") || "UNDEFINED");
-const govCloudDeploymentPublicAccess = false; //Only use for testing GovCloud deployment pipeline on commercial AWS as it deploys the WebApp ALB in public subnets
+const govCloudDeploymentPublicAccess = true; //Only use for testing GovCloud deployment pipeline on commercial AWS as it deploys the WebApp ALB in public subnets
 
 if(govCloudDeployment && (govCloudDeploymentACMCertARN == "UNDEFINED" || govCloudDeploymentDomainHostName == "UNDEFINED"))
 {
     throw new Error("Cannot use GovCloud deployment without specifying a valid domain hostname and a ACM Certificate ARN to use for SSL/TLS security!")
 }
+
+//TODO: Start implementing a CDK config loader vs using a bunch of context parameter inputs for mroe advanced configuration items
 
 console.log("CDK_NAG_ENABLED 👉", enableCdkNag);
 console.log("STACK_NAME 👉", stackName);

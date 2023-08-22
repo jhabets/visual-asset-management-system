@@ -187,7 +187,6 @@ export class VAMS extends cdk.Stack {
 
         }
         else {
-
             //Deploy for GovCloud (aka, use ALB->NGINX->VPCEndpoint->S3 as path for web deployment)
             const webAppDistroNetwork =
                 new VpcGatewayGovCloudConstruct(
@@ -300,14 +299,14 @@ export class VAMS extends cdk.Stack {
         );
 
         //Write enabled features to dynamoDB table
-        const customCognitoWebClientConfig = new CustomFeatureEnabledConfigConstruct(
+        const customFeatureEnabledConfigConstruct = new CustomFeatureEnabledConfigConstruct(
         this,
-        "CustomFeatureEnabledConfig",
+        "CustomFeatureEnabledConfigConstruct",
         {
             appFeatureEnabledTable: storageResources.dynamo.appFeatureEnabledStorageTable,
             featuresEnabled: enabledFeatures
         });
-        customCognitoWebClientConfig.node.addDependency(storageResources);
+        customFeatureEnabledConfigConstruct.node.addDependency(storageResources.dynamo.appFeatureEnabledStorageTable);
 
         //Write outputs
         const assetBucketOutput = new cdk.CfnOutput(this, "AssetBucketNameOutput", {

@@ -62,13 +62,14 @@ export class CustomFeatureEnabledConfigConstruct extends Construct {
         const awsSdkCall: AwsSdkCall = {
             service: 'DynamoDB',
             action: 'batchWriteItem',
-            physicalResourceId: PhysicalResourceId.of(tableName + 'insert'),
+            physicalResourceId: PhysicalResourceId.of(Date.now().toString()),
             parameters: records
         }
 
-        const customResource: AwsCustomResource = new AwsCustomResource(this, tableName+"_custom_resource", {
+        const customResource: AwsCustomResource = new AwsCustomResource(this, "appFeatureEnabled_table_populate_custom_resource", {
                 onCreate: awsSdkCall,
                 onUpdate: awsSdkCall,
+                installLatestAwsSdk: false,
                 logRetention: RetentionDays.ONE_WEEK,
                 policy: AwsCustomResourcePolicy.fromStatements([
                     new PolicyStatement({

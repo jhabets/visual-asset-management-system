@@ -1,3 +1,9 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/*
+ * Copyright 2023 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import * as cognito from "aws-cdk-lib/aws-cognito";
 
 interface SamlSettings {
@@ -15,9 +21,9 @@ interface SamlSettings {
  */
 
 /**
- * To enable SAML, set this to true and provide the SAML settings below.
+ * To enable SAML, set this in the main configuration file
+ * TODO: Move this to main config file
  */
-export const samlEnabled = false;
 
 export const samlSettings: SamlSettings = {
     // This string is used to identify the saml identify provider in the Cognito User Pool as well as

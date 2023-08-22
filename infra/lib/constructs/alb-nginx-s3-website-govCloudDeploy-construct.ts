@@ -23,7 +23,7 @@ import * as acm from "aws-cdk-lib/aws-certificatemanager";
 import * as route53targets from "aws-cdk-lib/aws-route53-targets";
 import { NagSuppressions } from "cdk-nag";
 
-export interface AlbS3WebsiteGovCloudDeployConstructProps extends cdk.StackProps {
+export interface AlbNginxS3WebsiteGovCloudDeployConstructProps extends cdk.StackProps {
     /**
      * The path to the build directory of the web site, relative to the project root
      * ex: "./app/build"
@@ -42,7 +42,7 @@ export interface AlbS3WebsiteGovCloudDeployConstructProps extends cdk.StackProps
 /**
  * Default input properties
  */
-const defaultProps: Partial<AlbS3WebsiteGovCloudDeployConstructProps> = {
+const defaultProps: Partial<AlbNginxS3WebsiteGovCloudDeployConstructProps> = {
     stackName: "",
     env: {},
 };
@@ -54,14 +54,14 @@ const defaultProps: Partial<AlbS3WebsiteGovCloudDeployConstructProps> = {
  * - ALB
  *
  */
-export class AlbS3WebsiteGovCloudDeployConstruct extends Construct {
+export class AlbNginxS3WebsiteGovCloudDeployConstruct extends Construct {
 
     /**
      * Returns the ALB URL instance for the static webpage
      */
     public websiteUrl: string;
 
-    constructor(parent: Construct, name: string, props: AlbS3WebsiteGovCloudDeployConstructProps) {
+    constructor(parent: Construct, name: string, props: AlbNginxS3WebsiteGovCloudDeployConstructProps) {
         super(parent, name);
 
         props = { ...defaultProps, ...props };
@@ -169,6 +169,7 @@ export class AlbS3WebsiteGovCloudDeployConstruct extends Construct {
         });
 
         //TODO: Figure out why this policy is not working and still letting requests through for other bucket names (use ALB dns name to test)
+        //TODO: Specifically add a deny policy for anything outside of bucket?
         //Add policy to VPC endpoint to only allow access to the specific S3 Bucket
         s3VPCEndpoint.addToPolicy(new iam.PolicyStatement({
             resources: [
@@ -271,6 +272,7 @@ export class AlbS3WebsiteGovCloudDeployConstruct extends Construct {
         });
 
         //Add Bucket policy to only allow read access from VPC Endpoint
+        //TODO: Specifically add a extra deny policy for anything outside of VPCE
         const webAppBucketPolicy = new iam.PolicyStatement({
             resources: [
             webAppBucket.arnForObjects("*"), 

@@ -12,6 +12,7 @@ import { NagSuppressions } from "cdk-nag";
 
 /* eslint-disable @typescript-eslint/no-empty-interface */
 export interface VpcGatewayGovCloudConstructProps extends cdk.StackProps {
+    vpcCidrRange: string
     setupPublicAccess:boolean
 }
 
@@ -46,11 +47,11 @@ export class VpcGatewayGovCloudConstruct extends Construct {
             removalPolicy: cdk.RemovalPolicy.RETAIN,
         });
 
-        const cidrRange = "10.1.0.0/16"; // 4096
+        //const cidrRange = "10.1.0.0/16"; // 4096
 
         //Create VPC that auto creates 1 private and 1 public subnet per AZ
         this.vpc = new ec2.Vpc(this, "Vpc", {
-            ipAddresses: ec2.IpAddresses.cidr(cidrRange),
+            ipAddresses: ec2.IpAddresses.cidr(props.vpcCidrRange),
             maxAzs: 2, //Two AZs for VPC for now
             enableDnsHostnames: true,
             enableDnsSupport: true,

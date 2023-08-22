@@ -15,7 +15,7 @@ import {
 } from "./constructs/amplify-config-lambda-construct";
 import { CloudFrontS3WebSiteConstruct } from "./constructs/cloudfront-s3-website-construct";
 import { VpcGatewayGovCloudConstruct } from "./constructs/vpc-gateway-govcloudDeploy-construct";
-import { AlbS3WebsiteGovCloudDeployConstruct } from "./constructs/alb-s3-website-govCloudDeploy-construct";
+import { AlbNginxS3WebsiteGovCloudDeployConstruct } from "./constructs/alb-nginx-s3-website-govCloudDeploy-construct";
 import {
     CognitoWebNativeConstruct,
     CognitoWebNativeConstructProps,
@@ -25,24 +25,20 @@ import { Construct } from "constructs";
 import { NagSuppressions } from "cdk-nag";
 import { CustomCognitoConfigConstruct } from "./constructs/custom-cognito-config-construct";
 import { CustomFeatureEnabledConfigConstruct } from "./constructs/custom-featureEnabled-config-construct";
-import { samlEnabled, samlSettings } from "./saml-config";
+import { samlSettings } from "./saml-config";
 import { LocationServiceConstruct } from "./constructs/location-service-construct";
 import { streamsBuilder } from "./streams-builder";
 import customResources = require('aws-cdk-lib/custom-resources');
+import * as Config from '../config/config';
+import { VAMS_APP_FEATURES } from '../config/common/vamsAppFeatures';
 
 interface EnvProps {
-    prod: boolean; //ToDo: replace with env
     env: cdk.Environment;
     stackName: string;
     ssmWafArnParameterName: string;
     ssmWafArnParameterRegion: string;
     ssmWafArn: string;
-    stagingBucket?: string;
-    govCloudDeployment: boolean;
-    govCloudDeploymentDomainHostName: string; //Domain name associated with ACM Certificate and S3 bucket name for WebApp Distro ALB pass-through
-    govCloudDeploymentPublicAccess: boolean; //Primarily used to test VAMS GovCloud settings on commercial cloud with a public deployment (see instructions for additional setup requirements)
-    govCloudDeploymentACMCertARN: string; //ACM Certificate ARN to use for GovCloud Deployment (see instructions as additional seutp is still required with the Domain/DNS name of the ALB WebApp endpoint)
-    govCloudDeploymentHostedZoneId: string; //Optional Route 53 Hosted zone to add a alias to the GovCloud created ALB based on provided Domain Host Name
+    config: Config.Config;
 }
 
 export class VAMS extends cdk.Stack {
@@ -51,33 +47,16 @@ export class VAMS extends cdk.Stack {
 
         const enabledFeatures: string[] = [];
 
-        const region = props.env.region || "us-east-1";
-
-        const providedAdminEmailAddress =
-            process.env.VAMS_ADMIN_EMAIL || scope.node.tryGetContext("adminEmailAddress");
-
         const adminEmailAddress = new cdk.CfnParameter(this, "adminEmailAddress", {
             type: "String",
             description:
                 "Email address for login and where your password is sent to. You wil be sent a temporary password for the turbine to authenticate to Cognito.",
-            default: providedAdminEmailAddress,
+            default: props.config.app.adminEmailAddress,
         });
-
-        ///Setup optional configurations
-        const govCloudDeployment_CDKParam = new cdk.CfnParameter(
-            this,
-            "govCloudDeployment",
-            {
-                type: "String",
-                description:
-                    "Parameter for whether VAMS is deployed to a GovCloud environment",
-                default: props.govCloudDeployment,
-            }
-        );
 
         const webAppBuildPath = "../web/build";
 
-        const storageResources = storageResourcesBuilder(this, props.stagingBucket);
+        const storageResources = storageResourcesBuilder(this, props.config.app.stagingBucketName);
 
         const trail = new cloudTrail.Trail(this, "CloudTrail-VAMS", {
             isMultiRegionTrail: false,
@@ -91,20 +70,31 @@ export class VAMS extends cdk.Stack {
             ...props,
             storageResources: storageResources,
         };
-        if (samlEnabled) {
+
+        //Select auth provider
+        if(props.config.app.authProvider.cognito.enabled)
+        {
+            enabledFeatures.push(VAMS_APP_FEATURES.AUTHPROVIDER_COGNITO)
+        }
+        //else if ...
+
+        //See if we have enabled SAML settings
+        //TODO: Migrate rest of settings to main config file
+        if (props.config.app.authProvider.cognito.samlEnabled) {
             cognitoProps.samlSettings = samlSettings;
+            enabledFeatures.push(VAMS_APP_FEATURES.AUTHPROVIDER_COGNITO_SAML)
         }
 
         const cognitoResources = new CognitoWebNativeConstruct(this, "Cognito", cognitoProps);
 
         const cognitoUser = new cognito.CfnUserPoolUser(this, "AdminUser", {
-            username: providedAdminEmailAddress,
+            username: props.config.app.adminEmailAddress,
             userPoolId: cognitoResources.userPoolId,
             desiredDeliveryMediums: ["EMAIL"],
             userAttributes: [
                 {
                     name: "email",
-                    value: providedAdminEmailAddress,
+                    value: props.config.app.adminEmailAddress,
                 },
             ],
         });
@@ -119,7 +109,7 @@ export class VAMS extends cdk.Stack {
             "AdminUserToGroupAttachment",
             {
                 userPoolId: cognitoResources.userPoolId,
-                username: providedAdminEmailAddress,
+                username: props.config.app.adminEmailAddress,
                 groupName: "super-admin",
             }
         );
@@ -134,17 +124,17 @@ export class VAMS extends cdk.Stack {
 
 
         //Deploy website distribution infrastructure and authentication tie-ins
-        if(!props.govCloudDeployment) {
-            //Deploy through CloudFront (default)
+        if(!props.config.app.govCloud.enabled) {
 
+            //Deploy through CloudFront (default)
             const website = new CloudFrontS3WebSiteConstruct(this, "WebApp", {
                 ...props,
                 webSiteBuildPath: webAppBuildPath,
                 webAcl: props.ssmWafArn,
                 apiUrl: api.apiUrl,
                 assetBucketUrl: storageResources.s3.assetBucket.bucketRegionalDomainName,
-                cognitoDomain: samlEnabled
-                    ? `https://${samlSettings.cognitoDomainPrefix}.auth.${region}.amazoncognito.com`
+                cognitoDomain: props.config.app.authProvider.cognito.samlEnabled
+                    ? `https://${samlSettings.cognitoDomainPrefix}.auth.${props.env.region}.amazoncognito.com`
                     : "",
             });
 
@@ -167,7 +157,7 @@ export class VAMS extends cdk.Stack {
              * Propagate Base CloudFront URL to Cognito User Pool Callback and Logout URLs
              * if SAML is enabled.
              */
-            if (samlEnabled) {
+            if (props.config.app.authProvider.cognito.samlEnabled) {
                 const customCognitoWebClientConfig = new CustomCognitoConfigConstruct(
                     this,
                     "CustomCognitoWebClientConfig",
@@ -197,28 +187,30 @@ export class VAMS extends cdk.Stack {
 
         }
         else {
-            //Deploy for GovCloud (aka, use ALB->VPCEndpoint->S3 as path for web deployment)
+
+            //Deploy for GovCloud (aka, use ALB->NGINX->VPCEndpoint->S3 as path for web deployment)
             const webAppDistroNetwork =
                 new VpcGatewayGovCloudConstruct(
                     this,
                     "WebAppDistroNetwork",
                     {
                         ...props,
-                        setupPublicAccess: props.govCloudDeploymentPublicAccess
+                        vpcCidrRange: props.config.app.govCloud.vpcCidrRange,
+                        setupPublicAccess: props.config.govCloudDeploymentPublicAccess
                     }
                 );
                 
-            const website = new AlbS3WebsiteGovCloudDeployConstruct(this, "WebApp", {
+            const website = new AlbNginxS3WebsiteGovCloudDeployConstruct(this, "WebApp", {
                 ...props,
-                domainHostName: props.govCloudDeploymentDomainHostName,
+                domainHostName: props.config.app.govCloud.domainHost,
                 webSiteBuildPath: webAppBuildPath,
                 webAcl: props.ssmWafArn,
                 apiUrl: api.apiUrl,
                 vpc: webAppDistroNetwork.vpc,
                 subnets: webAppDistroNetwork.subnets.webApp,
-                setupPublicAccess: props.govCloudDeploymentPublicAccess,
-                acmCertARN: props.govCloudDeploymentACMCertARN,
-                optionalHostedZoneId: props.govCloudDeploymentHostedZoneId
+                setupPublicAccess: props.config.govCloudDeploymentPublicAccess,
+                acmCertARN: props.config.app.govCloud.certificateARN,
+                optionalHostedZoneId: props.config.app.govCloud.domainHost
             });
 
             /**
@@ -237,7 +229,7 @@ export class VAMS extends cdk.Stack {
              * Propagate Base CloudFront URL to Cognito User Pool Callback and Logout URLs
              * if SAML is enabled.
              */
-            if (samlEnabled) {
+            if (props.config.app.authProvider.cognito.samlEnabled) {
                 const customCognitoWebClientConfig = new CustomCognitoConfigConstruct(
                     this,
                     "CustomCognitoWebClientConfig",
@@ -253,7 +245,7 @@ export class VAMS extends cdk.Stack {
                 customCognitoWebClientConfig.node.addDependency(website);
             }
 
-            enabledFeatures.push("GOVCLOUD")
+            enabledFeatures.push(VAMS_APP_FEATURES.GOVCLOUD)
         }
         
         //Deploy Backend API framework
@@ -261,9 +253,9 @@ export class VAMS extends cdk.Stack {
 
         //Deploy OpenSearch Serverless
         //Note: OpenSearch Serverless not currently supported in GovCloud
-        if(!props.govCloudDeployment) {
+        if(!props.config.app.govCloud.enabled && props.config.app.openSearchServerless) {
             streamsBuilder(this, cognitoResources, api.apiGatewayV2, storageResources);
-            enabledFeatures.push("OPENSEARCH")
+            enabledFeatures.push(VAMS_APP_FEATURES.OPENSEARCH)
         }
 
 
@@ -275,11 +267,11 @@ export class VAMS extends cdk.Stack {
 
         //Deploy Location Services
         //Note: Location Services currently not supported in GovCloud
-        if(!props.govCloudDeployment) {
+        if(!props.config.app.govCloud.enabled) {
             const location = new LocationServiceConstruct(this, "LocationService", {
                 role: cognitoResources.authenticatedRole,
             });
-            enabledFeatures.push("LOCATIONSERVICE")
+            enabledFeatures.push(VAMS_APP_FEATURES.LOCATIONSERVICES)
         }
 
         const amplifyConfigProps: AmplifyConfigLambdaConstructProps = {
@@ -288,18 +280,17 @@ export class VAMS extends cdk.Stack {
             appClientId: cognitoResources.webClientId,
             identityPoolId: cognitoResources.identityPoolId,
             userPoolId: cognitoResources.userPoolId,
-            region,
+            region: props.config.env.region,
         };
 
-        if (samlEnabled) {
+        if (props.config.app.authProvider.cognito.samlEnabled) {
             amplifyConfigProps.federatedConfig = {
-                customCognitoAuthDomain: `${samlSettings.cognitoDomainPrefix}.auth.${region}.amazoncognito.com`,
+                customCognitoAuthDomain: `${samlSettings.cognitoDomainPrefix}.auth.${props.config.env.region}.amazoncognito.com`,
                 customFederatedIdentityProviderName: samlSettings.name,
                 // if necessary, the callback urls can be determined here and passed to the UI through the config endpoint
                 // redirectSignIn: callbackUrls[0],
                 // redirectSignOut: callbackUrls[0],
             };
-            enabledFeatures.push("COGNITOSAML")
         }
 
         const amplifyConfigFn = new AmplifyConfigLambdaConstruct(
@@ -329,14 +320,17 @@ export class VAMS extends cdk.Stack {
             description: "S3 bucket for template notebooks",
         });
 
-        if (samlEnabled) {
+        if (props.config.app.authProvider.cognito.samlEnabled) {
             const samlIdpResponseUrl = new cdk.CfnOutput(this, "SAML_IdpResponseUrl", {
-                value: `https://${samlSettings.cognitoDomainPrefix}.auth.${region}.amazoncognito.com/saml2/idpresponse`,
+                value: `https://${samlSettings.cognitoDomainPrefix}.auth.${props.env.region}.amazoncognito.com/saml2/idpresponse`,
                 description: "SAML IdP Response URL",
             });
         }
 
         cdk.Tags.of(this).add("vams:stackname", props.stackName);
+
+        //Add for Systems Manager->Application Manager Cost Tracking for main VAMS Stack
+        cdk.Tags.of(this).add("AppManagerCFNStackKey", this.stackId);
 
         this.node.findAll().forEach((item) => {
             if (item instanceof cdk.aws_lambda.Function) {
@@ -381,7 +375,7 @@ export class VAMS extends cdk.Stack {
             `/${props.stackName}/listExecutions`,
         ];
 
-        if(!props.govCloudDeployment) {
+        if(!props.config.app.govCloud.enabled) {
             refactorPaths.concat(`/${props.stackName}/idxa`);
             refactorPaths.concat(`/${props.stackName}/idxm`);
         }

@@ -1,0 +1,71 @@
+{
+    "description": "*This automation document implements an AWS-RunShellScript execution for a step functions waitForCallBack integration pattern. This allows step functions to synchronously call an AWS-RunShellScript. \n\n---\n# Details\nThis AWS-RunShellScript document wrapper for will execute the necessary step function api calls send_task_success upon successful execution and send_task_failure when errors occur.\n\nThis document is used to target a list of InstanceIds. To use target filtering please check SfnRunCommandByTargets.\n\nThe automation consists of three steps to achieve a synchronous call when using (.waitForCallBack) option in step functions.\n>1. **RunCommand** - takes several inputs and executes a RunShellScript command. Check details tab for more information.\n2. **SendTaskSuccess** - executed when step 1 is successful and consists of an AWS step function api call (send_task_success) having as input the token passed by the step function\n3. **SendTaskFailure** - executed when step 1 is aborted or cancelled and consists of an AWS step function api call (send_task_failure) having as input the token passed by the step function and the execution failure error and cause\n\n## Sample step function StartAutomationExecution Task parameters \n\n> ```\n\"Parameters\": {\n \"DocumentName\": \"SfnRunCommandByInstanceIds\",\n \"Parameters\": {\n     \"InstanceIds.$\": \"States.Array($.runInstances.Instances[0].InstanceId)\",\n     \"taskToken.$\": \"States.Array($$.Task.Token)\",\n     \"workingDirectory\": [\n         \"/home/ssm-user/\"\n     ],\n     \"Commands\": [\n        \"echo test\"\n     ]\n }\n}\n\n## References\n- Step function service integration patterns [wait for CallBack](https://docs.aws.amazon.com/step-functions/latest/dg/connect-to-resource.html#connect-wait-token)\n- Step function boto3 api call send_task_success and send_task_failure [reference](https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/stepfunctions.html)",
+    "schemaVersion": "0.3",
+    "assumeRole": "%ASSUME_ROLE_RUN_COMMAND_BY_INSTANCE_IDS%",
+    "parameters": {
+        "InstanceIds": {
+            "type": "StringList",
+            "description": "(Required) The IDs of the instances where you want to run the command."
+        },
+        "taskToken": {
+            "type": "String",
+            "description": "(Required) Step Function task token for callback response."
+        },
+        "Commands": {
+            "type": "StringList",
+            "description": "(Required) Specify a shell script or a command to run."
+        },
+        "workingDirectory": {
+            "type": "String",
+            "default": "\"\"",
+            "description": "(Optional) The path to the working directory on your instance."
+        },
+        "executionTimeout": {
+            "type": "String",
+            "description": "(Optional) The time in seconds for a command to complete before it is considered to have failed. Default is 3600 (1 hour). Maximum is 172800 (48 hours).",
+            "default": "3600"
+        }
+    },
+    "mainSteps": [
+        {
+            "name": "RunCommand",
+            "action": "aws:runCommand",
+            "inputs": {
+                "DocumentName": "AWS-RunShellScript",
+                "Parameters": {
+                    "commands": "{{Commands}}",
+                    "workingDirectory": "{{workingDirectory}}",
+                    "executionTimeout": "{{executionTimeout}}"
+                },
+                "InstanceIds": "{{InstanceIds}}"
+            },
+            "nextStep": "SendTaskSuccess",
+            "onFailure": "step:SendTaskFailure",
+            "onCancel": "step:SendTaskFailure"
+        },
+        {
+            "name": "SendTaskSuccess",
+            "action": "aws:executeAwsApi",
+            "inputs": {
+                "Service": "stepfunctions",
+                "Api": "send_task_success",
+                "taskToken": "{{ taskToken }}",
+                "output": "{}"
+            },
+            "isEnd": true,
+            "timeoutSeconds": 50
+        },
+        {
+            "name": "SendTaskFailure",
+            "action": "aws:executeAwsApi",
+            "inputs": {
+                "Service": "stepfunctions",
+                "Api": "send_task_failure",
+                "taskToken": "{{ taskToken }}",
+                "error": "Automation document failure",
+                "cause": "RunCommand failed, check command execution id {{RunCommand.CommandId}} for more details"
+            },
+            "timeoutSeconds": 50
+        }
+    ]
+}

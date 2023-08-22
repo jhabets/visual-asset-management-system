@@ -1,0 +1,28 @@
+{
+	"name": "VAMS",
+	"env": {
+		"account": null,
+		"region": null
+	},
+	"app": {
+		"baseStackName": "prod",
+		"stagingBucketName": null,
+		"adminEmailAddress": "adminEmail@example.com",
+		"govCloud": {
+			"enabled": true,
+			"vpcCidrRange": "10.1.0.0/16",
+			"domainHost": "vams.example.com",
+			"certificateARN": "ACM-Certificate-ARN",
+			"optionalHostedZoneID": ""
+		},
+		"openSearchServerless": {
+			"enabled": false
+		},
+		"authProvider": {
+			"cognito": {
+				"enabled": true,
+				"samlEnabled": false
+			}
+		}
+	}
+}

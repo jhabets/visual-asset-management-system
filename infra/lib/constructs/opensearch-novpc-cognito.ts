@@ -5,6 +5,7 @@
 
 import * as cdk from "aws-cdk-lib";
 import { Construct } from "constructs";
+import { Service } from "../helper/service-helper";
 
 /* eslint-disable @typescript-eslint/no-empty-interface */
 export interface OpensearchConstructProps {
@@ -103,7 +104,7 @@ export class OpensearchConstruct extends Construct {
                     "AmazonOpenSearchServiceCognitoAccess"
                 ),
             ],
-            assumedBy: new cdk.aws_iam.ServicePrincipal("opensearchservice.amazonaws.com"),
+            assumedBy: Service("ES").Principal,
         });
 
         const opensearchDomainPolicy = new cdk.aws_iam.PolicyStatement({

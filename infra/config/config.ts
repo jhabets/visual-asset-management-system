@@ -35,7 +35,8 @@ export function getConfig(
 	config.app.baseStackName = (app.node.tryGetContext("stack-name") || config.app.baseStackName || process.env.STACK_NAME) + "-" + config.env.region;
 	config.app.stagingBucketName = <string>(app.node.tryGetContext("staging-bucket") || config.app.stagingBucketName || process.env.STAGING_BUCKET);
 	config.app.adminEmailAddress = <string>(app.node.tryGetContext("adminEmailAddress") || config.app.adminEmailAddress || process.env.ADMIN_EMAIL_ADDRESS)
-	
+	config.app.useFIPS = <boolean>(app.node.tryGetContext("useFIPS") || process.env.AWS_USE_FIPS_ENDPOINT || config.app.govCloud.enabled || false)
+
 	//If we are govCloud, we always use FIPS
 	//TODO: Re-enable, shouldn't be a problem once we split out cloudfront deployment for testing
 	//if(config.app.govCloud.enabled) {
@@ -69,6 +70,7 @@ export interface ConfigPublic {
 		baseStackName: string;
 		stagingBucketName: string;	
 		adminEmailAddress: string;
+		useFIPS: boolean;
 		govCloud: {
 			enabled: boolean;
 			vpcCidrRange: string;

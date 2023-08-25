@@ -11,6 +11,7 @@ import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as cdk from "aws-cdk-lib";
 import { Construct } from "constructs";
 import { IHttpRouteAuthorizer } from "@aws-cdk/aws-apigatewayv2-alpha";
+import { Service } from "../helper/service-helper";
 
 /**
  * Additional configuration needed to use federated identities
@@ -119,7 +120,7 @@ export class AmplifyConfigLambdaConstruct extends Construct {
         });
 
         // add lambda policies
-        lambdaFn.grantInvoke(new iam.ServicePrincipal("apigateway.amazonaws.com"));
+        lambdaFn.grantInvoke(Service("APIGATEWAY").Principal);
 
         // add lambda integration
         const lambdaFnIntegration = new apigwIntegrations.HttpLambdaIntegration(
@@ -144,7 +145,7 @@ export class AmplifyConfigLambdaConstruct extends Construct {
             timeout: cdk.Duration.seconds(15),
         });
 
-        authorizerFn.grantInvoke(new cdk.aws_iam.ServicePrincipal("apigateway.amazonaws.com"));
+        authorizerFn.grantInvoke(Service("APIGATEWAY").Principal);
 
         return new apigwAuthorizers.HttpLambdaAuthorizer("authorizer", authorizerFn, {
             authorizerName: "CognitoConfigAuthorizer",

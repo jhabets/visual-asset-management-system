@@ -13,7 +13,8 @@
         "cdk.synth.app": "cdk synth",
         "cdk.deploy.app": "cdk deploy --all",
         "deploy.dev": "npm run cdk.deploy.app -- --require-approval never --context ",
-        "deploy.vams": "cdk deploy --all -c stack-name=vams -c region=us-east-1 --require-approval never --context"
+        "deploy.vams": "cdk deploy --all -c stack-name=vams -c region=us-east-1 --require-approval never --context",
+        "gen": "ts-node ./gen/genEndpoints.ts"
     },
     "devDependencies": {
         "@aws-cdk/assert": "^2.68.0",
@@ -42,6 +43,7 @@
         "aws4": "^1.12.0",
         "cdk-nag": "^2.25.2",
         "constructs": "^10.1.303",
+        "dotenv": "16.3.1",
         "npm-check-updates": "^16.10.7",
         "source-map-support": "^0.5.21"
     }

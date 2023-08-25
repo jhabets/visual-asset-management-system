@@ -13,12 +13,15 @@ import { AwsSolutionsChecks } from "cdk-nag";
 import { Aspects, Annotations } from "aws-cdk-lib";
 import { WAFScope } from "../lib/constructs/wafv2-basic-construct";
 import * as Config from '../config/config';
+import * as Service from '../lib/helper/service-helper';
 
 const app = new cdk.App();
+
 
 //Set stack configuration
 const config = Config.getConfig(app);
 
+Service.SetConfig(config);
 console.log("DEPLOYMENT CONFIGURATION 👉", config);
 
 if (config.enableCdkNag) {
@@ -39,6 +42,16 @@ const cfWafStack = new CfWafStack(app, wafStackName, {
     },
     wafScope: wafScope,
 });
+
+
+console.log(Service.Service("EC2").ARN("role", "*VAMS*"));
+console.log(Service.Service("EC2").Principal);
+console.log(Service.Service("EC2").Endpoint);
+
+
+console.log(Service.Service("EC2").ARN("role", "*VAMS*"));
+console.log(Service.Service("EC2").Principal);
+console.log(Service.Service("EC2").Endpoint);
 
 const vamsStackName = `${config.name}-${config.app.baseStackName || process.env.DEMO_LABEL || "dev"}`;
 const vamsStack = new VAMS(app, vamsStackName, {

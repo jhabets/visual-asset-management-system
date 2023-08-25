@@ -12,6 +12,7 @@ import { Construct } from "constructs";
 import { Duration } from "aws-cdk-lib";
 import { suppressCdkNagErrorsByGrantReadWrite } from "../security";
 import { storageResources } from "../storage-builder";
+import { Service } from "../helper/service-helper";
 export function buildWorkflowService(
     scope: Construct,
     storageResources: storageResources
@@ -242,9 +243,9 @@ export function buildWorkflowRole(
 
     const role = new iam.Role(scope, "VAMSWorkflowIAMRole", {
         assumedBy: new iam.CompositePrincipal(
-            new iam.ServicePrincipal("lambda.amazonaws.com"),
-            new iam.ServicePrincipal("sagemaker.amazonaws.com"),
-            new iam.ServicePrincipal("states.amazonaws.com")
+            Service("LAMBDA").Principal,
+            Service("SAGEMAKER").Principal,
+            Service("STATES").Principal
         ),
         description: "VAMS Workflow IAM Role.",
         inlinePolicies: {

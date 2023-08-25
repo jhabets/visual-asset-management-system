@@ -35,6 +35,7 @@ export function getConfig(
 	config.app.baseStackName = (app.node.tryGetContext("stack-name") || config.app.baseStackName || process.env.STACK_NAME) + "-" + config.env.region;
 	config.app.stagingBucketName = <string>(app.node.tryGetContext("staging-bucket") || config.app.stagingBucketName || process.env.STAGING_BUCKET);
 	config.app.adminEmailAddress = <string>(app.node.tryGetContext("adminEmailAddress") || process.env.ADMIN_EMAIL_ADDRESS)
+	config.app.useFIPS = <boolean>(app.node.tryGetContext("useFIPS") || process.env.AWS_USE_FIPS_ENDPOINT || config.app.govCloud.enabled || false)
 
 	//Any configuration error checks
 	if(config.app.govCloud.enabled && (config.app.govCloud.certificateARN == "UNDEFINED" || config.app.govCloud.domainHost == "UNDEFINED"))
@@ -65,6 +66,7 @@ export interface ConfigPublic {
 		baseStackName: string;
 		stagingBucketName: string;	
 		adminEmailAddress: string;
+		useFIPS: boolean;
 		govCloud: {
 			enabled: boolean;
 			vpcCidrRange: string;

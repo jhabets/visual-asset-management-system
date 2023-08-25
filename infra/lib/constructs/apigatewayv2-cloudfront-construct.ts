@@ -10,6 +10,7 @@ import * as cloudfrontOrigins from "aws-cdk-lib/aws-cloudfront-origins";
 import * as cognito from "aws-cdk-lib/aws-cognito";
 import * as cdk from "aws-cdk-lib";
 import { Construct } from "constructs";
+import { Service } from "../helper/service-helper";
 
 export interface ApiGatewayV2CloudFrontProps extends cdk.StackProps {
     /**
@@ -96,7 +97,7 @@ export class ApiGatewayV2CloudFrontConstruct extends Construct {
             defaultAuthorizer: cognitoAuth,
         });
 
-        const apiUrl = `${api.httpApiId}.execute-api.${cdk.Stack.of(this).region}.amazonaws.com`;
+        const apiUrl = `${api.httpApiId}${Service("EXECUTE_API").Endpoint}`;
         this.apiUrl = apiUrl;
 
         // export any cf outputs

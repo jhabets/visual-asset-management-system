@@ -11,6 +11,7 @@ import * as lambdaPython from "@aws-cdk/aws-lambda-python-alpha";
 import * as lambdaNodejs from "aws-cdk-lib/aws-lambda-nodejs";
 import * as cdk from "aws-cdk-lib";
 import { Construct } from "constructs";
+import { Service } from "../helper/service-helper";
 
 export interface ApiGatewayV2LambdaConstructProps extends cdk.StackProps {
     /**
@@ -51,7 +52,8 @@ export class ApiGatewayV2LambdaConstruct extends Construct {
         const { lambdaFn } = props;
 
         // add lambda policies
-        lambdaFn.grantInvoke(new iam.ServicePrincipal("apigateway.amazonaws.com"));
+
+        lambdaFn.grantInvoke(Service("APIGATEWAY").Principal);
 
         // add lambda integration
         const lambdaFnIntegration = new apigwIntegrations.HttpLambdaIntegration(

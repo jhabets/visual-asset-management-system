@@ -12,6 +12,7 @@ import { Construct } from "constructs";
 import { Duration } from "aws-cdk-lib";
 import { suppressCdkNagErrorsByGrantReadWrite } from "../security";
 import { storageResources } from "../storage-builder";
+import { Service } from "../helper/service-helper";
 
 export function buildCreatePipelineFunction(
     scope: Construct,
@@ -131,7 +132,7 @@ export function buildCreatePipelineFunction(
 
 function createRoleToAttachToLambdaPipelines(scope: Construct, assetBucket: s3.Bucket) {
     const newPipelineLambdaRole = new iam.Role(scope, "lambdaPipelineRole", {
-        assumedBy: new iam.ServicePrincipal("lambda.amazonaws.com"),
+        assumedBy: Service("LAMBDA").Principal,
         inlinePolicies: {
             ReadWriteAssetBucketPolicy: new iam.PolicyDocument({
                 statements: [

@@ -29,7 +29,6 @@ export interface AlbNginxS3WebsiteGovCloudDeployConstructProps extends cdk.Stack
      * The path to the build directory of the web site, relative to the project root
      * ex: "./app/build"
      */
-    arnBaseIdentifier: string;
     artefactsBucket: s3.IBucket;
     domainHostName: string;
     webSiteBuildPath: string;

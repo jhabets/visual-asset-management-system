@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2023 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -7,7 +7,7 @@ import { useEffect, useState } from "react";
 import ReactDOM from "react-dom";
 import { Cache } from "aws-amplify";
 import { Authenticator } from "@aws-amplify/ui-react";
-import { BrowserRouter } from "react-router-dom";
+import { BrowserRouter, HashRouter } from "react-router-dom";
 import { TopNavigation } from "@cloudscape-design/components";
 import { AppRoutes } from "./routes";
 import logoWhite from "./resources/img/logo_white.png";
@@ -90,13 +90,13 @@ function App() {
                                 }}
                             />
                         </HeaderPortal>
-                        <BrowserRouter>
+                        <HashRouter>
                             <AppRoutes
                                 navigationOpen={navigationOpen}
                                 user={user}
                                 setNavigationOpen={setNavigationOpen}
                             />
-                        </BrowserRouter>
+                        </HashRouter>
                     </>
                 );
             }}

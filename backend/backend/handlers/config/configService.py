@@ -6,6 +6,7 @@ import os
 import boto3
 from boto3.dynamodb.conditions import Key
 from backend.common.validators import validate
+from boto3.dynamodb.types import TypeDeserializer
 
 response = {
     'statusCode': 200,
@@ -19,35 +20,54 @@ response = {
     }
 }
 
+dynamo_client = boto3.client('dynamodb')
+deserializer = TypeDeserializer()
+
 
 def lambda_handler(event, context):
     try:
-        # Initialize DynamoDB client
-        dynamo_client = boto3.client('dynamodb')
-
         print("Looking up the requested resource")
         assetS3Bucket = os.getenv("ASSET_STORAGE_BUCKET", None)
         appFeatureEnabledDynamoDBTable = os.getenv("APPFEATUREENABLED_STORAGE_TABLE_NAME", None)
 
         # Specify the column name you want to aggregate
         appFeatureEnableDynamoDB_feature_column_name = 'featureName'
-        appFeatureEnableDynamoDB_enabled_column_name = 'enabled'
 
         # Initialize an empty list to store column values
         appFeatureEnableDynamoDB_column_values = []
 
-        table = dynamo_client.Table(appFeatureEnabledDynamoDBTable)
-        record = table.query(
-            KeyConditionExpression=Key(appFeatureEnableDynamoDB_enabled_column_name).eq("true")
-        )
+        paginator = dynamo_client.get_paginator('scan')
+        pageIterator = paginator.paginate(
+            TableName=appFeatureEnabledDynamoDBTable,
+            PaginationConfig={
+                'MaxItems': 100,
+                'PageSize': 100,
+                'StartingToken': None
+            }
+        ).build_full_result()
 
-        # Loop through the query results and fetch the aggregated values
-        while 'Items' in record:
-            appFeatureEnableDynamoDB_column_values.extend(
-                [item[appFeatureEnableDynamoDB_feature_column_name]['S'] for item in response['Items']])
+        print("Fetching results")
+        result = {}
+        items = []
+        for item in pageIterator['Items']:
+            deserialized_document = {
+                k: deserializer.deserialize(v) for k, v in item.items()}
+            items.append(deserialized_document)
+        result['Items'] = items
+
+        if 'NextToken' in pageIterator:
+            result['NextToken'] = pageIterator['NextToken']
+        # print(result)
+
+        for item in items:
+            appFeatureEnableDynamoDB_column_values.append(
+                item[appFeatureEnableDynamoDB_feature_column_name])
+
+        print(appFeatureEnableDynamoDB_column_values)
 
         # Create a concatenated string from the column values
-        appFeatureEnabledconcatenated_string = ','.join(appFeatureEnableDynamoDB_column_values)
+        appFeatureEnabledconcatenated_string = ','.join(
+            appFeatureEnableDynamoDB_column_values)
 
         response = {
             "bucket": assetS3Bucket,

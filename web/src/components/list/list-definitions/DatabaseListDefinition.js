@@ -25,7 +25,9 @@ export const DatabaseListDefinition = new ListDefinition({
             header: "Name",
             cellWrapper: (props) => {
                 const { item } = props;
-                return <Link href={`/databases/${item.databaseId}/assets/`}>{props.children}</Link>;
+                return (
+                    <Link href={`#/databases/${item.databaseId}/assets/`}>{props.children}</Link>
+                );
             },
             sortingField: "databaseId",
         }),

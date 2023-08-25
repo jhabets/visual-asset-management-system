@@ -22,10 +22,10 @@ let navItems = [
         role: "assets",
         text: "Manage",
         items: [
-            { type: "link", text: Synonyms.Databases, href: "/databases" },
-            { type: "link", text: Synonyms.Assets, href: "/assets" },
-            { type: "link", text: `Upload ${Synonyms.Asset}`, href: "/upload" },
-            { type: "link", text: `Search`, href: "/search" },
+            { type: "link", text: Synonyms.Databases, href: "#/databases" },
+            { type: "link", text: Synonyms.Assets, href: "#/assets" },
+            { type: "link", text: `Upload ${Synonyms.Asset}`, href: "#/upload" },
+            { type: "link", text: `Search`, href: "#/search" },
         ],
     },
     {
@@ -33,22 +33,22 @@ let navItems = [
         role: "assets",
         text: "Visualize",
         items: [
-            { type: "link", text: "3D Model Viewer", href: "/visualizers/model" },
-            { type: "link", text: "3D Plotter", href: "/visualizers/plot" },
-            { type: "link", text: "Columnar Viewer", href: "/visualizers/column" },
+            { type: "link", text: "3D Model Viewer", href: "#/visualizers/model" },
+            { type: "link", text: "3D Plotter", href: "#/visualizers/plot" },
+            { type: "link", text: "Columnar Viewer", href: "#/visualizers/column" },
         ],
     },
     {
         type: "section",
         role: "pipelines",
         text: "Transform",
-        items: [{ type: "link", text: "Pipelines", href: "/pipelines" }],
+        items: [{ type: "link", text: "Pipelines", href: "#/pipelines" }],
     },
     {
         type: "section",
         role: "workflows",
         text: "Orchestrate & Automate",
-        items: [{ type: "link", text: "Workflows", href: "/workflows" }],
+        items: [{ type: "link", text: "Workflows", href: "#/workflows" }],
     },
     {
         type: "divider",
@@ -59,11 +59,11 @@ let navItems = [
         role: "super-admin",
         text: "Admin",
         items: [
-            { type: "link", text: "Fine Grained Access Controls", href: "/auth/constraints" },
+            { type: "link", text: "Fine Grained Access Controls", href: "#/auth/constraints" },
             {
                 type: "link",
                 text: "Metadata Schema",
-                href: "/metadataschema/create",
+                href: "#/metadataschema/create",
             },
         ],
     },

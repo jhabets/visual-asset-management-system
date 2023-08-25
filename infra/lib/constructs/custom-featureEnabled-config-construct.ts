@@ -26,6 +26,11 @@ interface RequestItem {
     RequestItems: RequestItem
   }
 
+  interface IAppFeatureEnabled {
+    enabled: { S: string };
+    featureName: { S: string };
+  }
+
 const defaultProps: Partial<CustomFeatureEnabledConfigConstructProps> = {};
 
 /**
@@ -52,51 +57,70 @@ export class CustomFeatureEnabledConfigConstruct extends Construct {
             featureName: {S:feature},
         }));
 
-        this.insertMultipleRecord(props.appFeatureEnabledTable.tableName,props.appFeatureEnabledTable.tableArn,
+        this.insertMultipleRecord(props.appFeatureEnabledTable,
             appFeatureItems)
     }
 
-    private insertMultipleRecord( tableName: string,tableArn: string, items: any[]) {
-        const records = this.constructBatchInsertObject(items, tableName);
+    //Note: Allows for 25 items to be written as part of BatchWriteItem. If more needed, batch over many different AwsCustomResource
+    //Third Party Blog: https://dev.to/elthrasher/exploring-aws-cdk-loading-dynamodb-with-custom-resources-jlf, 
+    // https://kevin-van-ingen.medium.com/aws-cdk-custom-resources-for-dynamodb-inserts-2d79cb1ae395
+    private insertMultipleRecord(appFeatureEnabledTable: dynamodb.Table, items: any[]) {
+        //const records = this.constructBatchInsertObject(items, tableName);
 
         const awsSdkCall: AwsSdkCall = {
             service: 'DynamoDB',
             action: 'batchWriteItem',
             physicalResourceId: PhysicalResourceId.of(Date.now().toString()),
-            parameters: records
+            //parameters: records
+            parameters: {
+                RequestItems: {
+                  [appFeatureEnabledTable.tableName]: this.constructBatchInsertObject(items),
+                },
+            },
         }
 
-        const customResource: AwsCustomResource = new AwsCustomResource(this, "appFeatureEnabled_table_populate_custom_resource", {
+        const customResource: AwsCustomResource = new AwsCustomResource(this, "appFeatureEnabled_tablePopulate_custom_resource", {
                 onCreate: awsSdkCall,
                 onUpdate: awsSdkCall,
                 installLatestAwsSdk: false,
-                logRetention: RetentionDays.ONE_WEEK,
                 policy: AwsCustomResourcePolicy.fromStatements([
                     new PolicyStatement({
                     sid: 'DynamoWriteAccess',
                     effect: Effect.ALLOW,
                     actions: ['dynamodb:BatchWriteItem'],
-                    resources: [tableArn],
+                    resources: [appFeatureEnabledTable.tableName],
                     })
                 ]),
                 timeout: Duration.minutes(5)
             }
         );
+
+        customResource.node.addDependency(appFeatureEnabledTable);
     }
 
-    private constructBatchInsertObject(items: any[], tableName: string) {
+    // private constructBatchInsertObject(items: any[], tableName: string) {
+    //     const itemsAsDynamoPutRequest: any[] = [];
+    //     items.forEach(item => itemsAsDynamoPutRequest.push({
+    //     PutRequest: {
+    //         Item: item
+    //     }
+    //     }));
+    //     const records: DynamoInsert =
+    //         {
+    //         RequestItems: {}
+    //         };
+    //     records.RequestItems[tableName] = itemsAsDynamoPutRequest;
+    //     return records;
+    // }
+
+    private constructBatchInsertObject(items: any[]) {
         const itemsAsDynamoPutRequest: any[] = [];
         items.forEach(item => itemsAsDynamoPutRequest.push({
         PutRequest: {
             Item: item
         }
         }));
-        const records: DynamoInsert =
-            {
-            RequestItems: {}
-            };
-        records.RequestItems[tableName] = itemsAsDynamoPutRequest;
-        return records;
+        return itemsAsDynamoPutRequest;
     }
 
 }

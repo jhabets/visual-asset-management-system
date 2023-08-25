@@ -30,8 +30,9 @@ const wafRegion = config.app.govCloud.enabled? config.env.region : "us-east-1" ;
 const wafScope = config.app.govCloud.enabled? WAFScope.REGIONAL : WAFScope.CLOUDFRONT;
 
 //The web access firewall
-const cfWafStack = new CfWafStack(app, `${config.name}-waf-${config.app.baseStackName || process.env.DEMO_LABEL || "dev"}`, {
-    stackName: `vams-waf-${config.app.baseStackName || process.env.DEPLOYMENT_ENV || "dev"}`,
+const wafStackName = `${config.name}-waf-${config.app.baseStackName || process.env.DEPLOYMENT_ENV || "dev"}`;
+const cfWafStack = new CfWafStack(app, wafStackName, {
+    stackName: wafStackName,
     env: {
         account: config.env.account,
         region: wafRegion,
@@ -39,8 +40,9 @@ const cfWafStack = new CfWafStack(app, `${config.name}-waf-${config.app.baseStac
     wafScope: wafScope,
 });
 
-const vamsStack = new VAMS(app, `${config.name}-${config.app.baseStackName || process.env.DEMO_LABEL || "dev"}`, {
-    stackName: `${config.name}-${config.app.baseStackName || process.env.DEPLOYMENT_ENV || "dev"}`,
+const vamsStackName = `${config.name}-${config.app.baseStackName || process.env.DEMO_LABEL || "dev"}`;
+const vamsStack = new VAMS(app, vamsStackName, {
+    stackName: vamsStackName,
     env: {
         account: config.env.account,
         region: config.env.region,

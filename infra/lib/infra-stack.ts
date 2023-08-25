@@ -201,6 +201,7 @@ export class VAMS extends cdk.Stack {
                 
             const website = new AlbNginxS3WebsiteGovCloudDeployConstruct(this, "WebApp", {
                 ...props,
+                artefactsBucket: storageResources.s3.artefactsBucket,
                 domainHostName: props.config.app.govCloud.domainHost,
                 webSiteBuildPath: webAppBuildPath,
                 webAcl: props.ssmWafArn,
@@ -299,14 +300,13 @@ export class VAMS extends cdk.Stack {
         );
 
         //Write enabled features to dynamoDB table
-        const customFeatureEnabledConfigConstruct = new CustomFeatureEnabledConfigConstruct(
-        this,
-        "CustomFeatureEnabledConfigConstruct",
-        {
-            appFeatureEnabledTable: storageResources.dynamo.appFeatureEnabledStorageTable,
-            featuresEnabled: enabledFeatures
-        });
-        customFeatureEnabledConfigConstruct.node.addDependency(storageResources.dynamo.appFeatureEnabledStorageTable);
+        // const customFeatureEnabledConfigConstruct = new CustomFeatureEnabledConfigConstruct(
+        // this,
+        // "CustomFeatureEnabledConfigConstruct",
+        // {
+        //     appFeatureEnabledTable: storageResources.dynamo.appFeatureEnabledStorageTable,
+        //     featuresEnabled: enabledFeatures
+        // });
 
         //Write outputs
         const assetBucketOutput = new cdk.CfnOutput(this, "AssetBucketNameOutput", {
@@ -329,7 +329,7 @@ export class VAMS extends cdk.Stack {
         cdk.Tags.of(this).add("vams:stackname", props.stackName);
 
         //Add for Systems Manager->Application Manager Cost Tracking for main VAMS Stack
-        cdk.Tags.of(this).add("AppManagerCFNStackKey", this.stackId);
+        //cdk.Tags.of(this).add("AppManagerCFNStackKey", this.stackId);
 
         this.node.findAll().forEach((item) => {
             if (item instanceof cdk.aws_lambda.Function) {

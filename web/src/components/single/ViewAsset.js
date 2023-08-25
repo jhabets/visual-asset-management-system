@@ -297,7 +297,7 @@ export default function ViewAsset() {
                                                 <>
                                                     <h5>Finish Incomplete uploads</h5>
                                                     <Link
-                                                        href={`/databases/${databaseId}/assets/${assetId}/uploads`}
+                                                        href={`#/databases/${databaseId}/assets/${assetId}/uploads`}
                                                     >
                                                         {" "}
                                                         Finish Incomplete uploads{" "}

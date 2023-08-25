@@ -34,16 +34,20 @@ export function getConfig(
 	config.env.region = <string>(app.node.tryGetContext("region") || config.env.region || process.env.CDK_DEFAULT_REGION || "us-east-1");
 	config.app.baseStackName = (app.node.tryGetContext("stack-name") || config.app.baseStackName || process.env.STACK_NAME) + "-" + config.env.region;
 	config.app.stagingBucketName = <string>(app.node.tryGetContext("staging-bucket") || config.app.stagingBucketName || process.env.STAGING_BUCKET);
-	config.app.adminEmailAddress = <string>(app.node.tryGetContext("adminEmailAddress") || process.env.ADMIN_EMAIL_ADDRESS)
+	config.app.adminEmailAddress = <string>(app.node.tryGetContext("adminEmailAddress") || config.app.adminEmailAddress || process.env.ADMIN_EMAIL_ADDRESS)
+	
+	//If we are govCloud, we always use FIPS
+	//TODO: Re-enable, shouldn't be a problem once we split out cloudfront deployment for testing
+	//if(config.app.govCloud.enabled) {
+	//	config.app.fips.enabled = true
+	//}
 
 	//Any configuration error checks
-	if(config.app.govCloud.enabled && (config.app.govCloud.certificateARN == "UNDEFINED" || config.app.govCloud.domainHost == "UNDEFINED"))
-	{
+	if(config.app.govCloud.enabled && (config.app.govCloud.certificateARN == "UNDEFINED" || config.app.govCloud.domainHost == "UNDEFINED")) {
 		throw new Error("Cannot use GovCloud deployment without specifying a valid domain hostname and a ACM Certificate ARN to use for SSL/TLS security!")
 	}
 
-	if(config.app.adminEmailAddress == '' || config.app.adminEmailAddress == 'UNDEFINED')
-	{
+	if(config.app.adminEmailAddress == '' || config.app.adminEmailAddress == 'UNDEFINED') {
 		throw new Error("Must specify an initial admin email address as part of this deployment configuration!")
 	}
 

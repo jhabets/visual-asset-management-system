@@ -180,7 +180,7 @@ const FinishUploads = () => {
                     <Box variant="awsui-key-label">
                         Upload Progress for {Synonyms.Asset}
                         <Link
-                            href={`/databases/${assetDetail.databaseId}/assets/${assetDetail.assetId}`}
+                            href={`#/databases/${assetDetail.databaseId}/assets/${assetDetail.assetId}`}
                             target="_blank"
                         >
                             {` ${assetDetail.assetName}`}

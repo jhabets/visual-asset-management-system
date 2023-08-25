@@ -605,7 +605,7 @@ export default function MetadataSchema() {
                 setOpen={setDatabaseSelectModelOpen}
                 onSelectorChange={(event: any) => {
                     const id = event?.detail?.selectedOption?.value;
-                    navigate(`/metadataschema/${id}/create`);
+                    navigate(`#/metadataschema/${id}/create`);
                 }}
             />
         );

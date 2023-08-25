@@ -25,7 +25,7 @@ export default function FolderActionViewer({ name, urlKey, ...props }: FolderAct
     }
 
     function navigateToAssetFilePage() {
-        navigate(`/databases/${props.databaseId}/assets/${props.assetId}/file`, {
+        navigate(`#/databases/${props.databaseId}/assets/${props.assetId}/file`, {
             state: { filename: name, key: urlKey, isDirectory: props.isDirectory },
         });
     }

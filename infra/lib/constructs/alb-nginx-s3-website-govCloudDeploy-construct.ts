@@ -21,6 +21,7 @@ import customResources = require('aws-cdk-lib/custom-resources');
 import * as route53 from "aws-cdk-lib/aws-route53";
 import * as acm from "aws-cdk-lib/aws-certificatemanager";
 import * as route53targets from "aws-cdk-lib/aws-route53-targets";
+//import { ReverseProxyGovCloudDeployConstruct } from "./nested/reverseProxy-govCloudDeploy-construct";
 import { NagSuppressions } from "cdk-nag";
 
 export interface AlbNginxS3WebsiteGovCloudDeployConstructProps extends cdk.StackProps {
@@ -28,6 +29,8 @@ export interface AlbNginxS3WebsiteGovCloudDeployConstructProps extends cdk.Stack
      * The path to the build directory of the web site, relative to the project root
      * ex: "./app/build"
      */
+    arnBaseIdentifier: string;
+    artefactsBucket: s3.IBucket;
     domainHostName: string;
     webSiteBuildPath: string;
     webAcl: string;
@@ -214,6 +217,46 @@ export class AlbNginxS3WebsiteGovCloudDeployConstruct extends Construct {
             targetGroups: [targetGroup1],
         })
 
+        // //Create ASG Reverse Proxy Security Group
+        // const webAppASGESecurityGroup = new ec2.SecurityGroup(
+        //     this,
+        //     "WepAppDistroVPCS3EndpointSecurityGroup",
+        //     {
+        //         vpc: props.vpc,
+        //         allowAllOutbound: true,
+        //         description: "Web Application Distribution for VPC S3 Endpoint Security Group",
+        //     }
+        // );
+
+        // //Create Reverse Proxy Template + ASG
+		// const reverseProxyResources = new ReverseProxyGovCloudDeployConstruct(this, 'ReverseProxyGovCloudDeployConstruct', {
+		// 	artefactsBucket: props.artefactsBucket,
+        //     webAppBucket: webAppBucket,
+        //     arnBaseIdentifier: props.arnBaseIdentifier,
+        //     domainHostName: props.domainHostName,
+		// 	vpc: props.vpc,
+		// 	subnets: props.subnets.reverseProxy,
+		// 	securityGroup: webAppASGESecurityGroup,
+		// });
+
+        // //Set ASG as ALB target group
+        // const targetGroupASG = new elbv2.ApplicationTargetGroup(this, 'WebAppALBTargetGroup', {
+        //     port: 80,
+        //     vpc: props.vpc,
+        //     targetType: elbv2.TargetType.IP,
+        //     healthCheck: {
+        //     enabled: true,
+        //     healthyHttpCodes: "200"
+        //     }
+        // });
+
+        // targetGroupASG.addTarget(reverseProxyResources.autoScalingGroup);
+
+        // listener.addTargetGroups("WebAppTargetGroupASG", {
+        //     targetGroups: [targetGroupASG],
+        // })
+        
+
         //Setup listener rule to rewrite path to forward to API Gateway for backend API calls
         const applicationListenerRuleBackendAPI= new elbv2.ApplicationListenerRule(this, 'WebAppnListenerRuleBackendAPI', {
             listener: listener,
@@ -224,13 +267,42 @@ export class AlbNginxS3WebsiteGovCloudDeployConstruct extends Construct {
                 protocol: "HTTPS",
                 permanent: true,
             }),
-            conditions: [elbv2.ListenerCondition.pathPatterns(['/api/*'])],
+            conditions: [elbv2.ListenerCondition.pathPatterns(['/api*'])],
+        });
+
+        //Setup listener rule to rewrite path to forward to API Gateway for backend API calls
+        const applicationListenerRuleBackendSecureConfig= new elbv2.ApplicationListenerRule(this, 'WebAppnListenerRuleBackendSecureConfig', {
+            listener: listener,
+            priority: 2,
+            action: elbv2.ListenerAction.redirect({
+                host: `${props.apiUrl}`,
+                port: "443",
+                protocol: "HTTPS",
+                permanent: true,
+            }),
+            conditions: [elbv2.ListenerCondition.pathPatterns(['/secure-config*'])],
+        });
+
+        //Setup listener rule to forward index.html to S3
+        const applicationListenerRuleBackendIndex= new elbv2.ApplicationListenerRule(this, 'WebAppnListenerRuleBackendIndex', {
+            listener: listener,
+            priority: 3,
+            targetGroups: [targetGroup1],
+            conditions: [elbv2.ListenerCondition.pathPatterns(['/index.html*'])],
+        });
+
+        //Setup listener rule to forward individual file requests to S3
+        const applicationListenerRuleBackendIndividualFile= new elbv2.ApplicationListenerRule(this, 'WebAppnListenerRuleBackendIndividualFile', {
+            listener: listener,
+            priority: 4,
+            targetGroups: [targetGroup1],
+            conditions: [elbv2.ListenerCondition.pathPatterns(['*/*.*'])],
         });
 
         //Setup listener rule to rewrite path to forward to index.html for a no path route
-        const applicationListenerRuleIndex = new elbv2.ApplicationListenerRule(this, 'WebAppnListenerRuleIndex', {
+        const applicationListenerRuleBaseRoute = new elbv2.ApplicationListenerRule(this, 'WebAppnListenerRuleBaseRoute', {
             listener: listener,
-            priority: 2,
+            priority: 5,
             action: elbv2.ListenerAction.redirect({
                 path: "/#{path}index.html",
                 permanent: false,
@@ -238,24 +310,35 @@ export class AlbNginxS3WebsiteGovCloudDeployConstruct extends Construct {
             conditions: [elbv2.ListenerCondition.pathPatterns(['*/'])],
         });
 
+        //Setup listener rule to rewrite path to forward to index.html for any other (no file) path route
+        const applicationListenerRuleOtherRoute = new elbv2.ApplicationListenerRule(this, 'WebAppnListenerRuleOtherRoute', {
+            listener: listener,
+            priority: 6,
+            action: elbv2.ListenerAction.redirect({
+                path: "/index.html",
+                permanent: false,
+            }),
+            conditions: [elbv2.ListenerCondition.pathPatterns(['/*'])],
+        });
+
         // Enable a ALB redirect from port 80 to 443
         alb.addRedirect()
 
         // //Optional: Add alias to ALB if hosted zone ID provided (must match domain root of provided domain host)
-        if(props.optionalHostedZoneId != "UNDEFINED") {
-            const zone = route53.HostedZone.fromHostedZoneAttributes(this, 'ExistingRoute53HostedZone', {
-                zoneName: props.domainHostName.substring(props.domainHostName.indexOf(".")+1, props.domainHostName.length),
-                hostedZoneId: props.optionalHostedZoneId, 
-            });
+        if(props.optionalHostedZoneId != "" && props.optionalHostedZoneId != "UNDEFINED") {
+            // const zone = route53.HostedZone.fromHostedZoneAttributes(this, 'ExistingRoute53HostedZone', {
+            //     zoneName: props.domainHostName.substring(props.domainHostName.indexOf(".")+1, props.domainHostName.length),
+            //     hostedZoneId: props.optionalHostedZoneId, 
+            // });
 
-            // Add a Route 53 alias with the Load Balancer as the target (using sub-domain in provided domain host)
-            new route53.ARecord(this, "WebAppALBAliasRecord", {
-                zone: zone,
-                recordName: `${props.domainHostName}.`,
-                target: route53.RecordTarget.fromAlias(
-                new route53targets.LoadBalancerTarget(alb)
-                ),
-            });
+            // // Add a Route 53 alias with the Load Balancer as the target (using sub-domain in provided domain host)
+            // new route53.ARecord(this, "WebAppALBAliasRecord", {
+            //     zone: zone,
+            //     recordName: `${props.domainHostName}.`,
+            //     target: route53.RecordTarget.fromAlias(
+            //     new route53targets.LoadBalancerTarget(alb)
+            //     ),
+            // });
         }
 
         //Associate WAF to ALB

@@ -144,7 +144,7 @@ export const PipelineFormDefinition = new FormDefinition({
             label: "Container Uri (Optional)",
             id: "containerUri",
             constraintText:
-                "ACCOUNT_NUMBER.dkr.ecr.REGION.amazonaws.com/IMAGE_NAME. If you do not provide an image stored in Amazon ECR, an Amazon Sagemaker notebook instance will be provisioned on your behalf with steps to deploy one.",
+                "ACCOUNT_NUMBER.dkr.(ecr|ecr-fips).REGION.amazonaws.com/IMAGE_NAME. If you do not provide an image stored in Amazon ECR, an Amazon Sagemaker notebook instance will be provisioned on your behalf with steps to deploy one.",
             elementDefinition: new ElementDefinition({
                 formElement: Input,
                 elementProps: { autoFocus: false },

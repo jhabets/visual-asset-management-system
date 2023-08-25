@@ -14,9 +14,9 @@ export default function Workflows(props) {
     const navigate = useNavigate();
     const createNewWorkflow = () => {
         if (databaseId) {
-            navigate(`/databases/${databaseId}/workflows/create`);
+            navigate(`#/databases/${databaseId}/workflows/create`);
         } else {
-            navigate(`/workflows/create`);
+            navigate(`#/workflows/create`);
         }
     };
 

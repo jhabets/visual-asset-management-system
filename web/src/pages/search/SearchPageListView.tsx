@@ -8,7 +8,7 @@ function columnRender(e: any, name: string, value: any) {
     if (name.indexOf("str") === 0 || name.indexOf("date_") === 0) {
         return (
             <div>
-                <Link href={`/databases/${e["str_databaseid"]}/assets/${e["str_assetid"]}`}>
+                <Link href={`#/databases/${e["str_databaseid"]}/assets/${e["str_assetid"]}`}>
                     {value}
                 </Link>
             </div>

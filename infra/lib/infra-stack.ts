@@ -215,7 +215,7 @@ export class VAMS extends cdk.Stack {
                 subnets: webAppDistroNetwork.subnets.webApp,
                 setupPublicAccess: props.config.app.albDeploy.publicSubnet,
                 acmCertARN: props.config.app.albDeploy.certificateARN,
-                optionalHostedZoneId: props.config.app.albDeploy.domainHost
+                optionalHostedZoneId: props.config.app.albDeploy.optionalHostedZoneID
             });
 
             /**

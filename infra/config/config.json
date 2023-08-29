@@ -24,7 +24,7 @@
 			"vpcCidrRange": "10.1.0.0/16",
 			"domainHost": "vams1.scheurik.people.aws.dev",
 			"certificateARN": "arn:aws:acm:us-east-1:465557923944:certificate/85391730-2e85-42c9-ada8-333e26a72f95",
-			"optionalHostedZoneID": ""
+			"optionalHostedZoneID": "Z0886931FQXQZD8RU4ZM"
 		},
 		"authProvider": {
 			"cognito": {

@@ -171,7 +171,7 @@ export class AlbS3WebsiteGovCloudDeployConstruct extends Construct {
         });
 
         //TODO: Figure out why this policy is not working and still letting requests through for other bucket names (use ALB dns name to test)
-        //TODO: Specifically add a deny policy for anything outside of bucket?
+        //TODO?: Specifically add a deny policy for anything outside of bucket
         //Add policy to VPC endpoint to only allow access to the specific S3 Bucket
         s3VPCEndpoint.addToPolicy(new iam.PolicyStatement({
             resources: [
@@ -325,19 +325,19 @@ export class AlbS3WebsiteGovCloudDeployConstruct extends Construct {
 
         // //Optional: Add alias to ALB if hosted zone ID provided (must match domain root of provided domain host)
         if(props.optionalHostedZoneId != "" && props.optionalHostedZoneId != "UNDEFINED") {
-            // const zone = route53.HostedZone.fromHostedZoneAttributes(this, 'ExistingRoute53HostedZone', {
-            //     zoneName: props.domainHostName.substring(props.domainHostName.indexOf(".")+1, props.domainHostName.length),
-            //     hostedZoneId: props.optionalHostedZoneId, 
-            // });
+            const zone = route53.HostedZone.fromHostedZoneAttributes(this, 'ExistingRoute53HostedZone', {
+                zoneName: props.domainHostName.substring(props.domainHostName.indexOf(".")+1, props.domainHostName.length),
+                hostedZoneId: props.optionalHostedZoneId, 
+            });
 
-            // // Add a Route 53 alias with the Load Balancer as the target (using sub-domain in provided domain host)
-            // new route53.ARecord(this, "WebAppALBAliasRecord", {
-            //     zone: zone,
-            //     recordName: `${props.domainHostName}.`,
-            //     target: route53.RecordTarget.fromAlias(
-            //     new route53targets.LoadBalancerTarget(alb)
-            //     ),
-            // });
+            // Add a Route 53 alias with the Load Balancer as the target (using sub-domain in provided domain host)
+            new route53.ARecord(this, "WebAppALBAliasRecord", {
+                zone: zone,
+                recordName: `${props.domainHostName}.`,
+                target: route53.RecordTarget.fromAlias(
+                new route53targets.LoadBalancerTarget(alb)
+                ),
+            });
         }
 
         //Associate WAF to ALB
@@ -354,7 +354,7 @@ export class AlbS3WebsiteGovCloudDeployConstruct extends Construct {
         });
 
         //Add Bucket policy to only allow read access from VPC Endpoint
-        //TODO: Specifically add a extra deny policy for anything outside of VPCE
+        //TODO?: Specifically add a extra deny policy for anything outside of VPCE
         const webAppBucketPolicy = new iam.PolicyStatement({
             resources: [
             webAppBucket.arnForObjects("*"), 

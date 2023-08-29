@@ -43,7 +43,7 @@ class ServiceFormatter {
 export function Service(name: SERVICE): ServiceFormatter {
 
     const ret = new ServiceFormatter(name, region_info.RegionInfo.get(config.env.region));
-    console.log(ret.Endpoint);
+    //console.log(ret.Endpoint);
 
     return ret;
 }

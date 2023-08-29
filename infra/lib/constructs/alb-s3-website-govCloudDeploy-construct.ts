@@ -24,7 +24,7 @@ import * as route53targets from "aws-cdk-lib/aws-route53-targets";
 //import { ReverseProxyGovCloudDeployConstruct } from "./nested/reverseProxy-govCloudDeploy-construct";
 import { NagSuppressions } from "cdk-nag";
 
-export interface AlbNginxS3WebsiteGovCloudDeployConstructProps extends cdk.StackProps {
+export interface AlbS3WebsiteGovCloudDeployConstructProps extends cdk.StackProps {
     /**
      * The path to the build directory of the web site, relative to the project root
      * ex: "./app/build"
@@ -44,7 +44,7 @@ export interface AlbNginxS3WebsiteGovCloudDeployConstructProps extends cdk.Stack
 /**
  * Default input properties
  */
-const defaultProps: Partial<AlbNginxS3WebsiteGovCloudDeployConstructProps> = {
+const defaultProps: Partial<AlbS3WebsiteGovCloudDeployConstructProps> = {
     stackName: "",
     env: {},
 };
@@ -56,14 +56,14 @@ const defaultProps: Partial<AlbNginxS3WebsiteGovCloudDeployConstructProps> = {
  * - ALB
  *
  */
-export class AlbNginxS3WebsiteGovCloudDeployConstruct extends Construct {
+export class AlbS3WebsiteGovCloudDeployConstruct extends Construct {
 
     /**
      * Returns the ALB URL instance for the static webpage
      */
     public websiteUrl: string;
 
-    constructor(parent: Construct, name: string, props: AlbNginxS3WebsiteGovCloudDeployConstructProps) {
+    constructor(parent: Construct, name: string, props: AlbS3WebsiteGovCloudDeployConstructProps) {
         super(parent, name);
 
         props = { ...defaultProps, ...props };

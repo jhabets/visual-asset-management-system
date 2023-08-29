@@ -1,3 +1,7 @@
+/*
+ * Copyright 2023 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
 // Return a class provides common patterns to build a URL, ARN, principal
 import { region_info, Arn, Stack, aws_iam} from "aws-cdk-lib";
 import { Config } from '../../config/config';

@@ -15,7 +15,7 @@ import {
 } from "./constructs/amplify-config-lambda-construct";
 import { CloudFrontS3WebSiteConstruct } from "./constructs/cloudfront-s3-website-construct";
 import { VpcGatewayGovCloudConstruct } from "./constructs/vpc-gateway-govcloudDeploy-construct";
-import { AlbNginxS3WebsiteGovCloudDeployConstruct } from "./constructs/alb-nginx-s3-website-govCloudDeploy-construct";
+import { AlbS3WebsiteGovCloudDeployConstruct } from "./constructs/alb-s3-website-govCloudDeploy-construct";
 import {
     CognitoWebNativeConstruct,
     CognitoWebNativeConstructProps,
@@ -85,6 +85,10 @@ export class VAMS extends cdk.Stack {
             enabledFeatures.push(VAMS_APP_FEATURES.AUTHPROVIDER_COGNITO_SAML)
         }
 
+        if(props.config.app.govCloud.enabled) {
+            enabledFeatures.push(VAMS_APP_FEATURES.GOVCLOUD)
+        }
+
         const cognitoResources = new CognitoWebNativeConstruct(this, "Cognito", cognitoProps);
 
         const cognitoUser = new cognito.CfnUserPoolUser(this, "AdminUser", {
@@ -124,9 +128,9 @@ export class VAMS extends cdk.Stack {
 
 
         //Deploy website distribution infrastructure and authentication tie-ins
-        if(!props.config.app.govCloud.enabled) {
-
+        if(!props.config.app.albDeploy.enabled) {
             //Deploy through CloudFront (default)
+
             const website = new CloudFrontS3WebSiteConstruct(this, "WebApp", {
                 ...props,
                 webSiteBuildPath: webAppBuildPath,
@@ -187,30 +191,31 @@ export class VAMS extends cdk.Stack {
 
         }
         else {
-            //Deploy for GovCloud (aka, use ALB->NGINX->VPCEndpoint->S3 as path for web deployment)
+            //Deploy with ALB (aka, use ALB->VPCEndpoint->S3 as path for web deployment)
+
             const webAppDistroNetwork =
                 new VpcGatewayGovCloudConstruct(
                     this,
                     "WebAppDistroNetwork",
                     {
                         ...props,
-                        vpcCidrRange: props.config.app.govCloud.vpcCidrRange,
-                        setupPublicAccess: props.config.govCloudDeploymentPublicAccess
+                        vpcCidrRange: props.config.app.albDeploy.vpcCidrRange,
+                        setupPublicAccess: props.config.app.albDeploy.publicSubnet
                     }
                 );
                 
-            const website = new AlbNginxS3WebsiteGovCloudDeployConstruct(this, "WebApp", {
+            const website = new AlbS3WebsiteGovCloudDeployConstruct(this, "WebApp", {
                 ...props,
                 artefactsBucket: storageResources.s3.artefactsBucket,
-                domainHostName: props.config.app.govCloud.domainHost,
+                domainHostName: props.config.app.albDeploy.domainHost,
                 webSiteBuildPath: webAppBuildPath,
                 webAcl: props.ssmWafArn,
                 apiUrl: api.apiUrl,
                 vpc: webAppDistroNetwork.vpc,
                 subnets: webAppDistroNetwork.subnets.webApp,
-                setupPublicAccess: props.config.govCloudDeploymentPublicAccess,
-                acmCertARN: props.config.app.govCloud.certificateARN,
-                optionalHostedZoneId: props.config.app.govCloud.domainHost
+                setupPublicAccess: props.config.app.albDeploy.publicSubnet,
+                acmCertARN: props.config.app.albDeploy.certificateARN,
+                optionalHostedZoneId: props.config.app.albDeploy.domainHost
             });
 
             /**
@@ -245,15 +250,14 @@ export class VAMS extends cdk.Stack {
                 customCognitoWebClientConfig.node.addDependency(website);
             }
 
-            enabledFeatures.push(VAMS_APP_FEATURES.GOVCLOUD)
+            enabledFeatures.push(VAMS_APP_FEATURES.ALBDEPLOY)
         }
         
         //Deploy Backend API framework
         apiBuilder(this, api.apiGatewayV2, storageResources);
 
         //Deploy OpenSearch Serverless
-        //Note: OpenSearch Serverless not currently supported in GovCloud
-        if(!props.config.app.govCloud.enabled && props.config.app.openSearchServerless) {
+        if(props.config.app.openSearchServerless.enabled) {
             streamsBuilder(this, cognitoResources, api.apiGatewayV2, storageResources);
             enabledFeatures.push(VAMS_APP_FEATURES.OPENSEARCH)
         }
@@ -266,8 +270,7 @@ export class VAMS extends cdk.Stack {
         // });
 
         //Deploy Location Services
-        //Note: Location Services currently not supported in GovCloud
-        if(!props.config.app.govCloud.enabled) {
+        if(props.config.app.locationService.enabled) {
             const location = new LocationServiceConstruct(this, "LocationService", {
                 role: cognitoResources.authenticatedRole,
             });
@@ -300,13 +303,13 @@ export class VAMS extends cdk.Stack {
         );
 
         //Write enabled features to dynamoDB table
-        // const customFeatureEnabledConfigConstruct = new CustomFeatureEnabledConfigConstruct(
-        // this,
-        // "CustomFeatureEnabledConfigConstruct",
-        // {
-        //     appFeatureEnabledTable: storageResources.dynamo.appFeatureEnabledStorageTable,
-        //     featuresEnabled: enabledFeatures
-        // });
+        const customFeatureEnabledConfigConstruct = new CustomFeatureEnabledConfigConstruct(
+        this,
+        "CustomFeatureEnabledConfigConstruct",
+        {
+            appFeatureEnabledTable: storageResources.dynamo.appFeatureEnabledStorageTable,
+            featuresEnabled: enabledFeatures
+        });
 
         //Write outputs
         const assetBucketOutput = new cdk.CfnOutput(this, "AssetBucketNameOutput", {
@@ -329,7 +332,10 @@ export class VAMS extends cdk.Stack {
         cdk.Tags.of(this).add("vams:stackname", props.stackName);
 
         //Add for Systems Manager->Application Manager Cost Tracking for main VAMS Stack
-        //cdk.Tags.of(this).add("AppManagerCFNStackKey", this.stackId);
+        //TODO: Figure out why tag is not getting added to stack
+        cdk.Tags.of(this).add("AppManagerCFNStackKey", this.stackId, {
+            includeResourceTypes: ['AWS::CloudFormation::Stack'],
+        });
 
         this.node.findAll().forEach((item) => {
             if (item instanceof cdk.aws_lambda.Function) {

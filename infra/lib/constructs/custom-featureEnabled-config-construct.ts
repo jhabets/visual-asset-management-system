@@ -53,7 +53,7 @@ export class CustomFeatureEnabledConfigConstruct extends Construct {
         
         const appFeatureItems: any[] = []
         props.featuresEnabled.forEach(feature => appFeatureItems.push({
-            enabled: {S:"true"},
+            //enabled: {S:"true"},
             featureName: {S:feature},
         }));
 
@@ -88,7 +88,7 @@ export class CustomFeatureEnabledConfigConstruct extends Construct {
                     sid: 'DynamoWriteAccess',
                     effect: Effect.ALLOW,
                     actions: ['dynamodb:BatchWriteItem'],
-                    resources: [appFeatureEnabledTable.tableName],
+                    resources: [appFeatureEnabledTable.tableArn],
                     })
                 ]),
                 timeout: Duration.minutes(5)

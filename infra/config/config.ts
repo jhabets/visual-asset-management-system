@@ -27,29 +27,30 @@ export function getConfig(
 	//Debugging Variables
 	config.dockerDefaultPlatform = <string>process.env.DOCKER_DEFAULT_PLATFORM;
 	config.enableCdkNag = true;
-	config.govCloudDeploymentPublicAccess = false;
 
 	//Main Variables (Parameter fall-back chain: context -> config file -> environment variables -> other fallback)
 	config.env.account = <string>(config.env.account || process.env.CDK_DEFAULT_ACCOUNT);
 	config.env.region = <string>(app.node.tryGetContext("region") || config.env.region || process.env.CDK_DEFAULT_REGION || "us-east-1");
 	config.app.baseStackName = (app.node.tryGetContext("stack-name") || config.app.baseStackName || process.env.STACK_NAME) + "-" + config.env.region;
 	config.app.stagingBucketName = <string>(app.node.tryGetContext("staging-bucket") || config.app.stagingBucketName || process.env.STAGING_BUCKET);
-	config.app.adminEmailAddress = <string>(app.node.tryGetContext("adminEmailAddress") || config.app.adminEmailAddress || process.env.ADMIN_EMAIL_ADDRESS)
-	config.app.useFIPS = <boolean>(app.node.tryGetContext("useFIPS") || process.env.AWS_USE_FIPS_ENDPOINT || config.app.govCloud.enabled || false)
+	config.app.adminEmailAddress = <string>(app.node.tryGetContext("adminEmailAddress") || config.app.adminEmailAddress || process.env.ADMIN_EMAIL_ADDRESS);
+	config.app.useFIPS = <boolean>(app.node.tryGetContext("useFIPS") || process.env.AWS_USE_FIPS_ENDPOINT || config.app.govCloud.enabled || false);
 
-	//If we are govCloud, we always use FIPS
-	//TODO: Re-enable, shouldn't be a problem once we split out cloudfront deployment for testing
-	//if(config.app.govCloud.enabled) {
-	//	config.app.fips.enabled = true
-	//}
+	//If we are govCloud, we always use FIPS, ALB deploy, and disable opensearch serverless + location service (currently not supported in GovCloud 08-29-2023)
+	if(config.app.govCloud.enabled) {
+		config.app.useFIPS = true;
+		config.app.albDeploy.enabled = true;
+		config.app.openSearchServerless.enabled = false;
+		config.app.locationService.enabled = false;
+	}
 
 	//Any configuration error checks
-	if(config.app.govCloud.enabled && (config.app.govCloud.certificateARN == "UNDEFINED" || config.app.govCloud.domainHost == "UNDEFINED")) {
-		throw new Error("Cannot use GovCloud deployment without specifying a valid domain hostname and a ACM Certificate ARN to use for SSL/TLS security!")
+	if(config.app.albDeploy.enabled && (config.app.albDeploy.certificateARN == "UNDEFINED" || config.app.albDeploy.domainHost == "UNDEFINED")) {
+		throw new Error("Cannot use ALB deployment without specifying a valid domain hostname and a ACM Certificate ARN to use for SSL/TLS security!");
 	}
 
 	if(config.app.adminEmailAddress == '' || config.app.adminEmailAddress == 'UNDEFINED') {
-		throw new Error("Must specify an initial admin email address as part of this deployment configuration!")
+		throw new Error("Must specify an initial admin email address as part of this deployment configuration!");
 	}
 
 	//Todo: Implement error check when implementing multiple auth providers that only 1 is enabled
@@ -73,14 +74,21 @@ export interface ConfigPublic {
 		useFIPS: boolean;
 		govCloud: {
 			enabled: boolean;
-			vpcCidrRange: string;
-			domainHost: string;
-			certificateARN: string;
-			optionalHostedZoneID: string;
 		};
 		openSearchServerless: {
 			enabled: boolean;
 		};
+		locationService: {
+			enabled: boolean;
+		};
+		albDeploy: {
+			enabled: boolean;
+			publicSubnet: boolean;
+			vpcCidrRange: string;
+			domainHost: string;
+			certificateARN: string;
+			optionalHostedZoneID: string;
+		}
 		authProvider: {
 			cognito: {
 				enabled: boolean;
@@ -94,5 +102,4 @@ export interface ConfigPublic {
 export interface Config extends ConfigPublic {
 	enableCdkNag: boolean;
 	dockerDefaultPlatform: string;
-	govCloudDeploymentPublicAccess: boolean;
 }

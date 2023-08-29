@@ -97,7 +97,7 @@ export class ApiGatewayV2CloudFrontConstruct extends Construct {
             defaultAuthorizer: cognitoAuth,
         });
 
-        const apiUrl = `${api.httpApiId}${Service("EXECUTE_API").Endpoint}`;
+        const apiUrl = `${api.httpApiId}.${Service("EXECUTE_API").Endpoint}`;
         this.apiUrl = apiUrl;
 
         // export any cf outputs

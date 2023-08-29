@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /*
- * Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2023 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -20,20 +20,21 @@ const app = new cdk.App();
 
 //Set stack configuration
 const config = Config.getConfig(app);
-
 Service.SetConfig(config);
+
 console.log("DEPLOYMENT CONFIGURATION 👉", config);
-console.log(Service.Service("EC2").ARN("role", "*VAMS*"));
-console.log(Service.Service("EC2").Principal);
-console.log(Service.Service("EC2").Endpoint);
+
+//console.log(Service.Service("EC2").ARN("role", "*VAMS*"));
+//console.log(Service.Service("EC2").Principal);
+//console.log(Service.Service("EC2").Endpoint);
 
 if (config.enableCdkNag) {
     Aspects.of(app).add(new AwsSolutionsChecks({ verbose: true }));
 }
 
-//Deploy web access firewall to us-east-1 for cloudfront or in-region for non-cloudfront deployments
-const wafRegion = config.app.govCloud.enabled? config.env.region : "us-east-1" ;
-const wafScope = config.app.govCloud.enabled? WAFScope.REGIONAL : WAFScope.CLOUDFRONT;
+//Deploy web access firewall to us-east-1 for cloudfront or in-region for non-cloudfront (ALB) deployments
+const wafRegion = config.app.albDeploy.enabled? config.env.region : "us-east-1" ;
+const wafScope = config.app.albDeploy.enabled? WAFScope.REGIONAL : WAFScope.CLOUDFRONT;
 
 //The web access firewall
 const wafStackName = `${config.name}-waf-${config.app.baseStackName || process.env.DEPLOYMENT_ENV || "dev"}`;

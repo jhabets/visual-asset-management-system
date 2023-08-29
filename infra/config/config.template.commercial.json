@@ -8,15 +8,23 @@
 		"baseStackName": "prod",
 		"stagingBucketName": null,
 		"adminEmailAddress": "adminEmail@example.com",
+		"useFIPS": false,
 		"govCloud": {
-			"enabled": false,
-			"vpcCidrRange": "10.1.0.0/16",
-			"domainHost": "vams.example.com",
-			"certificateARN": "ACM-Certificate-ARN",
-			"optionalHostedZoneID": ""
+			"enabled": false
 		},
 		"openSearchServerless": {
 			"enabled": true
+		},
+		"locationService": {
+			"enabled": true
+		},
+		"albDeploy": {
+			"enabled": false,
+			"publicSubnet": false,
+			"vpcCidrRange": "10.1.0.0/16",
+			"domainHost": "vams1.example.com",
+			"certificateARN": "arn:aws-us-gov:acm:<REGION>:<ACCOUNTID>:certificate/<CERTIFICATEID>",
+			"optionalHostedZoneID": ""
 		},
 		"authProvider": {
 			"cognito": {

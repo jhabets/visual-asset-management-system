@@ -124,11 +124,11 @@ export function storageResourcesBuilder(
 
     const appFeatureEnabledStorageTable = new dynamodb.Table(scope, "AppFeatureEnabledStorageTable", {
         ...dynamodbDefaultProps,
+        // partitionKey: {
+        //     name: "enabled",
+        //     type: dynamodb.AttributeType.STRING,
+        // },
         partitionKey: {
-            name: "enabled",
-            type: dynamodb.AttributeType.STRING,
-        },
-        sortKey: {
             name: "featureName",
             type: dynamodb.AttributeType.STRING,
         },

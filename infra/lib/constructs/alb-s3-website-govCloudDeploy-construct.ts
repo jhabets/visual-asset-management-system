@@ -116,7 +116,7 @@ export class AlbS3WebsiteGovCloudDeployConstruct extends Construct {
 
         // Create an ALB
         const alb = new elbv2.ApplicationLoadBalancer(this, 'WebAppDistroALB', {
-            loadBalancerName: `${props.stackName}-WebAppALB`,
+            loadBalancerName: `${props.stackName}-WebAppALB`.substring(0, 32),
             internetFacing: props.setupPublicAccess,
             vpc: props.vpc,
             securityGroup: webAppALBSecurityGroup,

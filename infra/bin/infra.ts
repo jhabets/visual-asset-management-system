@@ -9,7 +9,7 @@ import "source-map-support/register";
 import * as cdk from "aws-cdk-lib";
 import { VAMS } from "../lib/infra-stack";
 import { CfWafStack } from "../lib/cf-waf-stack";
-import { AwsSolutionsChecks } from "cdk-nag";
+import { AwsSolutionsChecks, NagSuppressions, NIST80053R5Checks} from "cdk-nag";
 import { Aspects, Annotations } from "aws-cdk-lib";
 import { WAFScope } from "../lib/constructs/wafv2-basic-construct";
 import * as Config from '../config/config';
@@ -24,12 +24,8 @@ Service.SetConfig(config);
 
 console.log("DEPLOYMENT CONFIGURATION 👉", config);
 
-//console.log(Service.Service("EC2").ARN("role", "*VAMS*"));
-//console.log(Service.Service("EC2").Principal);
-//console.log(Service.Service("EC2").Endpoint);
-
 if (config.enableCdkNag) {
-    Aspects.of(app).add(new AwsSolutionsChecks({ verbose: true }));
+    Aspects.of(app).add(new AwsSolutionsChecks({ verbose: true, }));
 }
 
 //Deploy web access firewall to us-east-1 for cloudfront or in-region for non-cloudfront (ALB) deployments
@@ -61,5 +57,19 @@ const vamsStack = new VAMS(app, vamsStackName, {
 });
 
 vamsStack.addDependency(cfWafStack);
+
+if(config.app.govCloud) {
+    // Enable checks for NIST 800-53 R5
+    // TODO: RE-ENABLE WHEN WORKING THROUGH ISSUES
+    // Aspects.of(app).add(new NIST80053R5Checks({verbose: true}));
+
+    // Feature check suppression
+    NagSuppressions.addStackSuppressions(vamsStack, [
+        {
+            id: 'AwsSolutions-COG3',
+            reason: "Cognito AdvancedSecurityMode feature does not exist"
+        }
+    ], true)
+}
 
 app.synth();

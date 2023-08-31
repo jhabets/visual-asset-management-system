@@ -12,7 +12,7 @@ import { Construct } from "constructs";
 import { Duration } from "aws-cdk-lib";
 import { suppressCdkNagErrorsByGrantReadWrite } from "../security";
 import { storageResources } from "../storage-builder";
-import { Service } from "../helper/service-helper";
+import { IAMArn, Service } from "../helper/service-helper";
 
 export function buildCreatePipelineFunction(
     scope: Construct,
@@ -79,8 +79,8 @@ export function buildCreatePipelineFunction(
                 "iam:DetachRolePolicy",
             ],
             resources: [
-                "arn:aws:iam::*:role/*NotebookIAMRole*",
-                "arn:aws:iam::*:policy/*NotebookIAMRolePolicy*",
+                IAMArn("*NotebookIAMRole*").role,
+                IAMArn("*NotebookIAMRolePolicy*").policy,
             ],
         })
     );
@@ -198,8 +198,8 @@ export function buildPipelineService(
                 "iam:DetachRolePolicy",
             ],
             resources: [
-                "arn:aws:iam::*:role/*NotebookIAMRole*",
-                "arn:aws:iam::*:policy/*NotebookIAMRolePolicy*",
+                IAMArn("*NotebookIAMRole*").role,
+                IAMArn("*NotebookIAMRolePolicy*").policy,
             ],
         })
     );

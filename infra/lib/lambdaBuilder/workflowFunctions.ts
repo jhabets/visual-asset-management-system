@@ -12,7 +12,7 @@ import { Construct } from "constructs";
 import { Duration } from "aws-cdk-lib";
 import { suppressCdkNagErrorsByGrantReadWrite } from "../security";
 import { storageResources } from "../storage-builder";
-import { Service } from "../helper/service-helper";
+import { Service, IAMArn} from "../helper/service-helper";
 export function buildWorkflowService(
     scope: Construct,
     storageResources: storageResources
@@ -121,7 +121,7 @@ export function buildCreateWorkflowFunction(
         new iam.PolicyStatement({
             effect: iam.Effect.ALLOW,
             actions: ["iam:PassRole"],
-            resources: ["arn:aws:iam::*:role/*VAMS*"],
+            resources: [IAMArn("*VAMS*").role],
         })
     );
     suppressCdkNagErrorsByGrantReadWrite(createWorkflowFunction);
@@ -236,7 +236,7 @@ export function buildWorkflowRole(
             new iam.PolicyStatement({
                 effect: iam.Effect.ALLOW,
                 actions: ["iam:PassRole"],
-                resources: ["arn:aws:iam::*:role/*VAMS*"],
+                resources: [IAMArn("*VAMS*").role],
             }),
         ],
     });

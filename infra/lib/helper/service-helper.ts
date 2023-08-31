@@ -48,6 +48,13 @@ export function Service(name: SERVICE): ServiceFormatter {
     return ret;
 }
 
+export function IAMArn(name: string) {
+    return { 
+        role : `arn:${region_info.RegionInfo.get(config.env.region).partition || ""}:iam::*:role/${name}`,
+        policy : `arn:${region_info.RegionInfo.get(config.env.region).partition || ""}:iam::*:policy/${name}`
+    }
+}
+
 export function SetConfig(Config: Config) {
     config = Config;
 }

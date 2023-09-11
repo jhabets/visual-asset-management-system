@@ -272,7 +272,7 @@ function SearchPageListView({ state, dispatch }: SearchPageViewProps) {
                                     </Button>
                                     <Button
                                         onClick={(e) => {
-                                            navigate("/upload");
+                                            navigate("#/upload");
                                         }}
                                         variant="primary"
                                     >

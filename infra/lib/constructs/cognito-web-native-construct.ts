@@ -14,6 +14,7 @@ import { Construct } from "constructs";
 import { Duration } from "aws-cdk-lib";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as path from "path";
+import { Config } from "../../config/config";
 
 export interface SamlSettings {
     metadata: cognito.UserPoolIdentityProviderSamlMetadata;
@@ -25,6 +26,7 @@ export interface SamlSettings {
 export interface CognitoWebNativeConstructProps extends cdk.StackProps {
     storageResources: storageResources;
     samlSettings?: SamlSettings;
+    config: Config;
 }
 
 /**
@@ -102,10 +104,13 @@ export class CognitoWebNativeConstruct extends Construct {
 
         const cfnUserPool = userPool.node.defaultChild as cognito.CfnUserPool;
 
-        const userPoolAddOnsProperty: cognito.CfnUserPool.UserPoolAddOnsProperty = {
-            advancedSecurityMode: "ENFORCED",
-        };
-        cfnUserPool.userPoolAddOns = userPoolAddOnsProperty;
+        if(!props.config.app.govCloud) {
+            // Only enable advanced security where it's available
+            const userPoolAddOnsProperty: cognito.CfnUserPool.UserPoolAddOnsProperty = {
+                advancedSecurityMode: "ENFORCED",
+            };
+            cfnUserPool.userPoolAddOns = userPoolAddOnsProperty;
+        }
 
         const supportedIdentityProviders = [cognito.UserPoolClientIdentityProvider.COGNITO];
 

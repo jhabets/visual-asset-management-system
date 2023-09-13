@@ -19,6 +19,8 @@ export function buildAssetService(
     assetVisualizerStorageBucket: s3.Bucket
 ): lambda.Function {
     const name = "assetService";
+
+    //todo: Import Docker image from disk as we will need to do this later
     const assetService = new lambda.DockerImageFunction(scope, name, {
         code: lambda.DockerImageCode.fromImageAsset(path.join(__dirname, `../../../backend/`), {
             cmd: [`backend.handlers.assets.${name}.lambda_handler`],

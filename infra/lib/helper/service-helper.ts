@@ -35,7 +35,7 @@ class ServiceFormatter {
     }
 
     public URL() { }
-    public get Endpoint() { return config.app.useFIPS ? this.replaceValues(this.service.fipsHostname) :  this.replaceValues(this.service.hostname)};
+    public get Endpoint() { return config.app.useFips ? this.replaceValues(this.service.fipsHostname) :  this.replaceValues(this.service.hostname)};
     public get Principal() { return  new aws_iam.ServicePrincipal(this.replaceValues(this.service.principal))};
 
 }

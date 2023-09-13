@@ -33,8 +33,8 @@ if (config.enableCdkNag) {
 }
 
 //Deploy web access firewall to us-east-1 for cloudfront or in-region for non-cloudfront (ALB) deployments
-const wafRegion = config.app.albDeploy.enabled? config.env.region : "us-east-1" ;
-const wafScope = config.app.albDeploy.enabled? WAFScope.REGIONAL : WAFScope.CLOUDFRONT;
+const wafRegion = config.app.useAlb.enabled? config.env.region : "us-east-1" ;
+const wafScope = config.app.useAlb.enabled? WAFScope.REGIONAL : WAFScope.CLOUDFRONT;
 
 //The web access firewall
 const wafStackName = `${config.name}-waf-${config.app.baseStackName || process.env.DEPLOYMENT_ENV || "dev"}`;

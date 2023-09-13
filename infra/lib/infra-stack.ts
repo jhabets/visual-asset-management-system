@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /*
- * Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2023 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -31,6 +31,8 @@ import { streamsBuilder } from "./streams-builder";
 import customResources = require('aws-cdk-lib/custom-resources');
 import * as Config from '../config/config';
 import { VAMS_APP_FEATURES } from '../config/common/vamsAppFeatures';
+import { VpcSecurityGroupGatewayVisualizerPipelineConstruct } from "./constructs/vpc-securitygroup-gateway-visualizerPipeline-construct";
+import { VisualizationPipelineConstruct } from "./constructs/visualizerPipeline-construct";
 
 interface EnvProps {
     env: cdk.Environment;
@@ -50,7 +52,7 @@ export class VAMS extends cdk.Stack {
         const adminEmailAddress = new cdk.CfnParameter(this, "adminEmailAddress", {
             type: "String",
             description:
-                "Email address for login and where your password is sent to. You wil be sent a temporary password for the turbine to authenticate to Cognito.",
+                "Email address for login and where your password is sent to. You will be sent a temporary password to authenticate to Cognito.",
             default: props.config.app.adminEmailAddress,
         });
 
@@ -72,7 +74,7 @@ export class VAMS extends cdk.Stack {
         };
 
         //Select auth provider
-        if(props.config.app.authProvider.cognito.enabled)
+        if(props.config.app.authProvider.useCognito.enabled)
         {
             enabledFeatures.push(VAMS_APP_FEATURES.AUTHPROVIDER_COGNITO)
         }
@@ -80,7 +82,7 @@ export class VAMS extends cdk.Stack {
 
         //See if we have enabled SAML settings
         //TODO: Migrate rest of settings to main config file
-        if (props.config.app.authProvider.cognito.samlEnabled) {
+        if (props.config.app.authProvider.useCognito.useSaml) {
             cognitoProps.samlSettings = samlSettings;
             enabledFeatures.push(VAMS_APP_FEATURES.AUTHPROVIDER_COGNITO_SAML)
         }
@@ -103,10 +105,13 @@ export class VAMS extends cdk.Stack {
             ],
         });
 
-        new cognito.CfnUserPoolGroup(this, "AdminGroup", {
+        const userPoolGroup = new cognito.CfnUserPoolGroup(this, "AdminGroup", {
             groupName: "super-admin",
             userPoolId: cognitoResources.userPoolId,
+            roleArn: cognitoResources.superAdminRole.roleArn,
         });
+
+        userPoolGroup.node.addDependency(cognitoResources);
 
         const userGroupAttachment = new cognito.CfnUserPoolUserToGroupAttachment(
             this,
@@ -119,6 +124,8 @@ export class VAMS extends cdk.Stack {
         );
         userGroupAttachment.addDependency(cognitoUser);
 
+        userGroupAttachment.addDependency(userPoolGroup);
+
         // initialize api gateway
         const api = new ApiGatewayV2CloudFrontConstruct(this, "api", {
             ...props,
@@ -128,7 +135,7 @@ export class VAMS extends cdk.Stack {
 
 
         //Deploy website distribution infrastructure and authentication tie-ins
-        if(!props.config.app.albDeploy.enabled) {
+        if(!props.config.app.useAlb.enabled) {
             //Deploy through CloudFront (default)
 
             const website = new CloudFrontS3WebSiteConstruct(this, "WebApp", {
@@ -137,7 +144,7 @@ export class VAMS extends cdk.Stack {
                 webAcl: props.ssmWafArn,
                 apiUrl: api.apiUrl,
                 assetBucketUrl: storageResources.s3.assetBucket.bucketRegionalDomainName,
-                cognitoDomain: props.config.app.authProvider.cognito.samlEnabled
+                cognitoDomain: props.config.app.authProvider.useCognito.useSaml
                     ? `https://${samlSettings.cognitoDomainPrefix}.auth.${props.env.region}.amazoncognito.com`
                     : "",
             });
@@ -161,7 +168,7 @@ export class VAMS extends cdk.Stack {
              * Propagate Base CloudFront URL to Cognito User Pool Callback and Logout URLs
              * if SAML is enabled.
              */
-            if (props.config.app.authProvider.cognito.samlEnabled) {
+            if (props.config.app.authProvider.useCognito.useSaml) {
                 const customCognitoWebClientConfig = new CustomCognitoConfigConstruct(
                     this,
                     "CustomCognitoWebClientConfig",
@@ -199,23 +206,23 @@ export class VAMS extends cdk.Stack {
                     "WebAppDistroNetwork",
                     {
                         ...props,
-                        vpcCidrRange: props.config.app.albDeploy.vpcCidrRange,
-                        setupPublicAccess: props.config.app.albDeploy.publicSubnet
+                        vpcCidrRange: props.config.app.useAlb.vpcCidrRange,
+                        setupPublicAccess: props.config.app.useAlb.publicSubnet
                     }
                 );
                 
             const website = new AlbS3WebsiteGovCloudDeployConstruct(this, "WebApp", {
                 ...props,
                 artefactsBucket: storageResources.s3.artefactsBucket,
-                domainHostName: props.config.app.albDeploy.domainHost,
+                domainHostName: props.config.app.useAlb.domainHost,
                 webSiteBuildPath: webAppBuildPath,
                 webAcl: props.ssmWafArn,
                 apiUrl: api.apiUrl,
                 vpc: webAppDistroNetwork.vpc,
                 subnets: webAppDistroNetwork.subnets.webApp,
-                setupPublicAccess: props.config.app.albDeploy.publicSubnet,
-                acmCertARN: props.config.app.albDeploy.certificateARN,
-                optionalHostedZoneId: props.config.app.albDeploy.optionalHostedZoneID
+                setupPublicAccess: props.config.app.useAlb.publicSubnet,
+                acmCertARN: props.config.app.useAlb.certificateARN,
+                optionalHostedZoneId: props.config.app.useAlb.optionalHostedZoneID
             });
 
             /**
@@ -234,7 +241,7 @@ export class VAMS extends cdk.Stack {
              * Propagate Base CloudFront URL to Cognito User Pool Callback and Logout URLs
              * if SAML is enabled.
              */
-            if (props.config.app.authProvider.cognito.samlEnabled) {
+            if (props.config.app.authProvider.useCognito.useSaml) {
                 const customCognitoWebClientConfig = new CustomCognitoConfigConstruct(
                     this,
                     "CustomCognitoWebClientConfig",
@@ -257,7 +264,7 @@ export class VAMS extends cdk.Stack {
         apiBuilder(this, api.apiGatewayV2, storageResources);
 
         //Deploy OpenSearch Serverless
-        if(props.config.app.openSearchServerless.enabled) {
+        if(props.config.app.useOpenSearchServerless.enabled) {
             streamsBuilder(this, cognitoResources, api.apiGatewayV2, storageResources);
             enabledFeatures.push(VAMS_APP_FEATURES.OPENSEARCH)
         }
@@ -270,7 +277,7 @@ export class VAMS extends cdk.Stack {
         // });
 
         //Deploy Location Services
-        if(props.config.app.locationService.enabled) {
+        if(props.config.app.useLocationService.enabled) {
             const location = new LocationServiceConstruct(this, "LocationService", {
                 role: cognitoResources.authenticatedRole,
             });
@@ -286,7 +293,7 @@ export class VAMS extends cdk.Stack {
             region: props.config.env.region,
         };
 
-        if (props.config.app.authProvider.cognito.samlEnabled) {
+        if (props.config.app.authProvider.useCognito.useSaml) {
             amplifyConfigProps.federatedConfig = {
                 customCognitoAuthDomain: `${samlSettings.cognitoDomainPrefix}.auth.${props.config.env.region}.amazoncognito.com`,
                 customFederatedIdentityProviderName: samlSettings.name,
@@ -301,6 +308,33 @@ export class VAMS extends cdk.Stack {
             "AmplifyConfig",
             amplifyConfigProps
         );
+
+        ///Optional Pipeline Constructs
+        //Point Cloud (PC) Visualizer Pipeline
+        if (props.config.app.pipelines.usePointCloudVisualization.enabled) {
+            const visualizerPipelineNetwork =
+                new VpcSecurityGroupGatewayVisualizerPipelineConstruct(
+                    this,
+                    "VisualizerPipelineNetwork",
+                    {
+                        ...props,
+                    }
+                );
+
+            const visualizerPipeline = new VisualizationPipelineConstruct(
+                this,
+                "VisualizerPipeline",
+                {
+                    ...props,
+                    storage: storageResources,
+                    vpc: visualizerPipelineNetwork.vpc,
+                    visualizerPipelineSubnets: visualizerPipelineNetwork.subnets.pipeline,
+                    visualizerPipelineSecurityGroups: [
+                        visualizerPipelineNetwork.securityGroups.pipeline,
+                    ],
+                }
+            );
+        }
 
         //Write enabled features to dynamoDB table
         const customFeatureEnabledConfigConstruct = new CustomFeatureEnabledConfigConstruct(
@@ -317,12 +351,21 @@ export class VAMS extends cdk.Stack {
             description: "S3 bucket for asset storage",
         });
 
+        const assetVisualizerBucketOutput = new cdk.CfnOutput(
+            this,
+            "AssetVisualizerBucketNameOutput",
+            {
+                value: storageResources.s3.assetVisualizerBucket.bucketName,
+                description: "S3 bucket for visualization asset storage",
+            }
+        );
+
         const artefactsBucketOutput = new cdk.CfnOutput(this, "artefactsBucketOutput", {
             value: storageResources.s3.artefactsBucket.bucketName,
             description: "S3 bucket for template notebooks",
         });
 
-        if (props.config.app.authProvider.cognito.samlEnabled) {
+        if (props.config.app.authProvider.useCognito.useSaml) {
             const samlIdpResponseUrl = new cdk.CfnOutput(this, "SAML_IdpResponseUrl", {
                 value: `https://${samlSettings.cognitoDomainPrefix}.auth.${props.env.region}.amazoncognito.com/saml2/idpresponse`,
                 description: "SAML IdP Response URL",
@@ -337,6 +380,7 @@ export class VAMS extends cdk.Stack {
             includeResourceTypes: ['AWS::CloudFormation::Stack'],
         });
 
+        //Global Nag Supressions
         this.node.findAll().forEach((item) => {
             if (item instanceof cdk.aws_lambda.Function) {
                 const fn = item as cdk.aws_lambda.Function;

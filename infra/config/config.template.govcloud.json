@@ -8,17 +8,17 @@
 		"baseStackName": "prod",
 		"stagingBucketName": null,
 		"adminEmailAddress": "adminEmail@example.com",
-		"useFIPS": true,
+		"useFips": true,
 		"govCloud": {
 			"enabled": true
 		},
-		"openSearchServerless": {
+		"useOpenSearchServerless": {
 			"enabled": false
 		},
-		"locationService": {
+		"useLocationService": {
 			"enabled": false
 		},
-		"albDeploy": {
+		"useAlb": {
 			"enabled": true,
 			"publicSubnet": false,
 			"vpcCidrRange": "10.1.0.0/16",
@@ -26,10 +26,15 @@
 			"certificateARN": "arn:aws-us-gov:acm:<REGION>:<ACCOUNTID>:certificate/<CERTIFICATEID>",
 			"optionalHostedZoneID": ""
 		},
+		"pipelines": {
+			"usePointCloudVisualization": {
+				"enabled": false
+			}
+		},
 		"authProvider": {
-			"cognito": {
+			"useCognito": {
 				"enabled": true,
-				"samlEnabled": false
+				"useSaml": false
 			}
 		}
 	}

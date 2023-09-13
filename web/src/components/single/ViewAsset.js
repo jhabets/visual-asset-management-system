@@ -1,6 +1,6 @@
 /* eslint-disable jsx-a11y/anchor-is-valid */
 /*
- * Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2023 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -345,6 +345,8 @@ export default function ViewAsset() {
                                                         {viewType === "preview" &&
                                                             asset?.previewLocation?.Key && (
                                                                 <ImgViewer
+                                                                    assetId={assetId}
+                                                                    databaseId={databaseId}
                                                                     assetKey={
                                                                         asset?.generated_artifacts
                                                                             ?.preview?.Key ||

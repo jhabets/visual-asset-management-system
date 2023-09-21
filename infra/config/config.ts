@@ -92,6 +92,7 @@ export interface ConfigPublic {
 		pipelines: {
 			usePointCloudVisualization: {
 				enabled: boolean;
+				vpcCidrRange: string;
 			}
 		}
 		authProvider: {

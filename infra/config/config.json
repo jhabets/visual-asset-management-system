@@ -28,7 +28,8 @@
 		},
 		"pipelines": {
 			"usePointCloudVisualization": {
-				"enabled": true
+				"enabled": true,
+				"vpcCidrRange": "10.2.0.0/16"
 			}
 		},
 		"authProvider": {

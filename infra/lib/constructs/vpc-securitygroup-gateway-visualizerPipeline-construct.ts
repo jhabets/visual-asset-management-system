@@ -11,7 +11,9 @@ import { LogGroup, RetentionDays } from "aws-cdk-lib/aws-logs";
 import { NagSuppressions } from "cdk-nag";
 
 /* eslint-disable @typescript-eslint/no-empty-interface */
-export interface VpcSecurityGroupGatewayVisualizerPipelineConstructProps {}
+export interface VpcSecurityGroupGatewayVisualizerPipelineConstructProps extends cdk.StackProps {
+    vpcCidrRange: string;
+}
 
 const defaultProps: Partial<VpcSecurityGroupGatewayVisualizerPipelineConstructProps> = {
     stackName: "",
@@ -56,10 +58,10 @@ export class VpcSecurityGroupGatewayVisualizerPipelineConstruct extends Construc
             removalPolicy: cdk.RemovalPolicy.RETAIN,
         });
 
-        const cidrRange = "10.0.0.0/16"; // 4096
+        //const cidrRange = "10.0.0.0/16"; // 4096
 
         this.vpc = new ec2.Vpc(this, "Vpc", {
-            ipAddresses: ec2.IpAddresses.cidr(cidrRange),
+            ipAddresses: ec2.IpAddresses.cidr(props.vpcCidrRange),
             subnetConfiguration: [pipelineSubnetConfig],
             maxAzs: 1, //One 1AZ as VPC is for a pipeline that can re-generate temporary files
             enableDnsHostnames: true,

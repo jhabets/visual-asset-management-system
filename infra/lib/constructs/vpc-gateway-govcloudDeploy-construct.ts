@@ -11,12 +11,12 @@ import { LogGroup, RetentionDays } from "aws-cdk-lib/aws-logs";
 import { NagSuppressions } from "cdk-nag";
 
 /* eslint-disable @typescript-eslint/no-empty-interface */
-export interface VpcGatewayGovCloudConstructProps extends cdk.StackProps {
+export interface VpcGatewayGovCloudDeployConstructProps extends cdk.StackProps {
     vpcCidrRange: string
     setupPublicAccess:boolean
 }
 
-const defaultProps: Partial<VpcGatewayGovCloudConstructProps> = {
+const defaultProps: Partial<VpcGatewayGovCloudDeployConstructProps> = {
     stackName: "",
     env: {},
 };
@@ -24,7 +24,7 @@ const defaultProps: Partial<VpcGatewayGovCloudConstructProps> = {
 /**
  * Custom configuration to Cognito.
  */
-export class VpcGatewayGovCloudConstruct extends Construct {
+export class VpcGatewayGovCloudDeployConstruct extends Construct {
     readonly vpc: ec2.Vpc;
     readonly subnets: {
         webApp: ec2.ISubnet[];
@@ -33,7 +33,7 @@ export class VpcGatewayGovCloudConstruct extends Construct {
     constructor(
         parent: Construct,
         name: string,
-        props: VpcGatewayGovCloudConstructProps
+        props: VpcGatewayGovCloudDeployConstructProps
     ) {
         super(parent, name);
 

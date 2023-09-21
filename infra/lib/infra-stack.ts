@@ -14,7 +14,7 @@ import {
     AmplifyConfigLambdaConstructProps,
 } from "./constructs/amplify-config-lambda-construct";
 import { CloudFrontS3WebSiteConstruct } from "./constructs/cloudfront-s3-website-construct";
-import { VpcGatewayGovCloudConstruct } from "./constructs/vpc-gateway-govcloudDeploy-construct";
+import { VpcGatewayGovCloudDeployConstruct } from "./constructs/vpc-gateway-govCloudDeploy-construct";
 import { AlbS3WebsiteGovCloudDeployConstruct } from "./constructs/alb-s3-website-govCloudDeploy-construct";
 import {
     CognitoWebNativeConstruct,
@@ -201,7 +201,7 @@ export class VAMS extends cdk.Stack {
             //Deploy with ALB (aka, use ALB->VPCEndpoint->S3 as path for web deployment)
 
             const webAppDistroNetwork =
-                new VpcGatewayGovCloudConstruct(
+                new VpcGatewayGovCloudDeployConstruct(
                     this,
                     "WebAppDistroNetwork",
                     {
@@ -318,6 +318,7 @@ export class VAMS extends cdk.Stack {
                     "VisualizerPipelineNetwork",
                     {
                         ...props,
+                        vpcCidrRange: props.config.app.pipelines.usePointCloudVisualization.vpcCidrRange,
                     }
                 );
 

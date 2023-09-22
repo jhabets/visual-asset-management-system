@@ -69,7 +69,7 @@ Please take note:
 
 -   While we are limited to these formats to view assets, any file format may be uploaded to VAMS.
 -   There are some limitations with formats that leverage multiple files such as glTF that uses json with references to other files.
--   Some viewers like Potree Viewer requires additional pipelines to be deployed to fully generate and view visualizer files.
+-   Some viewers like Potree Viewer requires additional pipelines to be deployed to fully generate and view point cloud files.
 
 ## Install
 
@@ -78,7 +78,7 @@ Please take note:
 -   Python 3.8
 -   Poetry (for managing python dependencies in the VAMS backend)
 -   Docker
--   Node >=16.x
+-   Node >=18.7
 -   Yarn >=1.22.19
 -   Node Version Manager (nvm)
 -   AWS CDK cli
@@ -102,39 +102,80 @@ You can identify stable releases by their tag. Fetch the tags `git fetch --all -
 
 5. If you haven't already bootstrapped your aws account with CDK. `cdk bootstrap aws://101010101010/us-east-1` - replace with your account and region. If you are boostrapping a GovCloud account, run `export AWS_REGION=[gov-cloud-region]` as the AWS SDK needs to be informed to use GovCloud endpoints.
 
-6. Set the CDK stack name and the region for deployment with environment variables `export AWS_REGION=us-east-1 && export STACK_NAME=dev` - replace with the region you would like to deploy to and the name you want to associate with the cloudformation stack that the CDK will deploy.
+6. Modify the `config.json` in `/infra/config` to set the VAMS deployment parameters and features you would like to deploy. Recommended minimum fields to update are `region`, `adminEmailAddress`, and `baseStackName` when using the default provided template. More information about the configuration options can be found in the Configuration Options section below.
 
-7. (Optional) Set the optional feature to deploy the Point Cloud (PC) visualizer pipeline with environment variables `export pipelineActivatePCVisualizer=true` - the point cloud (PC) visualizer pipeline stack is for viewing Point Cloud files in the VAMS visualizer preview. You can optionally set this via CDK deploy context parameter. Note: This does deploy additional AWS components such as a VPC and EPV endpoints that may have additional static infrastructure costs.
+7. (Optional) Override the the CDK stack name and region for deployment with environment variables `export AWS_REGION=us-east-1 && export STACK_NAME=dev` - replace with the region you would like to deploy to and the name you want to associate with the cloudformation stack that the CDK will deploy.
 
-8. `npm run deploy.dev adminEmailAddress=myuser@example.com` - replace with your email address to deploy. An account is created in an AWS Cognito User Pool using this email address. Expect an email from no-reply@verificationemail.com with a temporary password.
+8. `npm run deploy.dev` - An account is created in an AWS Cognito User Pool using the email address specified in the infrastructure config file. Expect an email from no-reply@verificationemail.com with a temporary password.
 
     7a. Ensure that docker is running before deploying as a container will need to be built
 
 #### Deployment Success
 
-1. Navigate to URL provided in `{stackName].WebAppCloudFrontDistributionDomainName{uuid}` from `cdk deploy` output.
+1.a (Default)(Cloudfront Deployment) Navigate to URL provided in `{stackName].WebAppCloudFrontDistributionDomainName{uuid}` from `cdk deploy` output.
+
+1.b (ALB Deployment Feature) Navigate to URL provided in `webDistributionUrl` from `cdk deploy` output.
 
 2. Check email for temporary account password to log in with the email address you provided.
 
 ### Multiple Deployments With Different or Same Region in Single Account
 
-You can change the region and deploy a new instance of VAMS my setting the environment variables to new values (`export AWS_REGION=us-east-1 && export STACK_NAME=dev`) and then running `npm run deploy.dev adminEmailAddress=myuser@example.com` again.
+You can change the region and deploy a new instance of VAMS by changing the `config.json` or setting the environment variables to new values (`export AWS_REGION=us-east-1 && export STACK_NAME=dev`) and then running `npm run deploy.dev` again.
 
 ### Deploy VAMS Updates
 
-To deploy customzations or updates to VAMS, you can update the stack by running `cdk deploy --all`. A changeset is created and deployed to your stack.
+To deploy customzations or updates to VAMS, you can update the stack by running `cdk deploy --all --require-approval never`. A changeset is created and deployed to your stack.
 
 Please note, depending on what changes are in flight, VAMS may not be available to users in part or in whole during the deployment. Please read the change log carefully and test changes before exposing your users to new versions.
 
 ### Already have Assets in S3 that you want to register in VAMS?
 
-VAMS can be deployed with a `staging-bucket` parameter to enable copying from an existing asset bucket.
+VAMS can be deployed with a `stagingBucketName` config parameter to enable copying from an existing asset bucket.
 
-to deploy with staging bucket, just pass the `staging-bucket` paramter to your cdk deployment and VAMS will register your existing bucket as a staging bucket.
+To deploy with staging bucket, just set the `stagingBucketName` config parameter to your cdk deployment and VAMS will register your existing bucket as a staging bucket.
 
 Once the deployment is complete, you can invoke the `/assets/uploadAssetWorkflow` API to start copying the assets into the VAMS S3 bucket.
 
 Please refer to the uploadAssetWorkflow in the [API docs](./VAMS_API.yaml) to find out about the API request body.
+
+### Configuration Options
+
+VAMS backend allows for basic to advanced configuration based on the environment and use-case need.
+
+Configuration files can be found in `/infra/config` with `config.json` being the primary file used during deployment. Additional config template files exist for common environment setups for Commercial or GovCloud deployments.
+
+Recommended minimum fields to update are `region`, `adminEmailAddress`, and `baseStackName` when using the default provided templates.
+
+Some configuraiton options can be overriden at time of deployment with either environment variables or cdk context parameters (--context X) used with `cdk deploy`
+
+-   `name` | default: vams | #Base application name to use in the full CDK stack name
+
+-   `env.account` | default: NULL | #AWS Account to use for CDK deployment. If null, pulled from CDK environment.
+-   `env.region` | default: us-east-1 | #AWS Region to use for CDK deployment. If null, pulled from CDK environment.
+
+-   `app.baseStackName` | default: prod | #Base stack stage environment name to use when creating full CDK stack name.
+-   `app.stagingBucketName` | default: NULL | #Staging bucket for transfering assets between deployment. If null, no staging bucket will be created.
+-   `app.adminEmailAddress` | default: adminEmail@example.com | #Administrator email address to use for the initial super admin account.
+-   `app.useFips` | default: false | #Feature to deploy to a FIPS compliant AWS environment. Must combine with AWS CLI FIPS Environment variable `AWS_USE_FIPS_ENDPOINT`.
+
+-   `app.govCloud.enabled` | default: false | #Feature to deploy to the AWS GovCloud partition. Will automatically turn VAMS features on/off based on service support.
+
+-   `app.useOpenSearchServerless.enabled` | default: true | #Feature to deploy the Open Search service for VAMS asset searching. If false, will revert back to limited asset UI filter capability.
+
+-   `app.useLocationService.enabled` | default: false | #Feature to use location services to display maps data for asset metadata types that store global position coordinates
+
+-   `app.useAlb.enabled` | default: false | #Feature to swap in a Application Load Balancer instead of a CloudFront Deployment. This will 1) disable static webpage caching, 2) require a fixed web domain to be specified, 3) require a SSL/TLS certicate to be registered in AWS Certifcate Manager, and 4) have a S3 bucket name available in the partition that matches the domain name for the static website contents
+-   `app.useAlb.publicSubnet` | default: false | #Specifies if the ALB should be available for access in a public or private subnet.
+-   `app.useAlb.vpcCidrRange` | default: 10.1.0.0/16 | #Specifies the CIDR range to use for the new VPC created for the ALB
+-   `app.useAlb.domainHost` | default: vams1.example.com | #Specifies the domain to use for the ALB and static webpage S3 bucket
+-   `app.useAlb.certificateARN` | default: arn:aws-us-gov:acm:<REGION>:<ACCOUNTID>:certificate/<CERTIFICATEID> | #Specifies the existing ACM certificate to use for the ALB for HTTPS connections. ACM certificate must be for the `domainHost` specified and reside in the region being deployed to.
+-   `app.useAlb.optionalHostedZoneID` | default: NULL | #Optional route53 zone host ID to automatically create an alias for the `domainHost` specified to the created ALB.
+
+-   `app.pipelines.usePointCloudVisualization.enabled` | default: false | #Feature to create a point cloud visualization processing pipeline to support point cloud file type viewing within the VAMS web UI.
+-   `app.pipelines.usePointCloudVisualization.vpcCidrRange` | default: 10.2.0.0/16 | #Specifies the CIDR range to use for the new VPC created for the pipeline components
+
+-   `app.authProvider.useCognito.enabled` | default: true | #Feature to use Cognito Use Pools should be used for VAMS user management and authentication. At least 1 authProvider must be enabled in the configuration.
+-   `app.authProvider.useCognito.useSaml` | default: false | #Specifies if Cognito User Pools use a federated SAML from an external IDP integration.
 
 ### Architecture components
 
@@ -224,7 +265,7 @@ An approximate cost breakdown is below (excluding free tiers):
 | Amazon SageMaker                  | 2 inference endpoints                                    | $5.13  |
 | Amazon Elastic Container Registry | ECR (In region)40GB                                      | $4     |
 
-Below are the additional costs for including visualizer pipeline and their outputs in your deployment:
+Below are the additional costs for including the point cloud visualizer pipeline feature in your deployment:
 
 | Service           | Quantity                                                 | Cost   |
 | :---------------- | :------------------------------------------------------- | :----- |

@@ -3,15 +3,11 @@
 
 import os
 import boto3
-import sys
 import json
-from boto3.dynamodb.conditions import Key, Attr
 import datetime
-from decimal import Decimal
-from boto3.dynamodb.types import TypeDeserializer, TypeSerializer
 import os
 import uuid
-from backend.common.validators import validate
+from common.validators import validate
 
 import stepfunctions
 from stepfunctions.steps import (
@@ -23,6 +19,13 @@ from stepfunctions.workflow import Workflow
 from sagemaker.processing import ProcessingInput, ProcessingOutput
 from sagemaker.processing import Processor
 
+############################################ NOTE############################################
+# Due to the unique library imports of stepfunctions and sagemaker, this function is assigned
+# it's own lambda layer due to library sizes (close to the 250mb layer limit by itself).
+# --------------------------------------------------------------------------------------------
+# Please be caughteous of adding anymore new library references, including downstream references
+# when importing VAMS common files that use other libaries.
+############################################################################################
 
 dynamodb = boto3.resource('dynamodb')
 
@@ -152,7 +155,7 @@ def create_step_function(pipelines, databaseId, workflowId):
     # SageMaker Execution Role
     # You can use sagemaker.get_execution_role() if running inside sagemaker's notebook instance
     role = os.environ['LAMBDA_ROLE_ARN']
-    #step_role = "arn:aws:iam::611143256665:role/AmazonSageMaker-StepFunctionsWorkflowExecutionRole"
+    # step_role = "arn:aws:iam::611143256665:role/AmazonSageMaker-StepFunctionsWorkflowExecutionRole"
 
     client = boto3.client('sts')
     account_id = client.get_caller_identity()['Account']
@@ -182,12 +185,14 @@ def create_step_function(pipelines, databaseId, workflowId):
         else:
             input_s3_uri = output_s3_uri
 
-        output_s3_uri = "States.Format('s3://{}/pipelines/" + pipeline["name"] + "/" + job_names[i]+ "/output/{}/', $.bucket, $$.Execution.Name)"
+        output_s3_uri = "States.Format('s3://{}/pipelines/" + \
+            pipeline["name"] + "/" + job_names[i] + "/output/{}/', $.bucket, $$.Execution.Name)"
         print(output_s3_uri)
         if ('pipelineType' in pipeline and pipeline['pipelineType'] == 'Lambda'):
             step = create_lambda_step(pipeline, input_s3_uri, output_s3_uri)
         else:
-            step = create_sagemaker_step(databaseId, region, role, account_id, job_names, instance_type, i, pipeline, input_s3_uri, output_s3_uri)
+            step = create_sagemaker_step(databaseId, region, role, account_id, job_names,
+                                         instance_type, i, pipeline, input_s3_uri, output_s3_uri)
         step.add_retry(retry=stepfunctions.steps.Retry(
             error_equals=["States.ALL"],
             interval_seconds=5,
@@ -203,7 +208,7 @@ def create_step_function(pipelines, databaseId, workflowId):
                 "assetId.$": "$.assetId",
                 "workflowId.$": "$.workflowId",
                 "bucket.$": "$.bucket",
-                "key.$": "States.Format('pipelines/" + pipeline["name"] +"/"+ job_names[i] + "/output/{}/', $$.Execution.Name)",
+                "key.$": "States.Format('pipelines/" + pipeline["name"] + "/" + job_names[i] + "/output/{}/', $$.Execution.Name)",
                 "description": f'Output from {pipeline["name"]}',
                 "executionId.$": "$$.Execution.Name",
                 "pipeline": pipeline["name"],
@@ -269,16 +274,16 @@ def create_step_function(pipelines, databaseId, workflowId):
 
 def create_sagemaker_step(databaseId, region, role, account_id, job_names, instance_type, i, pipeline, input_s3_uri, output_s3_uri):
 
-    try: 
+    try:
         userResource = json.loads(pipeline['userProvidedResource'])
-        if userResource['isProvided'] == False:    
+        if userResource['isProvided'] == False:
             image_uri = account_id+'.dkr.ecr.'+region + \
                 '.amazonaws.com/'+pipeline['name']
         else:
             image_uri = userResource['resourceId']
-    except KeyError: #For pipelines created before user provided resources were implemented
+    except KeyError:  # For pipelines created before user provided resources were implemented
         image_uri = account_id+'.dkr.ecr.'+region + \
-                '.amazonaws.com/'+pipeline['name']
+            '.amazonaws.com/'+pipeline['name']
 
     processor = Processor(
         role=role,
@@ -323,7 +328,7 @@ def create_lambda_step(pipeline, input_s3_uri, output_s3_uri):
             functionName = pipeline['name']
         else:
             functionName = userResource['resourceId']
-    except KeyError: #For pipelines created before user provided resources were implemented
+    except KeyError:  # For pipelines created before user provided resources were implemented
         functionName = pipeline['name']
 
     lambda_payload = {

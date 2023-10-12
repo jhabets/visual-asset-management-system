@@ -1,7 +1,6 @@
 #  Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #  SPDX-License-Identifier: Apache-2.0
 import json
-
 import os
 import boto3
 
@@ -35,7 +34,7 @@ def request_to_claims(request):
 
 def create_ddb_kwargs_for_token_filters(tokens):
     attrs = {":claim{}".format(n): {"S": v} for n, v in list(enumerate(tokens))}
-    attrs[":deleted"] = { "S": "#deleted" }
+    attrs[":deleted"] = {"S": "#deleted"}
     kwargs = {
         "ExpressionAttributeNames": {
             "#acl":  "acl",

@@ -9,14 +9,17 @@ import * as path from "path";
 import { Construct } from "constructs";
 import { Duration } from "aws-cdk-lib";
 import { storageResources } from "../storage-builder";
+import { LayerVersion } from 'aws-cdk-lib/aws-lambda';
 
 interface AuthFunctions {
     groups: lambda.Function;
     constraints: lambda.Function;
     scopeds3access: lambda.Function;
 }
+
 export function buildAuthFunctions(
     scope: Construct,
+    lambdaCommonBaseLayer: LayerVersion,
     storageResources: storageResources
 ): AuthFunctions {
     const storageBucketRole = new iam.Role(scope, "storageBucketRole", {
@@ -25,7 +28,7 @@ export function buildAuthFunctions(
 
     storageResources.s3.assetBucket.grantReadWrite(storageBucketRole);
 
-    const scopeds3access = buildAuthFunction(scope, storageResources, "scopeds3access", {
+    const scopeds3access = buildAuthFunction(scope, lambdaCommonBaseLayer, storageResources, "scopeds3access", {
         ROLE_ARN: storageBucketRole.roleArn,
         S3_BUCKET: storageResources.s3.assetBucket.bucketName,
     });
@@ -39,22 +42,24 @@ export function buildAuthFunctions(
     );
 
     return {
-        groups: buildAuthFunction(scope, storageResources, "groups"),
-        constraints: buildAuthFunction(scope, storageResources, "finegrainedaccessconstraints"),
+        groups: buildAuthFunction(scope, lambdaCommonBaseLayer, storageResources, "groups"),
+        constraints: buildAuthFunction(scope, lambdaCommonBaseLayer, storageResources, "finegrainedaccessconstraints"),
         scopeds3access,
     };
 }
 
 export function buildAuthFunction(
     scope: Construct,
+    lambdaCommonBaseLayer: LayerVersion,
     storageResources: storageResources,
     name: string,
     environment?: { [key: string]: string }
 ): lambda.Function {
-    const fun = new lambda.DockerImageFunction(scope, name, {
-        code: lambda.DockerImageCode.fromImageAsset(path.join(__dirname, `../../../backend/`), {
-            cmd: [`backend.handlers.auth.${name}.lambda_handler`],
-        }),
+    const fun = new lambda.Function(scope, name, {
+        code: lambda.Code.fromAsset(path.join(__dirname, `../../../backend/backend`)),
+        handler: `handlers.auth.${name}.lambda_handler`,
+        runtime: lambda.Runtime.PYTHON_3_10,
+        layers: [lambdaCommonBaseLayer],
         timeout: Duration.minutes(1),
         memorySize: 512,
         environment: {

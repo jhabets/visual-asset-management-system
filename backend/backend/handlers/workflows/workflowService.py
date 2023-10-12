@@ -6,8 +6,8 @@ import boto3
 import json
 from boto3.dynamodb.conditions import Key
 from boto3.dynamodb.types import TypeDeserializer
-from backend.common.validators import validate
-from backend.handlers.auth import create_ddb_filter, get_database_set, request_to_claims
+from common.validators import validate
+from handlers.auth import create_ddb_filter, get_database_set, request_to_claims
 
 dynamodb = boto3.resource('dynamodb')
 response = {
@@ -282,7 +282,6 @@ def get_handler_with_tokens(event, response, pathParameters, queryParameters, to
         response['body'] = json.dumps({"message": get_workflows(pathParameters['databaseId'])})
         print(response)
         return response
-
 
     databases = get_database_set(tokens)
     if len(databases) > 0:

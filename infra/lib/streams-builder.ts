@@ -16,12 +16,14 @@ import { buildSearchFunction } from "./lambdaBuilder/searchFunctions";
 import { attachFunctionToApi } from "./api-builder";
 import * as apigwv2 from "@aws-cdk/aws-apigatewayv2-alpha";
 import * as cdk from "aws-cdk-lib";
+import { LayerVersion} from 'aws-cdk-lib/aws-lambda';
 
 export function streamsBuilder(
     scope: Stack,
     cognitoResources: CognitoWebNativeConstruct,
     api: apigwv2.HttpApi,
-    storage: storageResources
+    storage: storageResources,
+    lambdaCommonBaseLayer: LayerVersion
 ) {
     const aoss = new OpensearchServerlessConstruct(scope, "AOSS", {
         principalArn: [],
@@ -31,6 +33,7 @@ export function streamsBuilder(
 
     const indexingFunction = buildMetadataIndexingFunction(
         scope,
+        lambdaCommonBaseLayer,
         storage,
         aoss.endpointSSMParameterName(),
         indexNameParam,
@@ -39,6 +42,7 @@ export function streamsBuilder(
 
     const assetIndexingFunction = buildMetadataIndexingFunction(
         scope,
+        lambdaCommonBaseLayer,
         storage,
         aoss.endpointSSMParameterName(),
         indexNameParam,
@@ -70,6 +74,7 @@ export function streamsBuilder(
 
     const searchFun = buildSearchFunction(
         scope,
+        lambdaCommonBaseLayer,
         aoss.endpointSSMParameterName(),
         indexNameParam,
         aoss,

@@ -9,10 +9,10 @@ import * as apigateway from "aws-cdk-lib/aws-apigatewayv2";
 import * as apigwv2 from "@aws-cdk/aws-apigatewayv2-alpha";
 import * as logs from "aws-cdk-lib/aws-logs";
 import { ApiGatewayV2LambdaConstruct } from "./constructs/apigatewayv2-lambda-construct";
-import { ApiGatewayV2CloudFrontConstruct } from "./constructs/apigatewayv2-cloudfront-construct";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import { storageResources } from "./storage-builder";
 import { buildConfigService } from "./lambdaBuilder/configFunctions";
+import { LayerVersion} from 'aws-cdk-lib/aws-lambda';
 import {
     buildCreateDatabaseLambdaFunction,
     buildDatabaseService,
@@ -79,10 +79,12 @@ export function attachFunctionToApi(
 export function apiBuilder(
     scope: Construct,
     api: apigwv2.HttpApi,
-    storageResources: storageResources
+    storageResources: storageResources,
+    lambdaCommonBaseLayer: LayerVersion,
+    lambdaCommonServiceSDKLayer: LayerVersion
 ) {
     //config resources
-    const createConfigFunction = buildConfigService(scope, storageResources.s3.assetBucket, storageResources.dynamo.appFeatureEnabledStorageTable);
+    const createConfigFunction = buildConfigService(scope, lambdaCommonBaseLayer, storageResources.s3.assetBucket, storageResources.dynamo.appFeatureEnabledStorageTable);
 
     attachFunctionToApi(scope, createConfigFunction, {
         routePath: "/secure-config",
@@ -93,6 +95,7 @@ export function apiBuilder(
     //Database Resources
     const createDatabaseFunction = buildCreateDatabaseLambdaFunction(
         scope,
+        lambdaCommonBaseLayer,
         storageResources.dynamo.databaseStorageTable
     );
     attachFunctionToApi(scope, createDatabaseFunction, {
@@ -103,6 +106,7 @@ export function apiBuilder(
 
     const databaseService = buildDatabaseService(
         scope,
+        lambdaCommonBaseLayer,
         storageResources.dynamo.databaseStorageTable,
         storageResources.dynamo.workflowStorageTable,
         storageResources.dynamo.pipelineStorageTable,
@@ -127,6 +131,7 @@ export function apiBuilder(
     //Comment Resources
     const commentService = buildCommentService(
         scope,
+        lambdaCommonBaseLayer,
         storageResources.dynamo.commentStorageTable,
         storageResources.dynamo.assetStorageTable
     );
@@ -152,6 +157,7 @@ export function apiBuilder(
 
     const addCommentFunction = buildAddCommentLambdaFunction(
         scope,
+        lambdaCommonBaseLayer,
         storageResources.dynamo.commentStorageTable
     );
     attachFunctionToApi(scope, addCommentFunction, {
@@ -162,6 +168,7 @@ export function apiBuilder(
 
     const editCommentFunction = buildEditCommentLambdaFunction(
         scope,
+        lambdaCommonBaseLayer,
         storageResources.dynamo.commentStorageTable
     );
     attachFunctionToApi(scope, editCommentFunction, {
@@ -173,6 +180,7 @@ export function apiBuilder(
     //Asset Resources
     const assetService = buildAssetService(
         scope,
+        lambdaCommonBaseLayer,
         storageResources.dynamo.assetStorageTable,
         storageResources.dynamo.databaseStorageTable,
         storageResources.s3.assetBucket,
@@ -201,6 +209,7 @@ export function apiBuilder(
 
     const listAssetFiles = buildAssetFiles(
         scope,
+        lambdaCommonBaseLayer,
         storageResources.dynamo.assetStorageTable,
         storageResources.dynamo.databaseStorageTable,
         storageResources.s3.assetBucket
@@ -213,6 +222,7 @@ export function apiBuilder(
 
     const assetMetadataFunction = buildAssetMetadataFunction(
         scope,
+        lambdaCommonBaseLayer,
         storageResources.s3.assetBucket,
         storageResources.dynamo.assetStorageTable
     );
@@ -224,6 +234,7 @@ export function apiBuilder(
 
     const assetColumnsFunction = buildAssetColumnsFunction(
         scope,
+        lambdaCommonBaseLayer,
         storageResources.s3.assetBucket,
         storageResources.dynamo.assetStorageTable
     );
@@ -235,6 +246,7 @@ export function apiBuilder(
 
     const uploadAssetFunction = buildUploadAssetFunction(
         scope,
+        lambdaCommonBaseLayer,
         storageResources.s3.assetBucket,
         storageResources.dynamo.databaseStorageTable,
         storageResources.dynamo.assetStorageTable
@@ -247,6 +259,7 @@ export function apiBuilder(
 
     const uploadAllAssetFunction = buildUploadAllAssetsFunction(
         scope,
+        lambdaCommonBaseLayer,
         storageResources.s3.assetBucket,
         storageResources.dynamo.databaseStorageTable,
         storageResources.dynamo.assetStorageTable,
@@ -261,6 +274,7 @@ export function apiBuilder(
 
     const fetchVisualizerAssetFunction = buildFetchVisualizerAssetFunction(
         scope,
+        lambdaCommonBaseLayer,
         storageResources.s3.assetVisualizerBucket
     );
     attachFunctionToApi(scope, fetchVisualizerAssetFunction, {
@@ -271,6 +285,7 @@ export function apiBuilder(
 
     const assetDownloadFunction = buildDownloadAssetFunction(
         scope,
+        lambdaCommonBaseLayer,
         storageResources.s3.assetBucket,
         storageResources.dynamo.assetStorageTable
     );
@@ -282,6 +297,7 @@ export function apiBuilder(
 
     const assetRevertFunction = buildRevertAssetFunction(
         scope,
+        lambdaCommonBaseLayer,
         storageResources.s3.assetBucket,
         storageResources.dynamo.databaseStorageTable,
         storageResources.dynamo.assetStorageTable
@@ -295,11 +311,13 @@ export function apiBuilder(
     //Pipeline Resources
     const enablePipelineFunction = buildEnablePipelineFunction(
         scope,
+        lambdaCommonBaseLayer,
         storageResources.dynamo.pipelineStorageTable
     );
 
     const createPipelineFunction = buildCreatePipelineFunction(
         scope,
+        lambdaCommonBaseLayer,
         storageResources.dynamo.pipelineStorageTable,
         storageResources.s3.artefactsBucket,
         storageResources.s3.sagemakerBucket,
@@ -312,7 +330,7 @@ export function apiBuilder(
         api: api,
     });
 
-    const pipelineService = buildPipelineService(scope, storageResources);
+    const pipelineService = buildPipelineService(scope, lambdaCommonBaseLayer, storageResources);
     attachFunctionToApi(scope, pipelineService, {
         routePath: "/database/{databaseId}/pipelines",
         method: apigwv2.HttpMethod.GET,
@@ -335,7 +353,7 @@ export function apiBuilder(
     });
 
     //Workflows
-    const workflowService = buildWorkflowService(scope, storageResources);
+    const workflowService = buildWorkflowService(scope, lambdaCommonBaseLayer, storageResources);
     attachFunctionToApi(scope, workflowService, {
         routePath: "/database/{databaseId}/workflows",
         method: apigwv2.HttpMethod.GET,
@@ -359,6 +377,7 @@ export function apiBuilder(
 
     const listWorkflowExecutionsFunction = buildListlWorkflowExecutionsFunction(
         scope,
+        lambdaCommonBaseLayer,
         storageResources.dynamo.workflowExecutionStorageTable
     );
     attachFunctionToApi(scope, listWorkflowExecutionsFunction, {
@@ -369,6 +388,7 @@ export function apiBuilder(
 
     const createWorkflowFunction = buildCreateWorkflowFunction(
         scope,
+        lambdaCommonServiceSDKLayer,
         storageResources.dynamo.workflowStorageTable,
         storageResources.s3.assetBucket,
         uploadAllAssetFunction
@@ -381,6 +401,7 @@ export function apiBuilder(
 
     const runWorkflowFunction = buildRunWorkflowFunction(
         scope,
+        lambdaCommonBaseLayer,
         storageResources.dynamo.workflowStorageTable,
         storageResources.dynamo.pipelineStorageTable,
         storageResources.dynamo.assetStorageTable,
@@ -396,7 +417,7 @@ export function apiBuilder(
     //https://github.com/aws/aws-cdk/issues/11100#issuecomment-904627081
 
     // metdata
-    const metadataCrudFunctions = buildMetadataFunctions(scope, storageResources);
+    const metadataCrudFunctions = buildMetadataFunctions(scope, lambdaCommonBaseLayer, storageResources);
     const methods = [
         apigwv2.HttpMethod.PUT,
         apigwv2.HttpMethod.GET,
@@ -411,7 +432,7 @@ export function apiBuilder(
         });
     }
 
-    const metadataSchemaFunctions = buildMetadataSchemaService(scope, storageResources);
+    const metadataSchemaFunctions = buildMetadataSchemaService(scope, lambdaCommonBaseLayer, storageResources);
 
     const metadataSchemaMethods = [
         apigwv2.HttpMethod.GET,
@@ -447,6 +468,7 @@ export function apiBuilder(
 
     const uploadAssetWorkflowFunction = buildUploadAssetWorkflowFunction(
         scope,
+        lambdaCommonBaseLayer,
         uploadAssetWorkflowStateMachine
     );
     attachFunctionToApi(scope, uploadAssetWorkflowFunction, {
@@ -455,7 +477,7 @@ export function apiBuilder(
         api: api,
     });
 
-    const authFunctions = buildAuthFunctions(scope, storageResources);
+    const authFunctions = buildAuthFunctions(scope, lambdaCommonBaseLayer, storageResources);
 
     attachFunctionToApi(scope, authFunctions.scopeds3access, {
         routePath: "/auth/scopeds3access",
@@ -484,7 +506,13 @@ export function apiBuilder(
 
     //Enabling API Gateway Access Logging: Currently the only way to do this is via V1 constructs
     //https://github.com/aws/aws-cdk/issues/11100#issuecomment-904627081
-    const accessLogs = new logs.LogGroup(scope, "VAMS-API-AccessLogs");
+    
+    const accessLogs = new logs.LogGroup(scope, "VAMS-API-AccessLogs", {
+        logGroupName: "/aws/vendedlogs/VAMS-API-AccessLogs"+Math.floor(Math.random() * 10000000),
+        retention: logs.RetentionDays.TWO_YEARS,
+        //removalPolicy: cdk.RemovalPolicy.DESTROY,
+        
+    });
     const stage = api.defaultStage?.node.defaultChild as apigateway.CfnStage;
     stage.accessLogSettings = {
         destinationArn: accessLogs.logGroupArn,

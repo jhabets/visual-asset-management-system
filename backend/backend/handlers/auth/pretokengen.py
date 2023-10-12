@@ -5,8 +5,8 @@ import json
 import boto3
 import os
 import traceback
-from backend.logging.logger import safeLogger
-from backend.common.dynamodb import to_update_expr
+from customLogging.logger import safeLogger
+from common.dynamodb import to_update_expr
 
 logger = safeLogger(child=True)
 

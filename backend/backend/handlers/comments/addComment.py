@@ -6,7 +6,7 @@ import boto3
 import json
 import datetime
 import logging
-from backend.common.validators import validate
+from common.validators import validate
 
 # Create a logger object to log the events
 logger = logging.getLogger()

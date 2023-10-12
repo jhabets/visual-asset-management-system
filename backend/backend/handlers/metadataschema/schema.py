@@ -5,14 +5,15 @@ import json
 import boto3
 import os
 import traceback
-from backend.logging.logger import safeLogger
-from backend.common.dynamodb import to_update_expr
-from boto3.dynamodb.conditions import Key, Attr
-from aws_lambda_powertools.utilities.typing import LambdaContext  
+from customLogging.logger import safeLogger
+from common.dynamodb import to_update_expr
+from boto3.dynamodb.conditions import Key
+from aws_lambda_powertools.utilities.typing import LambdaContext
 from aws_lambda_powertools.utilities.data_classes import APIGatewayProxyEvent
 from decimal import Decimal
 
 logger = safeLogger(service=__name__, child=True, level="INFO")
+
 
 class DecimalEncoder(json.JSONEncoder):
     def default(self, o):
@@ -22,6 +23,7 @@ class DecimalEncoder(json.JSONEncoder):
             else:
                 return int(o)
         return super(DecimalEncoder, self).default(o)
+
 
 class ValidationError(Exception):
     def __init__(self, code: int, resp: object):
@@ -64,8 +66,10 @@ class MetadataSchema:
 
     def update_schema(self, databaseId: str, field: str, schema: dict):
         # if the keys are in the schema dict, remove them
-        if 'field' in schema: del schema['field']
-        if 'databaseId' in schema: del schema['databaseId']
+        if 'field' in schema:
+            del schema['field']
+        if 'databaseId' in schema:
+            del schema['databaseId']
         keys_map, values_map, expr = to_update_expr(schema)
         resp = self.table.update_item(
             Key={
@@ -95,12 +99,14 @@ class MetadataSchema:
 
 
 def get_request_to_claims(event: APIGatewayProxyEvent):
-    from backend.handlers.auth import request_to_claims
+    from handlers.auth import request_to_claims
     return request_to_claims(event)
 
 # databaseId is part of pathParameters
-def lambda_handler(event: APIGatewayProxyEvent, context: LambdaContext, 
-                   claims_fn=get_request_to_claims, 
+
+
+def lambda_handler(event: APIGatewayProxyEvent, context: LambdaContext,
+                   claims_fn=get_request_to_claims,
                    metadata_schema_fn=MetadataSchema.from_env):
 
     logger.info("event: ", event)

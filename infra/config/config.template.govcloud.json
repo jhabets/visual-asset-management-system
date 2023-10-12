@@ -22,14 +22,16 @@
 			"enabled": true,
 			"publicSubnet": false,
 			"vpcCidrRange": "10.1.0.0/16",
+			"optionalVPCID": null,
 			"domainHost": "vams1.example.com",
 			"certificateARN": "arn:aws-us-gov:acm:<REGION>:<ACCOUNTID>:certificate/<CERTIFICATEID>",
-			"optionalHostedZoneID": ""
+			"optionalHostedZoneID": null
 		},
 		"pipelines": {
 			"usePointCloudVisualization": {
 				"enabled": false,
-				"vpcCidrRange": "10.2.0.0/16"
+				"vpcCidrRange": "10.2.0.0/16",
+				"optionalVPCID": null
 			}
 		},
 		"authProvider": {

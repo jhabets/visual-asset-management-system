@@ -22,12 +22,14 @@ import {
 import { BatchFargatePipelineConstruct } from "./nested/batch-fargate-pipeline";
 import { NagSuppressions } from "cdk-nag";
 import { CfnOutput } from "aws-cdk-lib";
+import { LayerVersion} from 'aws-cdk-lib/aws-lambda';
 
 export interface VisualizationPipelineConstructProps extends cdk.StackProps {
     storage: storageResources;
     vpc: ec2.Vpc;
     visualizerPipelineSubnets: ec2.ISubnet[];
     visualizerPipelineSecurityGroups: ec2.SecurityGroup[];
+    lambdaCommonBaseLayer: LayerVersion;
 }
 
 /**
@@ -198,6 +200,7 @@ export class VisualizationPipelineConstruct extends Construct {
         // transforms data input for AWS Batch
         const constructPipelineFunction = buildConstructPipelineFunction(
             this,
+            props.lambdaCommonBaseLayer,
             props.vpc,
             props.visualizerPipelineSubnets,
             props.visualizerPipelineSecurityGroups
@@ -228,6 +231,7 @@ export class VisualizationPipelineConstruct extends Construct {
         // final lambda called on pipeline end to close out the statemachine run
         const pipelineEndFunction = buildPipelineEndFunction(
             this,
+            props.lambdaCommonBaseLayer,
             props.storage.s3.assetBucket,
             props.storage.s3.assetVisualizerBucket,
             props.vpc,
@@ -306,9 +310,9 @@ export class VisualizationPipelineConstruct extends Construct {
             this,
             "PointCloudVisualizerPipelineProcessing-StateMachineLogGroup",
             {
-                logGroupName: "/aws/stateMachine-VizPipeline/",
-                retention: logs.RetentionDays.ONE_WEEK,
-                removalPolicy: cdk.RemovalPolicy.DESTROY,
+                logGroupName: "/aws/vendedlogs/stateMachine-VizPipeline/"+Math.floor(Math.random() * 10000000),
+                retention: logs.RetentionDays.TWO_YEARS,
+                //removalPolicy: cdk.RemovalPolicy.DESTROY,
             }
         );
 
@@ -336,6 +340,7 @@ export class VisualizationPipelineConstruct extends Construct {
         //Build Lambda VAMS Execution Function (as an optional pipeline execution action)
         const visualizerPCPipelineExecuteFunction = buildExecuteVisualizerPCPipelineFunction(
             this,
+            props.lambdaCommonBaseLayer,
             props.storage.s3.assetBucket,
             props.storage.s3.assetVisualizerBucket,
             props.storage.sns.assetBucketObjectCreatedTopic
@@ -358,6 +363,7 @@ export class VisualizationPipelineConstruct extends Construct {
         const allowedInputFileExtensions = ".laz,.las,.e57";
         const openPipelineFunction = buildOpenPipelineFunction(
             this,
+            props.lambdaCommonBaseLayer,
             props.storage.s3.assetBucket,
             props.storage.s3.assetVisualizerBucket,
             pipelineStateMachine,

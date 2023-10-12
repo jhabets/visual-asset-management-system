@@ -5,11 +5,11 @@ import os
 from typing import Any, Dict
 from aws_lambda_powertools.utilities.typing import LambdaContext
 from aws_lambda_powertools.utilities.parser import parse, ValidationError
-from backend.functions.assets.upload_asset_workflow.request_handler import UploadAssetWorkflowRequestHandler
-from backend.logging.logger import safeLogger
+from functions.assets.upload_asset_workflow.request_handler import UploadAssetWorkflowRequestHandler
+from customLogging.logger import safeLogger
 
-from backend.models.assets import UploadAssetWorkflowRequestModel
-from backend.models.common import APIGatewayProxyResponseV2, internal_error, success, validation_error
+from models.assets import UploadAssetWorkflowRequestModel
+from models.common import APIGatewayProxyResponseV2, internal_error, success, validation_error
 import boto3
 
 logger = safeLogger(service_name="UploadAssetWorkflow")

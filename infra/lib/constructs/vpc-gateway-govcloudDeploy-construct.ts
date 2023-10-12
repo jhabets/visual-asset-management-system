@@ -43,8 +43,9 @@ export class VpcGatewayGovCloudDeployConstruct extends Construct {
          * VPC + Logs
          */
         const vpcLogsGroups = new LogGroup(this, "CloudWatchVPCWebDistroLogs", {
+            logGroupName: "/aws/vendedlogs/CloudWatchVPCWebDistroLogs"+Math.floor(Math.random() * 10000000),
             retention: RetentionDays.ONE_WEEK,
-            removalPolicy: cdk.RemovalPolicy.RETAIN,
+            //removalPolicy: cdk.RemovalPolicy.RETAIN,
         });
 
         //const cidrRange = "10.1.0.0/16"; // 4096

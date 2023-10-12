@@ -13,9 +13,11 @@ import { Duration } from "aws-cdk-lib";
 import { suppressCdkNagErrorsByGrantReadWrite } from "../security";
 import { storageResources } from "../storage-builder";
 import { IAMArn, Service } from "../helper/service-helper";
+import { LayerVersion } from 'aws-cdk-lib/aws-lambda';
 
 export function buildCreatePipelineFunction(
     scope: Construct,
+    lambdaCommonBaseLayer: LayerVersion,
     pipelineStorageTable: dynamodb.Table,
     artefactsBucket: s3.Bucket,
     sagemakerBucket: s3.Bucket,
@@ -24,10 +26,11 @@ export function buildCreatePipelineFunction(
 ): lambda.Function {
     const name = "createPipeline";
     const newPipelineLambdaRole = createRoleToAttachToLambdaPipelines(scope, assetBucket);
-    const createPipelineFunction = new lambda.DockerImageFunction(scope, name, {
-        code: lambda.DockerImageCode.fromImageAsset(path.join(__dirname, `../../../backend/`), {
-            cmd: [`backend.handlers.pipelines.${name}.lambda_handler`],
-        }),
+    const createPipelineFunction = new lambda.Function(scope, name, {
+        code: lambda.Code.fromAsset(path.join(__dirname, `../../../backend/backend`)),
+        handler: `handlers.pipelines.${name}.lambda_handler`,
+        runtime: lambda.Runtime.PYTHON_3_10,
+        layers: [lambdaCommonBaseLayer],
         timeout: Duration.minutes(15),
         memorySize: 3008,
         environment: {
@@ -158,13 +161,15 @@ function createRoleToAttachToLambdaPipelines(scope: Construct, assetBucket: s3.B
 
 export function buildPipelineService(
     scope: Construct,
+    lambdaCommonBaseLayer: LayerVersion,
     storageResources: storageResources
 ): lambda.Function {
     const name = "pipelineService";
-    const pipelineService = new lambda.DockerImageFunction(scope, name, {
-        code: lambda.DockerImageCode.fromImageAsset(path.join(__dirname, `../../../backend/`), {
-            cmd: [`backend.handlers.pipelines.${name}.lambda_handler`],
-        }),
+    const pipelineService = new lambda.Function(scope, name, {
+        code: lambda.Code.fromAsset(path.join(__dirname, `../../../backend/backend`)),
+        handler: `handlers.pipelines.${name}.lambda_handler`,
+        runtime: lambda.Runtime.PYTHON_3_10,
+        layers: [lambdaCommonBaseLayer],
         timeout: Duration.minutes(15),
         memorySize: 3008,
         environment: {
@@ -235,13 +240,15 @@ export function buildPipelineService(
 
 export function buildEnablePipelineFunction(
     scope: Construct,
+    lambdaCommonBaseLayer: LayerVersion,
     pipelineStorageTable: dynamodb.Table
 ) {
     const name = "enablePipeline";
-    const enablePipelineFunction = new lambda.DockerImageFunction(scope, name, {
-        code: lambda.DockerImageCode.fromImageAsset(path.join(__dirname, `../../../backend/`), {
-            cmd: [`backend.handlers.pipelines.${name}.lambda_handler`],
-        }),
+    const enablePipelineFunction = new lambda.Function(scope, name, {
+        code: lambda.Code.fromAsset(path.join(__dirname, `../../../backend/backend`)),
+        handler: `handlers.pipelines.${name}.lambda_handler`,
+        runtime: lambda.Runtime.PYTHON_3_10,
+        layers: [lambdaCommonBaseLayer],
         timeout: Duration.minutes(15),
         memorySize: 3008,
         environment: {

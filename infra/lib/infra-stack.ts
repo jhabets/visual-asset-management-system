@@ -33,6 +33,9 @@ import * as Config from '../config/config';
 import { VAMS_APP_FEATURES } from '../config/common/vamsAppFeatures';
 import { VpcSecurityGroupGatewayVisualizerPipelineConstruct } from "./constructs/vpc-securitygroup-gateway-visualizerPipeline-construct";
 import { VisualizationPipelineConstruct } from "./constructs/visualizerPipeline-construct";
+import { Code, LayerVersion, Runtime } from 'aws-cdk-lib/aws-lambda';
+import * as pylambda from "@aws-cdk/aws-lambda-python-alpha";
+
 
 interface EnvProps {
     env: cdk.Environment;
@@ -68,9 +71,35 @@ export class VAMS extends cdk.Stack {
         trail.logAllLambdaDataEvents();
         trail.logAllS3DataEvents();
 
+        //Deploy Common Base Lambda Layer
+        const lambdaCommonBaseLayer = new pylambda.PythonLayerVersion(
+            this,
+            "VAMSLayerBase",
+            {
+              layerVersionName: "vams_layer_base",
+              entry: "../backend/lambdaLayers/base", 
+              compatibleRuntimes: [Runtime.PYTHON_3_10],
+              removalPolicy: cdk.RemovalPolicy.DESTROY
+            }
+          );
+
+        //Deploy Common Service SDK Lambda Layer
+        const lambdaCommonServiceSDKLayer = new pylambda.PythonLayerVersion(
+            this,
+            "VAMSLayerServiceSDK",
+            {
+              layerVersionName: "vams_layer_servicesdk",
+              entry: "../backend/lambdaLayers/serviceSDK", 
+              compatibleRuntimes: [Runtime.PYTHON_3_10],
+              removalPolicy: cdk.RemovalPolicy.DESTROY
+            }
+          );
+
         const cognitoProps: CognitoWebNativeConstructProps = {
             ...props,
+            lambdaCommonBaseLayer: lambdaCommonBaseLayer,
             storageResources: storageResources,
+            config: props.config
         };
 
         //Select auth provider
@@ -123,8 +152,8 @@ export class VAMS extends cdk.Stack {
             }
         );
         userGroupAttachment.addDependency(cognitoUser);
-
         userGroupAttachment.addDependency(userPoolGroup);
+
 
         // initialize api gateway
         const api = new ApiGatewayV2CloudFrontConstruct(this, "api", {
@@ -261,11 +290,11 @@ export class VAMS extends cdk.Stack {
         }
         
         //Deploy Backend API framework
-        apiBuilder(this, api.apiGatewayV2, storageResources);
+        apiBuilder(this, api.apiGatewayV2, storageResources, lambdaCommonBaseLayer, lambdaCommonServiceSDKLayer);
 
         //Deploy OpenSearch Serverless
         if(props.config.app.useOpenSearchServerless.enabled) {
-            streamsBuilder(this, cognitoResources, api.apiGatewayV2, storageResources);
+            streamsBuilder(this, cognitoResources, api.apiGatewayV2, storageResources, lambdaCommonBaseLayer);
             enabledFeatures.push(VAMS_APP_FEATURES.OPENSEARCH)
         }
 
@@ -333,6 +362,7 @@ export class VAMS extends cdk.Stack {
                     visualizerPipelineSecurityGroups: [
                         visualizerPipelineNetwork.securityGroups.pipeline,
                     ],
+                    lambdaCommonBaseLayer
                 }
             );
         }

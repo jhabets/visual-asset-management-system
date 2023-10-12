@@ -4,8 +4,7 @@
  */
 
 import * as iam from "aws-cdk-lib/aws-iam";
-import { CfnOutput, aws_location, Stack } from "aws-cdk-lib";
-
+import { aws_location, Stack } from "aws-cdk-lib";
 import { Construct } from "constructs";
 
 interface LocatioServiceConstructProps {

@@ -1,18 +1,17 @@
 # Copyright 2023 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # SPDX-License-Identifier: Apache-2.0
 import json
-from backend.handlers.authn import request_to_claims
-from backend.handlers.authz.opensearch import AuthEntities
-# from backend.handlers.auth import request_to_claims
+from handlers.authn import request_to_claims
+from handlers.authz.opensearch import AuthEntities
 import boto3
 import os
 import traceback
-from backend.logging.logger import safeLogger
+from customLogging.logger import safeLogger
 from aws_lambda_powertools.utilities.typing import LambdaContext
 from aws_lambda_powertools.utilities.data_classes import APIGatewayProxyEvent
 from urllib.parse import urlparse
 from opensearchpy import OpenSearch, RequestsHttpConnection, AWSV4SignerAuth
-from backend.common import get_ssm_parameter_value
+from common import get_ssm_parameter_value
 
 
 logger = safeLogger(service=__name__, child=True, level="INFO")
@@ -188,7 +187,7 @@ class SearchAOSS():
 
         host = get_ssm_parameter_value('AOSS_ENDPOINT_PARAM', region, env)
         indexName = get_ssm_parameter_value(
-                        'AOSS_INDEX_NAME_PARAM', region, env)
+            'AOSS_INDEX_NAME_PARAM', region, env)
 
         return SearchAOSS(
             host=host,
@@ -216,7 +215,7 @@ def load_auth_entities(env=os.environ):
 
 def load_tokens_to_database_set():
     # loading this here enables mocks with unit tests of this module
-    from backend.handlers.auth import get_database_set
+    from handlers.auth import get_database_set
     return get_database_set
 
 

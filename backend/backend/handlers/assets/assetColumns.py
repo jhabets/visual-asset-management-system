@@ -5,7 +5,7 @@ import boto3
 import json
 import os
 from boto3.dynamodb.conditions import Key
-from backend.common.validators import validate
+from common.validators import validate
 
 s3_client = boto3.client('s3')
 dynamo_client = boto3.resource('dynamodb')
@@ -25,10 +25,11 @@ try:
     asset_database = os.environ['ASSET_STORAGE_TABLE_NAME']
 except:
     print("Failed loading environment variables")
-    
+
     response['body'] = json.dumps(
-    {"message": "Failed Loading Environment Variables"})
+        {"message": "Failed Loading Environment Variables"})
     response['statusCode'] = 500
+
 
 def get_asset_path(databaseId, assetId):
     print("Trying to get asset from database")
@@ -38,6 +39,7 @@ def get_asset_path(databaseId, assetId):
     )
     return (record['Items'][0]['assetLocation'])
 
+
 def get_headers(bucket, key):
     print("Trying to get headers")
     resp = s3_client.select_object_content(
@@ -45,16 +47,17 @@ def get_headers(bucket, key):
         Key=key,
         ExpressionType='SQL',
         Expression="SELECT * FROM s3object limit 1",
-        InputSerialization = {'CSV': {"FileHeaderInfo": "NONE"}},
-        OutputSerialization = {'CSV': {}},
+        InputSerialization={'CSV': {"FileHeaderInfo": "NONE"}},
+        OutputSerialization={'CSV': {}},
     )
     records = []
     for event in resp['Payload']:
         if 'Records' in event:
-            record = event['Records']['Payload'].decode('utf-8');
+            record = event['Records']['Payload'].decode('utf-8')
             print(record)
             records.append(record)
     return records
+
 
 def get_records(bucket, key, columnNames):
     print("Trying to get records")
@@ -63,15 +66,16 @@ def get_records(bucket, key, columnNames):
         Key=key,
         ExpressionType='SQL',
         Expression=f"SELECT {columnNames} FROM s3object",
-        InputSerialization = {'CSV': {"FileHeaderInfo": "USE"}},
-        OutputSerialization = {'CSV': {}},
+        InputSerialization={'CSV': {"FileHeaderInfo": "USE"}},
+        OutputSerialization={'CSV': {}},
     )
     records = []
     for event in resp['Payload']:
         if 'Records' in event:
-            record = event['Records']['Payload'].decode('utf-8');
+            record = event['Records']['Payload'].decode('utf-8')
             records.append(record)
     return records
+
 
 def split_records(records):
     result = []
@@ -81,6 +85,7 @@ def split_records(records):
             row = row.split(",")
             result.append(row)
     return result
+
 
 def validateColumnNames(headers, columns):
     for column in columns:
@@ -102,7 +107,7 @@ def get_metadata(databaseId, assetId, columnNames):
         items.append(dict(zip(columns, item)))
 
     result = {}
-    result['Items']= items
+    result['Items'] = items
     return result
 
 
@@ -121,35 +126,35 @@ def lambda_handler(event, context):
     }
     queryParams = event.get('queryStringParameters', {})
     pathParams = event.get('pathParameters', {})
-    
+
     try:
         if 'assetId' not in pathParams or 'databaseId' not in pathParams:
             print("assetId or databaseId parameter is not present")
             message = "Required parameters not present in the request"
-            response['body']=json.dumps({"message": message})
+            response['body'] = json.dumps({"message": message})
             response['statusCode'] = 400
             return response
         if 'list' not in queryParams:
             print("list parameter is not present")
             message = "list parameter is required to fetch the columns"
-            response['body']=json.dumps({"message": message})
+            response['body'] = json.dumps({"message": message})
             response['statusCode'] = 400
-            return response     
+            return response
         else:
             print("Validating parameters")
             (valid, message) = validate({
                 'databaseId': {
-                    'value': pathParams['databaseId'], 
+                    'value': pathParams['databaseId'],
                     'validator': 'ID'
                 },
                 'assetId': {
-                    'value': pathParams['assetId'], 
+                    'value': pathParams['assetId'],
                     'validator': 'ID'
                 },
             })
             if not valid:
                 print(message)
-                response['body']=json.dumps({"message": message})
+                response['body'] = json.dumps({"message": message})
                 response['statusCode'] = 400
                 return response
 
@@ -157,7 +162,7 @@ def lambda_handler(event, context):
             result = get_metadata(pathParams['databaseId'], pathParams['assetId'], queryParams['list'])
             print(result)
             response['body'] = json.dumps({"message": result})
-            return response 
+            return response
     except Exception as e:
         response['statusCode'] = 500
         print("Error!", e.__class__, "occurred.")

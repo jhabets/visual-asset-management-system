@@ -3,16 +3,11 @@
 
 import os
 import boto3
-import sys
 import json
-from boto3.dynamodb.conditions import Key, Attr, AttributeNotExists
 from botocore.exceptions import ClientError
-
 import datetime
-from decimal import Decimal
-from boto3.dynamodb.types import TypeDeserializer, TypeSerializer
-from backend.common.validators import validate
-from backend.common.dynamodb import to_update_expr
+from common.validators import validate
+from common.dynamodb import to_update_expr
 
 dynamodb = boto3.resource('dynamodb')
 s3c = boto3.client('s3')

@@ -48,10 +48,10 @@ export default function ViewPipeline() {
             <SpaceBetween direction="vertical" size="xs">
                 <BreadcrumbGroup
                     items={[
-                        { text: Synonyms.Databases, href: "/databases/" },
-                        { text: databaseId, href: "/databases/" + databaseId },
-                        { text: "Pipelines", href: "/pipelines/" },
-                        { text: pipelineName, href: "/pipelines/" + pipelineName },
+                        { text: Synonyms.Databases, href: "#/databases/" },
+                        { text: databaseId, href: "#/databases/" + databaseId },
+                        { text: "Pipelines", href: "#/pipelines/" },
+                        { text: pipelineName, href: "#/pipelines/" + pipelineName },
                     ]}
                     ariaLabel="Breadcrumbs"
                 />

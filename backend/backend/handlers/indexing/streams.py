@@ -8,14 +8,11 @@ import traceback
 from decimal import Decimal
 from urllib.parse import urlparse
 import time
-
 import re
-
 from opensearchpy import OpenSearch, \
     RequestsHttpConnection, AWSV4SignerAuth, NotFoundError
 from boto3.dynamodb.types import TypeDeserializer
-
-from backend.common import get_ssm_parameter_value
+from common import get_ssm_parameter_value
 
 
 #

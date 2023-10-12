@@ -3,10 +3,9 @@
 
 import json
 import os
-
 import boto3
 from boto3.dynamodb.conditions import Key
-from backend.common.validators import validate
+from common.validators import validate
 
 sfn = boto3.client('stepfunctions')
 dynamodb = boto3.resource('dynamodb')
@@ -39,7 +38,7 @@ def get_executions(asset_id, workflow_id):
     )
     result = []
     for item in response['Items']:
-        assets=item.get('assets', [])
+        assets = item.get('assets', [])
         workflow_arn = item['workflow_arn']
         execution_arn = workflow_arn.replace("stateMachine", "execution")
         execution_arn = execution_arn + ":" + item['execution_id']
@@ -97,18 +96,18 @@ def lambda_handler(event, context):
         print("Validating Parameters")
         (valid, message) = validate({
             'workflowId': {
-                'value': pathParams['workflowId'], 
+                'value': pathParams['workflowId'],
                 'validator': 'ID'
-            }, 
+            },
             'assetId': {
-                'value': pathParams['assetId'], 
+                'value': pathParams['assetId'],
                 'validator': 'ID'
             },
         })
 
         if not valid:
             print(message)
-            response['body']=json.dumps({"message": message})
+            response['body'] = json.dumps({"message": message})
             response['statusCode'] = 400
             return response
 

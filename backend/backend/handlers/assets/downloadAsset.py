@@ -7,7 +7,7 @@ import json
 from boto3.dynamodb.conditions import Key, Attr
 from botocore.config import Config
 from botocore.exceptions import ClientError
-from backend.common.validators import validate
+from common.validators import validate
 
 dynamodb = boto3.resource('dynamodb')
 response = {
@@ -27,7 +27,7 @@ unitTest = {
         "databaseId": "Unit_Test"
     }
 }
-unitTest['body']=json.dumps(unitTest['body'])
+unitTest['body'] = json.dumps(unitTest['body'])
 
 try:
     asset_Database = os.environ["ASSET_STORAGE_TABLE_NAME"]
@@ -38,6 +38,7 @@ except:
 
 s3_config = Config(signature_version='s3v4')
 s3_client = boto3.client('s3', region_name=region, endpoint_url=f'https://s3.{region}.amazonaws.com', config=s3_config)
+
 
 def get_Assets(databaseId, assetId):
     table = dynamodb.Table(asset_Database)
@@ -105,11 +106,11 @@ def lambda_handler(event, context):
         print("Validating parameters")
         (valid, message) = validate({
             'databaseId': {
-                'value': event['body']['databaseId'], 
+                'value': event['body']['databaseId'],
                 'validator': 'ID'
             },
             'assetId': {
-                'value': event['body']['assetId'], 
+                'value': event['body']['assetId'],
                 'validator': 'ID'
             },
         })
@@ -147,6 +148,7 @@ def lambda_handler(event, context):
             print("Can't Read Error")
             response['body'] = json.dumps({"message": "An unexpected error occurred while executing the request"})
         return response
+
 
 if __name__ == "__main__":
     test_response = lambda_handler(None, None)

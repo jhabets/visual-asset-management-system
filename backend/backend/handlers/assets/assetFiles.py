@@ -1,7 +1,6 @@
 import boto3
 import json
 import os
-
 import logging
 
 # Create a logger object to log the events
@@ -94,4 +93,3 @@ def lambda_handler(event, context):
         response['statusCode'] = 404
         response['body'] = json.dumps("Asset not found")
         return response
-

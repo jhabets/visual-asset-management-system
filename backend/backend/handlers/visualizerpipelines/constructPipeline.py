@@ -1,10 +1,8 @@
 #  Copyright 2023 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #  SPDX-License-Identifier: Apache-2.0
 
-from fileinput import filename
 import json
 import os
-import uuid
 
 
 def lambda_handler(event, context):
@@ -32,7 +30,7 @@ def lambda_handler(event, context):
 
     return {
         "jobName": event.get("jobName"),
-        #"externalSfnTaskToken": event.get("externalSfnTaskToken"),
+        # "externalSfnTaskToken": event.get("externalSfnTaskToken"),
         "pipeline": {
             "type": definition["stages"][0]["type"],
             "definition": [json.dumps(definition)]

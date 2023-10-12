@@ -1,15 +1,11 @@
 # Copyright 2023 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # SPDX-License-Identifier: Apache-2.0
 
-import os
-import sys
 import json
-from decimal import Decimal
-from backend.common.validators import validate
+from common.validators import validate
 import traceback
-
-from backend.handlers.auth import get_database_set, request_to_claims
-from backend.handlers.metadata import logger, mask_sensitive_data, build_response, ValidationError, table, validate_event
+from handlers.auth import get_database_set, request_to_claims
+from handlers.metadata import logger, mask_sensitive_data, build_response, ValidationError, table, validate_event
 
 
 def delete_item(databaseId, assetId):

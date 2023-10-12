@@ -9,25 +9,29 @@ import { Construct } from "constructs";
 import { Duration } from "aws-cdk-lib";
 import { storageResources } from "../storage-builder";
 import * as cdk from "aws-cdk-lib";
+import { LayerVersion } from 'aws-cdk-lib/aws-lambda';
 
 export function buildMetadataFunctions(
     scope: Construct,
+    lambdaCommonBaseLayer: LayerVersion,
     storageResources: storageResources
 ): lambda.Function[] {
     return ["create", "read", "update", "delete"].map((f) =>
-        buildMetadataFunction(scope, storageResources, f)
+        buildMetadataFunction(scope, lambdaCommonBaseLayer, storageResources, f)
     );
 }
 
 export function buildMetadataFunction(
     scope: Construct,
+    lambdaCommonBaseLayer: LayerVersion,
     storageResources: storageResources,
     name: string
 ): lambda.Function {
-    const fun = new lambda.DockerImageFunction(scope, name + "-metadata", {
-        code: lambda.DockerImageCode.fromImageAsset(path.join(__dirname, `../../../backend/`), {
-            cmd: [`backend.handlers.metadata.${name}.lambda_handler`],
-        }),
+    const fun = new lambda.Function(scope, name+"-metadata", {
+        code: lambda.Code.fromAsset(path.join(__dirname, `../../../backend/backend`)),
+        handler: `handlers.metadata.${name}.lambda_handler`,
+        runtime: lambda.Runtime.PYTHON_3_10,
+        layers: [lambdaCommonBaseLayer],
         timeout: Duration.minutes(15),
         memorySize: 3008,
         environment: {
@@ -44,15 +48,17 @@ export function buildMetadataFunction(
 
 export function buildMetadataIndexingFunction(
     scope: Construct,
+    lambdaCommonBaseLayer: LayerVersion,
     storageResources: storageResources,
     aossEndpoint: string,
     indexNameParam: string,
     handlerType: "a" | "m"
 ): lambda.Function {
-    const fun = new lambda.DockerImageFunction(scope, "idx" + handlerType, {
-        code: lambda.DockerImageCode.fromImageAsset(path.join(__dirname, `../../../backend/`), {
-            cmd: [`backend.handlers.indexing.streams.lambda_handler_${handlerType}`],
-        }),
+    const fun = new lambda.Function(scope, "idx" + handlerType, {
+            code: lambda.Code.fromAsset(path.join(__dirname, `../../../backend/backend`)),
+            handler: `handlers.indexing.streams.lambda_handler_${handlerType}`,
+            runtime: lambda.Runtime.PYTHON_3_10,
+            layers: [lambdaCommonBaseLayer],
         timeout: Duration.minutes(15),
         memorySize: 3008,
         environment: {

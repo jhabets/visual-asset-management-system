@@ -6,10 +6,9 @@ import boto3
 import json
 from boto3.dynamodb.conditions import Key
 from boto3.dynamodb.types import TypeDeserializer
-from backend.common.validators import validate
+from common.validators import validate
 from botocore.exceptions import ClientError
-
-from backend.handlers.auth import create_ddb_filter, get_database_set, request_to_claims
+from handlers.auth import create_ddb_filter, get_database_set, request_to_claims
 
 
 dynamodb = boto3.resource('dynamodb')
@@ -333,7 +332,7 @@ def get_handler_with_tokens(event, response, pathParameters, queryParameters, to
         response['body'] = json.dumps({"message": get_all_pipelines_with_database_filter(queryParameters, databases)})
     else:
         print("No access to any databases")
-        response['body'] = json.dumps({"message": [] })
+        response['body'] = json.dumps({"message": []})
 
     return response
 

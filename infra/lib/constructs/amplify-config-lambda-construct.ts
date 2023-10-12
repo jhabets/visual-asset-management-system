@@ -6,7 +6,6 @@
 import * as apigatewayv2 from "@aws-cdk/aws-apigatewayv2-alpha";
 import * as apigwIntegrations from "@aws-cdk/aws-apigatewayv2-integrations-alpha";
 import * as apigwAuthorizers from "@aws-cdk/aws-apigatewayv2-authorizers-alpha";
-import * as iam from "aws-cdk-lib/aws-iam";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as cdk from "aws-cdk-lib";
 import { Construct } from "constructs";

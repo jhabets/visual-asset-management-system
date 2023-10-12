@@ -5,12 +5,11 @@ import os
 import boto3
 import sys
 import json
-from boto3.dynamodb.conditions import Key, Attr
+from boto3.dynamodb.conditions import Key
 import datetime
-from decimal import Decimal
-from boto3.dynamodb.types import TypeDeserializer, TypeSerializer
-from backend.common.validators import validate
-from backend.handlers.assets.assetCount import update_asset_count
+from boto3.dynamodb.types import TypeDeserializer
+from common.validators import validate
+from handlers.assets.assetCount import update_asset_count
 from collections import defaultdict
 
 dynamodb = boto3.resource('dynamodb')

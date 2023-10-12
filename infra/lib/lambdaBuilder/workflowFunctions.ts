@@ -13,15 +13,19 @@ import { Duration } from "aws-cdk-lib";
 import { suppressCdkNagErrorsByGrantReadWrite } from "../security";
 import { storageResources } from "../storage-builder";
 import { Service, IAMArn} from "../helper/service-helper";
+import { LayerVersion } from 'aws-cdk-lib/aws-lambda';
+
 export function buildWorkflowService(
     scope: Construct,
+    lambdaCommonBaseLayer: LayerVersion,
     storageResources: storageResources
 ): lambda.Function {
     const name = "workflowService";
-    const workflowService = new lambda.DockerImageFunction(scope, name, {
-        code: lambda.DockerImageCode.fromImageAsset(path.join(__dirname, `../../../backend/`), {
-            cmd: [`backend.handlers.workflows.${name}.lambda_handler`],
-        }),
+    const workflowService = new lambda.Function(scope, name, {
+        code: lambda.Code.fromAsset(path.join(__dirname, `../../../backend/backend`)),
+        handler: `handlers.workflows.${name}.lambda_handler`,
+        runtime: lambda.Runtime.PYTHON_3_10,
+        layers: [lambdaCommonBaseLayer],
         timeout: Duration.minutes(15),
         memorySize: 3008,
         environment: {
@@ -46,12 +50,16 @@ export function buildWorkflowService(
     return workflowService;
 }
 
-export function buildRunProcessingJobFunction(scope: Construct): lambda.Function {
+export function buildRunProcessingJobFunction(
+    scope: Construct,
+    lambdaCommonBaseLayer: LayerVersion
+    ): lambda.Function {
     const name = "runProcessingJob";
-    const runProcessingJobFunction = new lambda.DockerImageFunction(scope, name, {
-        code: lambda.DockerImageCode.fromImageAsset(path.join(__dirname, `../../../backend/`), {
-            cmd: [`backend.handlers.workflows.${name}.lambda_handler`],
-        }),
+    const runProcessingJobFunction = new lambda.Function(scope, name, {
+        code: lambda.Code.fromAsset(path.join(__dirname, `../../../backend/backend`)),
+        handler: `handlers.workflows.${name}.lambda_handler`,
+        runtime: lambda.Runtime.PYTHON_3_10,
+        layers: [lambdaCommonBaseLayer],
         timeout: Duration.minutes(15),
         memorySize: 3008,
         environment: {},
@@ -61,13 +69,15 @@ export function buildRunProcessingJobFunction(scope: Construct): lambda.Function
 
 export function buildListlWorkflowExecutionsFunction(
     scope: Construct,
+    lambdaCommonBaseLayer: LayerVersion,
     workflowExecutionStorageTable: dynamodb.Table
 ): lambda.Function {
     const name = "listExecutions";
-    const listAllWorkflowsFunction = new lambda.DockerImageFunction(scope, name, {
-        code: lambda.DockerImageCode.fromImageAsset(path.join(__dirname, `../../../backend/`), {
-            cmd: [`backend.handlers.workflows.${name}.lambda_handler`],
-        }),
+    const listAllWorkflowsFunction = new lambda.Function(scope, name, {
+        code: lambda.Code.fromAsset(path.join(__dirname, `../../../backend/backend`)),
+        handler: `handlers.workflows.${name}.lambda_handler`,
+        runtime: lambda.Runtime.PYTHON_3_10,
+        layers: [lambdaCommonBaseLayer],
         timeout: Duration.minutes(15),
         memorySize: 3008,
         environment: {
@@ -87,16 +97,18 @@ export function buildListlWorkflowExecutionsFunction(
 
 export function buildCreateWorkflowFunction(
     scope: Construct,
+    lambdaCommonServiceSDKLayer: LayerVersion,
     workflowStorageTable: dynamodb.Table,
     assetStorageBucket: s3.Bucket,
     uploadAllAssetFunction: lambda.Function
 ): lambda.Function {
     const role = buildWorkflowRole(scope, assetStorageBucket, uploadAllAssetFunction);
     const name = "createWorkflow";
-    const createWorkflowFunction = new lambda.DockerImageFunction(scope, name, {
-        code: lambda.DockerImageCode.fromImageAsset(path.join(__dirname, `../../../backend/`), {
-            cmd: [`backend.handlers.workflows.${name}.lambda_handler`],
-        }),
+    const createWorkflowFunction = new lambda.Function(scope, name, {
+        code: lambda.Code.fromAsset(path.join(__dirname, `../../../backend/backend`)),
+        handler: `handlers.workflows.${name}.lambda_handler`,
+        runtime: lambda.Runtime.PYTHON_3_10,
+        layers: [lambdaCommonServiceSDKLayer],
         timeout: Duration.minutes(15),
         memorySize: 3008,
         environment: {
@@ -130,6 +142,7 @@ export function buildCreateWorkflowFunction(
 
 export function buildRunWorkflowFunction(
     scope: Construct,
+    lambdaCommonBaseLayer: LayerVersion,
     workflowStorageTable: dynamodb.Table,
     pipelineStorageTable: dynamodb.Table,
     assetStorageTable: dynamodb.Table,
@@ -137,10 +150,11 @@ export function buildRunWorkflowFunction(
     assetStorageBucket: s3.Bucket
 ): lambda.Function {
     const name = "executeWorkflow";
-    const runWorkflowFunction = new lambda.DockerImageFunction(scope, name, {
-        code: lambda.DockerImageCode.fromImageAsset(path.join(__dirname, `../../../backend/`), {
-            cmd: [`backend.handlers.workflows.${name}.lambda_handler`],
-        }),
+    const runWorkflowFunction = new lambda.Function(scope, name, {
+        code: lambda.Code.fromAsset(path.join(__dirname, `../../../backend/backend`)),
+        handler: `handlers.workflows.${name}.lambda_handler`,
+        runtime: lambda.Runtime.PYTHON_3_10,
+        layers: [lambdaCommonBaseLayer],
         timeout: Duration.minutes(15),
         memorySize: 3008,
         environment: {

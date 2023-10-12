@@ -244,10 +244,10 @@ export default function ViewAsset() {
                         <SpaceBetween direction="vertical" size="l">
                             <BreadcrumbGroup
                                 items={[
-                                    { text: Synonyms.Databases, href: "/databases/" },
+                                    { text: Synonyms.Databases, href: "#/databases/" },
                                     {
                                         text: databaseId,
-                                        href: "/databases/" + databaseId + "/assets/",
+                                        href: "#/databases/" + databaseId + "/assets/",
                                     },
                                     { text: asset?.assetName },
                                 ]}

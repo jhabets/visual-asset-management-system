@@ -9,16 +9,20 @@ import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import * as path from "path";
 import { Construct } from "constructs";
 import { Duration } from "aws-cdk-lib";
+import { LayerVersion } from 'aws-cdk-lib/aws-lambda';
+
 export function buildConfigService(
     scope: Construct,
+    lambdaCommonBaseLayer: LayerVersion,
     assetStorageBucket: s3.Bucket,
     appFeatureEnabledStorageTable: dynamodb.Table,
 ): lambda.Function {
     const name = "configService";
-    const configService = new lambda.DockerImageFunction(scope, name, {
-        code: lambda.DockerImageCode.fromImageAsset(path.join(__dirname, `../../../backend/`), {
-            cmd: [`backend.handlers.config.${name}.lambda_handler`],
-        }),
+    const configService = new lambda.Function(scope, name, {
+        code: lambda.Code.fromAsset(path.join(__dirname, `../../../backend/backend`)),
+        handler: `handlers.config.${name}.lambda_handler`,
+        runtime: lambda.Runtime.PYTHON_3_10,
+        layers: [lambdaCommonBaseLayer],
         timeout: Duration.minutes(15),
         memorySize: 3008,
         environment: {

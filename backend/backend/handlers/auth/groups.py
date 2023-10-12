@@ -3,10 +3,9 @@
 
 import json
 import boto3
-import logging
 import os
 import traceback
-from backend.logging.logger import safeLogger
+from customLogging.logger import safeLogger
 
 logger = safeLogger(child=True)
 

@@ -6,8 +6,8 @@ import boto3
 import json
 from boto3.dynamodb.types import TypeDeserializer
 from boto3.dynamodb.conditions import Key
-from backend.common.validators import validate
-from backend.handlers.auth import create_ddb_filter, get_database_set, request_to_claims, create_ddb_kwargs_for_token_filters
+from common.validators import validate
+from handlers.auth import request_to_claims, create_ddb_kwargs_for_token_filters
 
 dynamodb = boto3.resource('dynamodb')
 response = {

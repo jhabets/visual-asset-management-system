@@ -7,10 +7,7 @@ Lambda Function to Call from within VAMS Pipeline and Workflows for Manual Execu
 import os
 import boto3
 import json
-import datetime
 import logging
-from pathlib import Path
-from urllib.parse import urlparse
 
 DEST_BUCKET_NAME = os.environ["DEST_BUCKET_NAME"]
 SNS_VISUALIZER_PIPELINE_PC_TOPICARN = os.environ["SNS_VISUALIZER_PIPELINE_PC_TOPICARN"]

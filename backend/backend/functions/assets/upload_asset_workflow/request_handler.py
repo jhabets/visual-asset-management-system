@@ -2,8 +2,8 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import json
-from backend.logging.logger import safeLogger
-from backend.models.assets import (
+from customLogging.logger import safeLogger
+from models.assets import (
     GetUploadAssetWorkflowStepFunctionInput,
     UploadAssetWorkflowRequestModel,
     UploadAssetWorkflowResponseModel,

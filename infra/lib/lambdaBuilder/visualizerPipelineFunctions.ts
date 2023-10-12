@@ -11,19 +11,22 @@ import * as sfn from "aws-cdk-lib/aws-stepfunctions";
 import * as sns from "aws-cdk-lib/aws-sns";
 import { Construct } from "constructs";
 import { Duration } from "aws-cdk-lib";
+import { LayerVersion } from 'aws-cdk-lib/aws-lambda';
 
 export function buildExecuteVisualizerPCPipelineFunction(
     scope: Construct,
+    lambdaCommonBaseLayer: LayerVersion,
     assetBucket: s3.Bucket,
     assetVisualizerBucket: s3.Bucket,
     pipelineSNSTopic: sns.Topic
 ): lambda.Function {
     const name = "executeVisualizerPCPipeline";
-    const fun = new lambda.DockerImageFunction(scope, name, {
-        code: lambda.DockerImageCode.fromImageAsset(path.join(__dirname, `../../../backend/`), {
-            cmd: [`backend.handlers.visualizerpipelines.${name}.lambda_handler`],
-        }),
-        timeout: Duration.minutes(1),
+    const fun = new lambda.Function(scope, name, {
+        code: lambda.Code.fromAsset(path.join(__dirname, `../../../backend/backend`)),
+        handler: `handlers.visualizerpipelines.${name}.lambda_handler`,
+        runtime: lambda.Runtime.PYTHON_3_10,
+        layers: [lambdaCommonBaseLayer],
+        timeout: Duration.minutes(5),
         memorySize: 256,
         environment: {
             DEST_BUCKET_NAME: assetVisualizerBucket.bucketName,
@@ -40,6 +43,7 @@ export function buildExecuteVisualizerPCPipelineFunction(
 
 export function buildOpenPipelineFunction(
     scope: Construct,
+    lambdaCommonBaseLayer: LayerVersion,
     assetBucket: s3.Bucket,
     assetVisualizerBucket: s3.Bucket,
     pipelineStateMachine: sfn.StateMachine,
@@ -52,11 +56,12 @@ export function buildOpenPipelineFunction(
         subnets: pipelineSubnets,
     });
 
-    const fun = new lambda.DockerImageFunction(scope, name, {
-        code: lambda.DockerImageCode.fromImageAsset(path.join(__dirname, `../../../backend/`), {
-            cmd: [`backend.handlers.visualizerpipelines.${name}.lambda_handler`],
-        }),
-        timeout: Duration.minutes(1),
+    const fun = new lambda.Function(scope, name, {
+        code: lambda.Code.fromAsset(path.join(__dirname, `../../../backend/backend`)),
+        handler: `handlers.visualizerpipelines.${name}.lambda_handler`,
+        runtime: lambda.Runtime.PYTHON_3_10,
+        layers: [lambdaCommonBaseLayer],
+        timeout: Duration.minutes(5),
         memorySize: 256,
         vpc: vpc,
         vpcSubnets: vpcSubnets,
@@ -77,6 +82,7 @@ export function buildOpenPipelineFunction(
 
 export function buildConstructPipelineFunction(
     scope: Construct,
+    lambdaCommonBaseLayer: LayerVersion,
     vpc: ec2.Vpc,
     pipelineSubnets: ec2.ISubnet[],
     pipelineSecurityGroups: ec2.SecurityGroup[]
@@ -86,11 +92,12 @@ export function buildConstructPipelineFunction(
         subnets: pipelineSubnets,
     });
 
-    const fun = new lambda.DockerImageFunction(scope, name, {
-        code: lambda.DockerImageCode.fromImageAsset(path.join(__dirname, `../../../backend/`), {
-            cmd: [`backend.handlers.visualizerpipelines.${name}.lambda_handler`],
-        }),
-        timeout: Duration.minutes(1),
+    const fun = new lambda.Function(scope, name, {
+        code: lambda.Code.fromAsset(path.join(__dirname, `../../../backend/backend`)),
+        handler: `handlers.visualizerpipelines.${name}.lambda_handler`,
+        runtime: lambda.Runtime.PYTHON_3_10,
+        layers: [lambdaCommonBaseLayer],
+        timeout: Duration.minutes(5),
         memorySize: 128,
         vpc: vpc,
         securityGroups: pipelineSecurityGroups,
@@ -102,6 +109,7 @@ export function buildConstructPipelineFunction(
 
 export function buildPipelineEndFunction(
     scope: Construct,
+    lambdaCommonBaseLayer: LayerVersion,
     assetBucket: s3.Bucket,
     assetVisualizerBucket: s3.Bucket,
     vpc: ec2.Vpc,
@@ -113,11 +121,12 @@ export function buildPipelineEndFunction(
         subnets: pipelineSubnets,
     });
 
-    const fun = new lambda.DockerImageFunction(scope, name, {
-        code: lambda.DockerImageCode.fromImageAsset(path.join(__dirname, `../../../backend/`), {
-            cmd: [`backend.handlers.visualizerpipelines.${name}.lambda_handler`],
-        }),
-        timeout: Duration.minutes(1),
+    const fun = new lambda.Function(scope, name, {
+        code: lambda.Code.fromAsset(path.join(__dirname, `../../../backend/backend`)),
+        handler: `handlers.visualizerpipelines.${name}.lambda_handler`,
+        runtime: lambda.Runtime.PYTHON_3_10,
+        layers: [lambdaCommonBaseLayer],
+        timeout: Duration.minutes(5),
         memorySize: 256,
         vpc: vpc,
         vpcSubnets: vpcSubnets,

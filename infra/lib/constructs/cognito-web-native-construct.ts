@@ -8,13 +8,13 @@ import * as cognito from "aws-cdk-lib/aws-cognito";
 import * as iam from "aws-cdk-lib/aws-iam";
 import * as ssm from "aws-cdk-lib/aws-ssm";
 import * as cdk from "aws-cdk-lib";
-
 import { storageResources } from "../storage-builder";
 import { Construct } from "constructs";
 import { Duration } from "aws-cdk-lib";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as path from "path";
 import { Config } from "../../config/config";
+import { LayerVersion } from 'aws-cdk-lib/aws-lambda';
 
 export interface SamlSettings {
     metadata: cognito.UserPoolIdentityProviderSamlMetadata;
@@ -24,6 +24,7 @@ export interface SamlSettings {
 }
 
 export interface CognitoWebNativeConstructProps extends cdk.StackProps {
+    lambdaCommonBaseLayer: LayerVersion;
     storageResources: storageResources;
     samlSettings?: SamlSettings;
     config: Config;
@@ -48,25 +49,21 @@ export class CognitoWebNativeConstruct extends Construct {
     constructor(parent: Construct, name: string, props: CognitoWebNativeConstructProps) {
         super(parent, name);
 
-        const preTokenGeneration = new lambda.DockerImageFunction(
-            this,
-            "PreTokenGenerationLambda",
-            {
-                code: lambda.DockerImageCode.fromImageAsset(
-                    path.join(__dirname, "../../../backend/"),
-                    {
-                        cmd: ["backend.handlers.auth.pretokengen.lambda_handler"],
-                    }
-                ),
-                timeout: Duration.minutes(2),
-                memorySize: 1000,
-                environment: {
-                    TABLE_NAME: props.storageResources.dynamo.authEntitiesStorageTable.tableName,
-                    ASSET_STORAGE_TABLE_NAME:
-                        props.storageResources.dynamo.assetStorageTable.tableName,
-                    DATABASE_STORAGE_TABLE_NAME:
-                        props.storageResources.dynamo.databaseStorageTable.tableName,
-                },
+        const handlerName = "pretokengen";
+        const preTokenGeneration = new lambda.Function(this, handlerName, {
+            code: lambda.Code.fromAsset(path.join(__dirname, `../../../backend/backend`)),
+            handler: `handlers.auth.${handlerName}.lambda_handler`,
+            runtime: lambda.Runtime.PYTHON_3_10,
+            layers: [props.lambdaCommonBaseLayer],
+            timeout: Duration.minutes(2),
+            memorySize: 1000,
+            environment: {
+                TABLE_NAME: props.storageResources.dynamo.authEntitiesStorageTable.tableName,
+                ASSET_STORAGE_TABLE_NAME:
+                    props.storageResources.dynamo.assetStorageTable.tableName,
+                DATABASE_STORAGE_TABLE_NAME:
+                    props.storageResources.dynamo.databaseStorageTable.tableName,
+            },
             }
         );
         props.storageResources.dynamo.authEntitiesStorageTable.grantReadWriteData(

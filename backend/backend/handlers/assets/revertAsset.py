@@ -3,13 +3,12 @@
 
 import os
 import boto3
-import sys
 import json
-from boto3.dynamodb.conditions import Key, Attr
+from boto3.dynamodb.conditions import Key
 import datetime
 from decimal import Decimal
-from boto3.dynamodb.types import TypeDeserializer, TypeSerializer
-from backend.common.validators import validate
+from boto3.dynamodb.types import TypeDeserializer
+from common.validators import validate
 
 dynamodb = boto3.resource('dynamodb')
 s3c = boto3.client('s3')
@@ -60,21 +59,21 @@ newObject = {
 unitTest = {
     "body": {
         "databaseId": "Unit_Test",
-        "assetId": "Unit_Test", #// Editable
-        "bucket": "", #// Editable
+        "assetId": "Unit_Test",  # // Editable
+        "bucket": "",  # // Editable
         "key": "",
         "assetType": "",
-        "description": "Testing as Usual", #// Editable
-        "specifiedPipelines": [], #// will develop a query to list pipelines that can act as tags.
-        "isDistributable": False, #// Editable
-        "Comment": "Unit Test", #// Editable
+        "description": "Testing as Usual",  # // Editable
+        "specifiedPipelines": [],  # // will develop a query to list pipelines that can act as tags.
+        "isDistributable": False,  # // Editable
+        "Comment": "Unit Test",  # // Editable
         "previewLocation": {
             "Bucket": "",
             "Key": ""
         }
     }
 }
-unitTest['body']=json.dumps(unitTest['body'])
+unitTest['body'] = json.dumps(unitTest['body'])
 
 
 asset_Database = None
@@ -102,6 +101,7 @@ def _deserialize(raw_data):
 
     return result
 
+
 def get_account_id():
     client = boto3.client("sts")
     return client.get_caller_identity()["Account"]
@@ -115,15 +115,17 @@ def get_account_id():
 # Copy (UploadPartCopy) API. For more information, see Copy Object
 # Using the REST Multipart Upload API.
 #
+
+
 def copy_object_and_return_new_version(bucket, key, asset):
-    #VersionId and ContentLength (bytes)
-    copy_source={
-        'Bucket':bucket,
-        'Key':key,
-        'VersionId':asset['currentVersion']['S3Version']
+    # VersionId and ContentLength (bytes)
+    copy_source = {
+        'Bucket': bucket,
+        'Key': key,
+        'VersionId': asset['currentVersion']['S3Version']
     }
     account_id = get_account_id()
-    resp=s3c.copy_object(
+    resp = s3c.copy_object(
         Bucket=bucket,
         CopySource=copy_source,
         Key=key,
@@ -133,12 +135,13 @@ def copy_object_and_return_new_version(bucket, key, asset):
     asset['currentVersion']['S3Version'] = resp['VersionId']
     return asset
 
+
 def assetReversion(item, version):
     asset = item
     print("Asset: ", asset)
     dtNow = datetime.datetime.utcnow().strftime('%B %d %Y - %H:%M:%S')
     prevVersions = asset['versions']
-    cV=asset['currentVersion']
+    cV = asset['currentVersion']
     cV['previewLocation'] = {
         "Bucket": asset['previewLocation']['Bucket'],
         "Key": asset['previewLocation']['Key']
@@ -146,10 +149,10 @@ def assetReversion(item, version):
     prevVersions.append(cV)
     asset['versions'] = prevVersions
     for i in prevVersions:
-        if i["Version"]==version:
-            asset['currentVersion']=i
+        if i["Version"] == version:
+            asset['currentVersion'] = i
             break
-    
+
     bucket = asset['assetLocation']['Bucket']
     key = asset['assetLocation']['Key']
     asset = copy_object_and_return_new_version(bucket, key, asset)
@@ -166,14 +169,14 @@ def revert_Asset(databaseId, assetId, version):
         )
         print(resp)
         item = resp['Items'][0]
-        up = assetReversion(item,version)
+        up = assetReversion(item, version)
         table.put_item(Item=up)
-        print('Revert Asset '+ json.dumps(up))
+        print('Revert Asset ' + json.dumps(up))
         return json.dumps({"message": "Succeeded"})
 
     except Exception as e:
         print(e)
-        return json.dumps({"message": str(e)}) 
+        return json.dumps({"message": str(e)})
 
 
 def lambda_handler(event, context):
@@ -196,14 +199,14 @@ def lambda_handler(event, context):
     print(pathParams)
     if 'databaseId' not in pathParams:
         message = "No database iD in API Call"
-        response['body']=json.dumps({"message":message})
+        response['body'] = json.dumps({"message": message})
         print(response)
         return response
     databaseId = pathParams['databaseId']
-    
+
     if 'assetId' not in pathParams:
         message = "No assetId iD in API Call"
-        response['body']=json.dumps({"message":message})
+        response['body'] = json.dumps({"message": message})
         print(response)
         return response
     assetId = pathParams['assetId']
@@ -212,23 +215,23 @@ def lambda_handler(event, context):
         print("Validating parameters")
         (valid, message) = validate({
             'databaseId': {
-                'value': pathParams['databaseId'], 
+                'value': pathParams['databaseId'],
                 'validator': 'ID'
             },
             'assetId': {
-                'value': pathParams['assetId'], 
+                'value': pathParams['assetId'],
                 'validator': 'ID'
             },
         })
         if not valid:
             print(message)
-            response['body']=json.dumps({"message": message})
+            response['body'] = json.dumps({"message": message})
             response['statusCode'] = 400
             return response
 
         if 'version' not in event['body']:
             message = "No version in API Call"
-            response['body']=json.dumps({'message':message})
+            response['body'] = json.dumps({'message': message})
             print(message)
             return response
         version = event['body']['version']

@@ -2,14 +2,13 @@
 #  SPDX-License-Identifier: Apache-2.0
 
 import json
-from backend.handlers.authn import request_to_claims
+from handlers.authn import request_to_claims
 import boto3
-import logging
 import os
 import traceback
-from backend.logging.logger import safeLogger
-from backend.common.dynamodb import to_update_expr
-from boto3.dynamodb.conditions import Key, Attr
+from customLogging.logger import safeLogger
+from common.dynamodb import to_update_expr
+from boto3.dynamodb.conditions import Key
 
 logger = safeLogger(child=True, service="finegrainedpolicies", level="INFO")
 
@@ -18,12 +17,14 @@ dynamodb = boto3.resource('dynamodb', region_name=region)
 table = dynamodb.Table(os.environ['TABLE_NAME'])
 
 attrs = "name,groupPermissions,constraintId,description,criteria".split(",")
-keys_attrs = { "#{f}".format(f=f): f for f in attrs }
+keys_attrs = {"#{f}".format(f=f): f for f in attrs}
+
 
 class ValidationError(Exception):
     def __init__(self, code: int, resp: object) -> None:
         self.code = code
         self.resp = resp
+
 
 def get_constraint(event, response):
 
@@ -37,6 +38,7 @@ def get_constraint(event, response):
     )
     response['body']['constraint'] = response['body']['Item']
 
+
 def get_constraints(event, response):
     result = table.query(
         ExpressionAttributeNames=keys_attrs,
@@ -44,7 +46,7 @@ def get_constraints(event, response):
         KeyConditionExpression=Key('entityType').eq('constraint') & Key('sk').begins_with('constraint#'),
     )
     logger.info(
-        msg="ddb response", 
+        msg="ddb response",
         response=result
     )
     response['body']['constraints'] = result['Items']
@@ -62,7 +64,7 @@ def get_constraints(event, response):
 #     {
 #       "field": "fieldname",
 #       "operator": "contains", # one of contains, does not contain, is one of, is not one of
-#       "value": "value" # or ["value", "value"] 
+#       "value": "value" # or ["value", "value"]
 #     }
 #   ]
 # }
@@ -105,14 +107,14 @@ def update_constraint(event, response):
     )
 
     response['body']['constraint'] = constraint
-    
+
 
 def delete_constraint(event, response):
     key, constraint = get_constraint_from_event(event)
     table.delete_item(
         Key=key
     )
-    response['body'] = { "message": "Constraint deleted." }
+    response['body'] = {"message": "Constraint deleted."}
 
 
 def lambda_handler(event, context):
@@ -139,16 +141,15 @@ def lambda_handler(event, context):
 
         if method == 'GET' and 'constraintId' not in pathParameters:
             get_constraints(event, response)
-    
+
         # For POST requests, add the new constraint to the table and return the new constraint as a json object
         if method == 'POST':
             update_constraint(event, response)
-        
+
         # For DELETE requests, remove the constraint from the table and return the deleted constraint as a json object
         if method == 'DELETE':
             delete_constraint(event, response)
-    
-    
+
         response['body'] = json.dumps(response['body'])
         return response
 

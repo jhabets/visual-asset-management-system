@@ -4,8 +4,7 @@
 import os
 import boto3
 import json
-from boto3.dynamodb.conditions import Key, Attr
-from backend.common.validators import validate
+from common.validators import validate
 
 response = {
     'statusCode': 200,
@@ -23,26 +22,28 @@ try:
     pipeline_Database = os.environ["PIPELINE_STORAGE_TABLE_NAME"]
 except:
     print("Failed Loading Environment Variables")
-    
-    response['body'] =json.dumps({"message":"Failed Loading Environment Variables"}) 
+
+    response['body'] = json.dumps({"message": "Failed Loading Environment Variables"})
+
 
 def enablePipeline(databaseId, pipelineId):
     table = dynamodb.Table(pipeline_Database)
     print("Enabling pipeline")
     response = table.update_item(
         Key={
-            'databaseId': databaseId, 
+            'databaseId': databaseId,
             'pipelineId': pipelineId
-        }, 
+        },
         UpdateExpression='SET #enabled = :true',
-        ExpressionAttributeNames = {
+        ExpressionAttributeNames={
             '#enabled': 'enabled'
         },
-        ExpressionAttributeValues = {
+        ExpressionAttributeValues={
             ':true': True
         }
     )
     print(response)
+
 
 def lambda_handler(event, context):
     print(event)
@@ -58,20 +59,20 @@ def lambda_handler(event, context):
         print("Validating Parameters")
         (valid, message) = validate({
             'databaseId': {
-                'value': event['body']['databaseId'], 
+                'value': event['body']['databaseId'],
                 'validator': 'ID'
             },
             'pipelineId': {
-                'value': event['body']['pipelineId'], 
+                'value': event['body']['pipelineId'],
                 'validator': 'ID'
             }
         })
         if not valid:
             print(message)
-            response['body']=json.dumps({"message": message})
+            response['body'] = json.dumps({"message": message})
             response['statusCode'] = 400
             return response
-        try: 
+        try:
             enablePipeline(event['databaseId'], event['pipelineId'])
             print("Pipeline is enabled")
             response['body'] = json.dumps({"message": "Success"})
@@ -86,7 +87,6 @@ def lambda_handler(event, context):
                 print("Can't Read Error")
                 response['body'] = json.dumps({"message": "An unexpected error occurred while executing the request"})
             return response
-
 
 
 if __name__ == "__main__":

@@ -4,9 +4,9 @@
 import json
 import traceback
 
-from backend.handlers.metadata import logger, mask_sensitive_data, \
+from handlers.metadata import logger, mask_sensitive_data, \
     build_response, table, validate_event, ValidationError
-from backend.handlers.auth import get_database_set, request_to_claims
+from handlers.auth import get_database_set, request_to_claims
 
 
 def generate_prefixes(path):

@@ -6,8 +6,8 @@ import boto3
 import json
 import datetime
 import logging
-from backend.common.validators import validate
-from backend.handlers.comments.commentService import get_single_comment
+from common.validators import validate
+from handlers.comments.commentService import get_single_comment
 
 # Create a logger object to log the events
 logger = logging.getLogger()

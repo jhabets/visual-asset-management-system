@@ -8,9 +8,9 @@ import json
 import botocore.exceptions
 from boto3.dynamodb.conditions import Key
 from boto3.dynamodb.types import TypeDeserializer
-from backend.common.validators import validate
-from backend.handlers.assets.assetCount import update_asset_count
-from backend.handlers.auth import create_ddb_filter, get_database_set, request_to_claims
+from common.validators import validate
+from handlers.assets.assetCount import update_asset_count
+from handlers.auth import create_ddb_filter, get_database_set, request_to_claims
 
 dynamodb = boto3.resource('dynamodb')
 dynamodb_client = boto3.client('dynamodb')

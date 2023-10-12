@@ -4,16 +4,19 @@ import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import { Construct } from "constructs";
 import { Duration } from "aws-cdk-lib";
 import { suppressCdkNagErrorsByGrantReadWrite } from "../security";
+import { LayerVersion } from 'aws-cdk-lib/aws-lambda';
 
 export function buildAddCommentLambdaFunction(
     scope: Construct,
+    lambdaCommonBaseLayer: LayerVersion,
     commentStorageTable: dynamodb.Table
 ): lambda.Function {
     const name = "addComment";
-    const addCommentFunction = new lambda.DockerImageFunction(scope, name, {
-        code: lambda.DockerImageCode.fromImageAsset(path.join(__dirname, `../../../backend/`), {
-            cmd: ["backend.handlers.comments.addComment.lambda_handler"],
-        }),
+    const addCommentFunction = new lambda.Function(scope, name, {
+        code: lambda.Code.fromAsset(path.join(__dirname, `../../../backend/backend`)),
+        handler: `handlers.comments.${name}.lambda_handler`,
+        runtime: lambda.Runtime.PYTHON_3_10,
+        layers: [lambdaCommonBaseLayer],
         timeout: Duration.minutes(15),
         memorySize: 3008,
         environment: {
@@ -26,13 +29,15 @@ export function buildAddCommentLambdaFunction(
 
 export function buildEditCommentLambdaFunction(
     scope: Construct,
+    lambdaCommonBaseLayer: LayerVersion,
     commentStorageTable: dynamodb.Table
 ): lambda.Function {
     const name = "editComment";
-    const editCommentFunction = new lambda.DockerImageFunction(scope, name, {
-        code: lambda.DockerImageCode.fromImageAsset(path.join(__dirname, `../../../backend/`), {
-            cmd: ["backend.handlers.comments.editComment.lambda_handler"],
-        }),
+    const editCommentFunction = new lambda.Function(scope, name, {
+        code: lambda.Code.fromAsset(path.join(__dirname, `../../../backend/backend`)),
+        handler: `handlers.comments.${name}.lambda_handler`,
+        runtime: lambda.Runtime.PYTHON_3_10,
+        layers: [lambdaCommonBaseLayer],
         timeout: Duration.minutes(15),
         memorySize: 3008,
         environment: {
@@ -45,14 +50,16 @@ export function buildEditCommentLambdaFunction(
 
 export function buildCommentService(
     scope: Construct,
+    lambdaCommonBaseLayer: LayerVersion,
     commentStorageTable: dynamodb.Table,
     assetStorageTable: dynamodb.Table
 ): lambda.Function {
     const name = "commentService";
-    const commentService = new lambda.DockerImageFunction(scope, name, {
-        code: lambda.DockerImageCode.fromImageAsset(path.join(__dirname, `../../../backend/`), {
-            cmd: [`backend.handlers.comments.${name}.lambda_handler`],
-        }),
+    const commentService = new lambda.Function(scope, name, {
+        code: lambda.Code.fromAsset(path.join(__dirname, `../../../backend/backend`)),
+        handler: `handlers.comments.${name}.lambda_handler`,
+        runtime: lambda.Runtime.PYTHON_3_10,
+        layers: [lambdaCommonBaseLayer],
         timeout: Duration.minutes(15),
         memorySize: 3008,
         environment: {

@@ -4,7 +4,6 @@
 import os
 import boto3
 import json
-import pathlib
 import uuid
 from boto3.dynamodb.conditions import Key
 
@@ -13,7 +12,7 @@ db_Database = None
 workflow_execution_database = None
 
 try:
-    upload_function=os.environ['UPLOAD_LAMBDA_FUNCTION_NAME']
+    upload_function = os.environ['UPLOAD_LAMBDA_FUNCTION_NAME']
     asset_Database = os.environ["ASSET_STORAGE_TABLE_NAME"]
     db_Database = os.environ["DATABASE_STORAGE_TABLE_NAME"]
     workflow_execution_database = os.environ["WORKFLOW_EXECUTION_STORAGE_TABLE_NAME"]
@@ -24,15 +23,20 @@ except Exception as e:
 s3c = boto3.client('s3')
 dynamodb = boto3.resource('dynamodb')
 client = boto3.client('lambda')
-_lambda = lambda payload: client.invoke(FunctionName=upload_function,InvocationType='RequestResponse', Payload=json.dumps(payload).encode('utf-8'))
+
+
+def _lambda(payload): return client.invoke(FunctionName=upload_function,
+                                           InvocationType='RequestResponse', Payload=json.dumps(payload).encode('utf-8'))
+
 
 def getS3MetaData(bucket, key, asset):
-    #VersionId and ContentLength (bytes)
+    # VersionId and ContentLength (bytes)
     resp = s3c.head_object(Bucket=bucket, Key=key)
     asset['currentVersion']['S3Version'] = resp['VersionId']
     asset['currentVersion']['FileSize'] = str(
         resp['ContentLength']/1000000)+'MB'
     return asset
+
 
 def attach_execution_assets(assets, execution_id, database_id, asset_id, workflow_id):
     print("Attaching assets to execution")
@@ -42,7 +46,7 @@ def attach_execution_assets(assets, execution_id, database_id, asset_id, workflo
 
     source_assets = asset_table.query(
         KeyConditionExpression=Key('databaseId').eq(database_id) & Key('assetId').begins_with(
-            asset_id)        )
+            asset_id))
     print("Source assets: ", source_assets)
     if source_assets['Items']:
         all_assets.append(source_assets['Items'][0])
@@ -58,6 +62,7 @@ def attach_execution_assets(assets, execution_id, database_id, asset_id, workflo
     )
 
     return
+
 
 def lambda_handler(event, context):
     print(event)
@@ -76,7 +81,7 @@ def lambda_handler(event, context):
                 'Access-Control-Allow-Methods': 'OPTIONS,POST,GET'
         }
     }
-    
+
     bucket_name = data['bucket']
     prefix = data['key'] if data['key'][0] != '/' else data['key'][1:]
     print(bucket_name, prefix)
@@ -135,4 +140,4 @@ def lambda_handler(event, context):
     else:
         response['body'] = "No files found"
     attach_execution_assets(assets, data['executionId'], data['databaseId'], data['assetId'], data['workflowId'])
-    return(response)
+    return (response)

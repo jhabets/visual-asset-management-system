@@ -9,20 +9,23 @@ import { Construct } from "constructs";
 import { Duration } from "aws-cdk-lib";
 import { OpensearchServerlessConstruct } from "../constructs/opensearch-serverless";
 import { storageResources } from "../storage-builder";
-import { iam } from "cdk-nag/lib/rules";
 import * as cdk from "aws-cdk-lib";
+import { LayerVersion } from 'aws-cdk-lib/aws-lambda';
 
 export function buildSearchFunction(
     scope: Construct,
+    lambdaCommonBaseLayer: LayerVersion,
     aossEndpoint: string,
     indexNameParam: string,
     aossConstruct: OpensearchServerlessConstruct,
     storageResources: storageResources
 ): lambda.Function {
-    const fun = new lambda.DockerImageFunction(scope, "srch", {
-        code: lambda.DockerImageCode.fromImageAsset(path.join(__dirname, `../../../backend/`), {
-            cmd: ["backend.handlers.search.search.lambda_handler"],
-        }),
+    const name = "search";
+    const fun = new lambda.Function(scope, name, {
+        code: lambda.Code.fromAsset(path.join(__dirname, `../../../backend/backend`)),
+        handler: `handlers.search.${name}.lambda_handler`,
+        runtime: lambda.Runtime.PYTHON_3_10,
+        layers: [lambdaCommonBaseLayer],
         timeout: Duration.minutes(15),
         memorySize: 3008,
         environment: {

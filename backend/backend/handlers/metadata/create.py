@@ -4,8 +4,8 @@
 import json
 import traceback
 
-from backend.handlers.metadata import logger, mask_sensitive_data, build_response, create_or_update, validate_event, validate_body, ValidationError
-from backend.handlers.auth import get_database_set, request_to_claims
+from handlers.metadata import logger, mask_sensitive_data, build_response, create_or_update, validate_event, validate_body, ValidationError
+from handlers.auth import get_database_set, request_to_claims
 
 
 def lambda_handler(event, context):

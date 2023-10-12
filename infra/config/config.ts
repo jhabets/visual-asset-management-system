@@ -85,6 +85,7 @@ export interface ConfigPublic {
 			enabled: boolean;
 			publicSubnet: boolean;
 			vpcCidrRange: string;
+			optionalVPCID: string;
 			domainHost: string;
 			certificateARN: string;
 			optionalHostedZoneID: string;
@@ -93,6 +94,7 @@ export interface ConfigPublic {
 			usePointCloudVisualization: {
 				enabled: boolean;
 				vpcCidrRange: string;
+				optionalVPCID: string;
 			}
 		}
 		authProvider: {

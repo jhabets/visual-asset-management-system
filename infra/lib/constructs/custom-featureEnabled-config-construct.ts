@@ -3,9 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as cdk from "aws-cdk-lib";
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
-import {RetentionDays} from "aws-cdk-lib/aws-logs";
 import {AwsCustomResource, AwsCustomResourcePolicy, AwsSdkCall, PhysicalResourceId} from "aws-cdk-lib/custom-resources";
 import {Effect, PolicyStatement} from "aws-cdk-lib/aws-iam";
 import { Duration } from "aws-cdk-lib";

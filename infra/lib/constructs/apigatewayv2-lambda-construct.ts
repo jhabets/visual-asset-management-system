@@ -5,7 +5,6 @@
 
 import * as apigw from "@aws-cdk/aws-apigatewayv2-alpha";
 import * as apigwIntegrations from "@aws-cdk/aws-apigatewayv2-integrations-alpha";
-import * as iam from "aws-cdk-lib/aws-iam";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as lambdaPython from "@aws-cdk/aws-lambda-python-alpha";
 import * as lambdaNodejs from "aws-cdk-lib/aws-lambda-nodejs";

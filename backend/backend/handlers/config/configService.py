@@ -4,8 +4,6 @@
 import json
 import os
 import boto3
-from boto3.dynamodb.conditions import Key
-from backend.common.validators import validate
 from boto3.dynamodb.types import TypeDeserializer
 
 response = {

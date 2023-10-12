@@ -1,9 +1,7 @@
 # Copyright 2023 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # SPDX-License-Identifier: Apache-2.0
 
-import boto3
-import os
-from boto3.dynamodb.conditions import Key, Attr
+from boto3.dynamodb.conditions import Key
 
 
 class AuthEntities:
@@ -51,7 +49,7 @@ class AuthEntities:
             predicates = []
             if len(group_permission) == 0:
                 continue
-            
+
             for criteria in claim['criteria']:
 
                 if criteria['operator'] == "contains":

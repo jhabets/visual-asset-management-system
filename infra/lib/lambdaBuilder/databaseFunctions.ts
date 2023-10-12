@@ -8,16 +8,19 @@ import * as path from "path";
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import { Construct } from "constructs";
 import { Duration } from "aws-cdk-lib";
+import { LayerVersion } from 'aws-cdk-lib/aws-lambda';
 
 export function buildCreateDatabaseLambdaFunction(
     scope: Construct,
+    lambdaCommonBaseLayer: LayerVersion,
     databaseStorageTable: dynamodb.Table
 ): lambda.Function {
     const name = "createDatabase";
-    const createDatabaseFunction = new lambda.DockerImageFunction(scope, name, {
-        code: lambda.DockerImageCode.fromImageAsset(path.join(__dirname, `../../../backend/`), {
-            cmd: ["backend.handlers.databases.createDatabase.lambda_handler"],
-        }),
+    const createDatabaseFunction = new lambda.Function(scope, name, {
+        code: lambda.Code.fromAsset(path.join(__dirname, `../../../backend/backend`)),
+        handler: `handlers.databases.${name}.lambda_handler`,
+        runtime: lambda.Runtime.PYTHON_3_10,
+        layers: [lambdaCommonBaseLayer],
         timeout: Duration.minutes(15),
         memorySize: 3008,
         environment: {
@@ -30,16 +33,18 @@ export function buildCreateDatabaseLambdaFunction(
 
 export function buildDatabaseService(
     scope: Construct,
+    lambdaCommonBaseLayer: LayerVersion,
     databaseStorageTable: dynamodb.Table,
     workflowStorageTable: dynamodb.Table,
     pipelineStorageTable: dynamodb.Table,
     assetStorageTable: dynamodb.Table
 ): lambda.Function {
     const name = "databaseService";
-    const databaseService = new lambda.DockerImageFunction(scope, name, {
-        code: lambda.DockerImageCode.fromImageAsset(path.join(__dirname, `../../../backend/`), {
-            cmd: [`backend.handlers.databases.${name}.lambda_handler`],
-        }),
+    const databaseService = new lambda.Function(scope, name, {
+        code: lambda.Code.fromAsset(path.join(__dirname, `../../../backend/backend`)),
+        handler: `handlers.databases.${name}.lambda_handler`,
+        runtime: lambda.Runtime.PYTHON_3_10,
+        layers: [lambdaCommonBaseLayer],
         timeout: Duration.minutes(15),
         memorySize: 3008,
         environment: {

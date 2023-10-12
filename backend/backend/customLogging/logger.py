@@ -22,16 +22,16 @@ def mask_sensitive_data(event):
     return result
 
 
-class CustomFormatter(LambdaPowertoolsFormatter):
-    def serialize(self, log: dict) -> str:
-        """Serialize final structured log dict to JSON str"""
-        log = mask_sensitive_data(event=log)  # rename message key to event
-        return self.json_serializer(log)  # use configured json serializer
-
-
 def safeLogger(**kwargs):
     return Logger(
         logger_formatter=CustomFormatter(),
         location=location_format,
         datefmt=date_format,
         **kwargs)
+
+
+class CustomFormatter(LambdaPowertoolsFormatter):
+    def serialize(self, log: dict) -> str:
+        """Serialize final structured log dict to JSON str"""
+        log = mask_sensitive_data(event=log)  # rename message key to event
+        return self.json_serializer(log)  # use configured json serializer

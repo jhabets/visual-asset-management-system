@@ -7,21 +7,18 @@ import * as s3 from "aws-cdk-lib/aws-s3";
 import { BlockPublicAccess } from "aws-cdk-lib/aws-s3";
 import * as s3deployment from "aws-cdk-lib/aws-s3-deployment";
 import * as cdk from "aws-cdk-lib";
-import { Duration, Stack } from "aws-cdk-lib";
+import { Duration} from "aws-cdk-lib";
 import { Construct } from "constructs";
 import * as iam from "aws-cdk-lib/aws-iam";
 import { requireTLSAddToResourcePolicy } from "../security";
-import * as logs from 'aws-cdk-lib/aws-logs';
 import { aws_wafv2 as wafv2 } from 'aws-cdk-lib';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
-import { CfnLoadBalancer } from 'aws-cdk-lib/aws-elasticloadbalancingv2';
 import * as elbv2 from 'aws-cdk-lib/aws-elasticloadbalancingv2';
 import * as elbv2_targets from 'aws-cdk-lib/aws-elasticloadbalancingv2-targets';
 import customResources = require('aws-cdk-lib/custom-resources');
 import * as route53 from "aws-cdk-lib/aws-route53";
 import * as acm from "aws-cdk-lib/aws-certificatemanager";
 import * as route53targets from "aws-cdk-lib/aws-route53-targets";
-//import { ReverseProxyGovCloudDeployConstruct } from "./nested/reverseProxy-govCloudDeploy-construct";
 import { NagSuppressions } from "cdk-nag";
 
 export interface AlbS3WebsiteGovCloudDeployConstructProps extends cdk.StackProps {
@@ -215,46 +212,6 @@ export class AlbS3WebsiteGovCloudDeployConstruct extends Construct {
         listener.addTargetGroups("WebAppTargetGroup1", {
             targetGroups: [targetGroup1],
         })
-
-        // //Create ASG Reverse Proxy Security Group
-        // const webAppASGESecurityGroup = new ec2.SecurityGroup(
-        //     this,
-        //     "WepAppDistroVPCS3EndpointSecurityGroup",
-        //     {
-        //         vpc: props.vpc,
-        //         allowAllOutbound: true,
-        //         description: "Web Application Distribution for VPC S3 Endpoint Security Group",
-        //     }
-        // );
-
-        // //Create Reverse Proxy Template + ASG
-		// const reverseProxyResources = new ReverseProxyGovCloudDeployConstruct(this, 'ReverseProxyGovCloudDeployConstruct', {
-		// 	artefactsBucket: props.artefactsBucket,
-        //     webAppBucket: webAppBucket,
-        //     arnBaseIdentifier: props.arnBaseIdentifier,
-        //     domainHostName: props.domainHostName,
-		// 	vpc: props.vpc,
-		// 	subnets: props.subnets.reverseProxy,
-		// 	securityGroup: webAppASGESecurityGroup,
-		// });
-
-        // //Set ASG as ALB target group
-        // const targetGroupASG = new elbv2.ApplicationTargetGroup(this, 'WebAppALBTargetGroup', {
-        //     port: 80,
-        //     vpc: props.vpc,
-        //     targetType: elbv2.TargetType.IP,
-        //     healthCheck: {
-        //     enabled: true,
-        //     healthyHttpCodes: "200"
-        //     }
-        // });
-
-        // targetGroupASG.addTarget(reverseProxyResources.autoScalingGroup);
-
-        // listener.addTargetGroups("WebAppTargetGroupASG", {
-        //     targetGroups: [targetGroupASG],
-        // })
-        
 
         //Setup listener rule to rewrite path to forward to API Gateway for backend API calls
         const applicationListenerRuleBackendAPI= new elbv2.ApplicationListenerRule(this, 'WebAppnListenerRuleBackendAPI', {

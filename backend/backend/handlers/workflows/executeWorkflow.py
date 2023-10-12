@@ -5,9 +5,7 @@ import json
 import boto3
 from boto3.dynamodb.conditions import Key
 import os
-import uuid
-import time
-from backend.common.validators import validate
+from common.validators import validate
 
 try:
     client = boto3.client('lambda')
@@ -16,11 +14,11 @@ try:
     dynamodb = boto3.resource('dynamodb')
 except Exception as e:
     print(str(e))
-    print("Failed Loading Error Functions")    
+    print("Failed Loading Error Functions")
 
 try:
     asset_Database = os.environ["ASSET_STORAGE_TABLE_NAME"]
-    pipeline_Database=os.environ["PIPELINE_STORAGE_TABLE_NAME"]
+    pipeline_Database = os.environ["PIPELINE_STORAGE_TABLE_NAME"]
     workflow_database = os.environ["WORKFLOW_STORAGE_TABLE_NAME"]
     workflow_execution_database = os.environ["WORKFLOW_EXECUTION_STORAGE_TABLE_NAME"]
 except:
@@ -35,30 +33,32 @@ def get_pipelines(databaseId, pipelineId):
     )
     return response['Items']
 
+
 def launchWorkflow(bucketName, key, workflow_arn, asset_id, workflow_id, database_id):
     print("Launching workflow with arn: ", workflow_arn)
     response = sfn_client.start_execution(
         stateMachineArn=workflow_arn,
-        input=json.dumps({ 'bucket': bucketName, 'key': key, 'databaseId': database_id,
-         'assetId': asset_id, 'workflowId': workflow_id })
+        input=json.dumps({'bucket': bucketName, 'key': key, 'databaseId': database_id,
+                          'assetId': asset_id, 'workflowId': workflow_id})
     )
     print("Response: ", response)
-    executionId = response['executionArn'].split(":")[-1];
+    executionId = response['executionArn'].split(":")[-1]
     table = dynamodb.Table(workflow_execution_database)
     table.put_item(
-        Item = {
-            'pk': f'{asset_id}-{workflow_id}', 
+        Item={
+            'pk': f'{asset_id}-{workflow_id}',
             'sk': executionId,
             'database_id': database_id,
-            'asset_id': asset_id, 
-            'workflow_id': workflow_id, 
+            'asset_id': asset_id,
+            'workflow_id': workflow_id,
             'workflow_arn': workflow_arn,
-            'execution_arn': response['executionArn'], 
+            'execution_arn': response['executionArn'],
             'execution_id': executionId,
             'assets': []
         }
-    )   
+    )
     return executionId
+
 
 def get_asset(databaseId, assetId):
     table = dynamodb.Table(asset_Database)
@@ -68,12 +68,13 @@ def get_asset(databaseId, assetId):
     return response['Items']
 
 
-def get_workflow(databaseId, workflowId): 
+def get_workflow(databaseId, workflowId):
     table = dynamodb.Table(workflow_database)
     response = table.query(
         KeyConditionExpression=Key('databaseId').eq(databaseId) & Key('workflowId').eq(workflowId)
     )
     return response['Items']
+
 
 def validate_pipelines(databaseId, workflow):
     for pipeline in workflow['specifiedPipelines']['functions']:
@@ -81,6 +82,7 @@ def validate_pipelines(databaseId, workflow):
         if not pipeline_state['enabled']:
             return (False, pipeline["name"])
     return (True, '')
+
 
 def lambda_handler(event, context):
     print(event)
@@ -90,19 +92,19 @@ def lambda_handler(event, context):
         print(pathParams)
         if 'databaseId' not in pathParams:
             message = "No database iD in API Call"
-            response['body']=json.dumps({"message":message})
+            response['body'] = json.dumps({"message": message})
             print(response)
             return response
-        
+
         if 'assetId' not in pathParams:
             message = "No assetId iD in API Call"
-            response['body']=json.dumps({"message":message})
+            response['body'] = json.dumps({"message": message})
             print(response)
             return response
 
         if 'workflowId' not in pathParams:
             message = "No workflow iD in API Call"
-            response['body']=json.dumps({"message":message})
+            response['body'] = json.dumps({"message": message})
             print(response)
             return response
 
@@ -120,34 +122,35 @@ def lambda_handler(event, context):
 
         data = {}
         data['assetId'] = pathParams['assetId']
-        data['workflow_arn']=workflow['workflow_arn']
-        data['workflowId']=workflow['workflowId']
+        data['workflow_arn'] = workflow['workflow_arn']
+        data['workflowId'] = workflow['workflowId']
         data['bucketName'] = asset['assetLocation']['Bucket']
         data['key'] = asset['assetLocation']['Key']
 
         print("Validating Parameters")
         (valid, message) = validate({
             'databaseId': {
-                'value': pathParams['databaseId'], 
+                'value': pathParams['databaseId'],
                 'validator': 'ID'
             },
             'workflowId': {
-                'value': data['workflowId'], 
+                'value': data['workflowId'],
                 'validator': 'ID'
-            }, 
+            },
             'assetId': {
-                'value': data['assetId'], 
+                'value': data['assetId'],
                 'validator': 'ID'
             },
         })
 
         if not valid:
             print(message)
-            response['body']=json.dumps({"message": message})
+            response['body'] = json.dumps({"message": message})
             response['statusCode'] = 400
             return response
 
-        executionId = launchWorkflow(data['bucketName'], data['key'], data['workflow_arn'], data['assetId'], data['workflowId'], pathParams['databaseId'])
+        executionId = launchWorkflow(data['bucketName'], data['key'], data['workflow_arn'],
+                                     data['assetId'], data['workflowId'], pathParams['databaseId'])
         response["statusCode"] = 200
         response['body'] = json.dumps({'message': executionId})
         return response
@@ -162,4 +165,3 @@ def lambda_handler(event, context):
             print("Can't Read Error")
             response['body'] = json.dumps({"message": "An unexpected error occurred while executing the request"})
         return response
-

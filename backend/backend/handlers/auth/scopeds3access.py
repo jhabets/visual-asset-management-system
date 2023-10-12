@@ -2,7 +2,7 @@
 #  SPDX-License-Identifier: Apache-2.0
 
 
-from backend.handlers.auth import get_database_set, request_to_claims
+from handlers.auth import get_database_set, request_to_claims
 import json
 import boto3
 import os

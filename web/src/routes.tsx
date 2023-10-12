@@ -3,12 +3,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { Suspense } from "react";
-import { Route, Routes } from "react-router-dom";
+import React, { Suspense, useEffect } from "react";
+import { Route, Routes, useLocation } from "react-router-dom";
 import AppLayout from "@cloudscape-design/components/app-layout";
 import { Navigation } from "./layout/Navigation";
 import LandingPage from "./pages/LandingPage";
 import Spinner from "@cloudscape-design/components/spinner";
+import { useNavigate } from 'react-router';
 
 const Databases = React.lazy(() => import("./pages/Databases"));
 const SearchPage = React.lazy(() => import("./pages/search/SearchPage"));
@@ -158,6 +159,29 @@ function CenterSpinner() {
 }
 
 export const AppRoutes = ({ navigationOpen, setNavigationOpen, user }: AppRoutesProps) => {
+    const location = useLocation();
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        console.log('Location changed', window.location.href);
+
+        const hashes = window.location.href.match(/#/g) || [];
+        console.log('hashes', hashes);
+
+        if (hashes.length > 1) {
+            const segments = window.location.href.split('#/');
+
+            const fragmentWeWant = segments.pop();
+
+            console.log('fragmentWeWant', `#/${fragmentWeWant}`);
+
+            const url = new URL(window.location.href);
+            url.hash = `#/${fragmentWeWant}`;
+
+            window.location.href = url.toString();
+        }
+    }, [location, navigate]);
+
     const buildRoute = (routeOptions: RouteOption, i: number = 0) => {
         const { path, active, Page } = routeOptions;
         return (

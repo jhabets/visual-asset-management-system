@@ -227,10 +227,10 @@ export default function CreateUpdateWorkflow(props) {
                 <SpaceBetween direction="vertical" size="xs">
                     <BreadcrumbGroup
                         items={[
-                            { text: Synonyms.Databases, href: "/databases/" },
+                            { text: Synonyms.Databases, href: "#/databases/" },
                             {
                                 text: databaseId,
-                                href: "/databases/" + databaseId + "/workflows/",
+                                href: "#/databases/" + databaseId + "/workflows/",
                             },
                             { text: "Create Workflow" },
                         ]}

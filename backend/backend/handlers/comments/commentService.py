@@ -7,7 +7,7 @@ import json
 import logging
 from boto3.dynamodb.conditions import Key
 from boto3.dynamodb.types import TypeDeserializer
-from backend.common.validators import validate
+from common.validators import validate
 from typing import List
 
 # Create a logger object to log the events

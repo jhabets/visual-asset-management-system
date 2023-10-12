@@ -53,9 +53,11 @@ export class VpcSecurityGroupGatewayVisualizerPipelineConstruct extends Construc
         /**
          * VPC
          */
-        const vpcLogsGroups = new LogGroup(this, "CloudWatchVPCLogs", {
+
+        const vpcLogsGroups = new LogGroup(this, "CloudWatchVPCVisualizerLogs", {
+            logGroupName: "/aws/vendedlogs/CloudWatchVPCVisualizerLogs"+Math.floor(Math.random() * 10000000),
             retention: RetentionDays.ONE_WEEK,
-            removalPolicy: cdk.RemovalPolicy.RETAIN,
+            //removalPolicy: cdk.RemovalPolicy.DESTROY,
         });
 
         //const cidrRange = "10.0.0.0/16"; // 4096

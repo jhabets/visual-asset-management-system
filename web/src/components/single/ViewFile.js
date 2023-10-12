@@ -169,14 +169,14 @@ export default function ViewFile() {
                         <SpaceBetween direction="vertical" size="l">
                             <BreadcrumbGroup
                                 items={[
-                                    { text: Synonyms.Databases, href: "/databases/" },
+                                    { text: Synonyms.Databases, href: "#/databases/" },
                                     {
                                         text: databaseId,
-                                        href: "/databases/" + databaseId + "/assets/",
+                                        href: "#/databases/" + databaseId + "/assets/",
                                     },
                                     {
                                         text: asset?.assetName,
-                                        href: "/databases/" + databaseId + "/assets/" + assetId,
+                                        href: "#/databases/" + databaseId + "/assets/" + assetId,
                                     },
                                     { text: "view " + filename },
                                 ]}

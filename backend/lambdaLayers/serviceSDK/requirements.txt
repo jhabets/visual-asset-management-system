@@ -1,0 +1,2 @@
+stepfunctions==2.3.0 ; python_version >= "3.9" and python_version < "4.0"
+sagemaker==2.142.0 ; python_version >= "3.9" and python_version < "4.0"

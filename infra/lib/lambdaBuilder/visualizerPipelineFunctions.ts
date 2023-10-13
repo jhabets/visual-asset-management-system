@@ -12,6 +12,7 @@ import * as sns from "aws-cdk-lib/aws-sns";
 import { Construct } from "constructs";
 import { Duration } from "aws-cdk-lib";
 import { LayerVersion } from 'aws-cdk-lib/aws-lambda';
+import { LAMBDA_PYTHON_RUNTIME } from '../../config/config';
 
 export function buildExecuteVisualizerPCPipelineFunction(
     scope: Construct,
@@ -24,7 +25,7 @@ export function buildExecuteVisualizerPCPipelineFunction(
     const fun = new lambda.Function(scope, name, {
         code: lambda.Code.fromAsset(path.join(__dirname, `../../../backend/backend`)),
         handler: `handlers.visualizerpipelines.${name}.lambda_handler`,
-        runtime: lambda.Runtime.PYTHON_3_10,
+        runtime: LAMBDA_PYTHON_RUNTIME,
         layers: [lambdaCommonBaseLayer],
         timeout: Duration.minutes(5),
         memorySize: 256,
@@ -59,7 +60,7 @@ export function buildOpenPipelineFunction(
     const fun = new lambda.Function(scope, name, {
         code: lambda.Code.fromAsset(path.join(__dirname, `../../../backend/backend`)),
         handler: `handlers.visualizerpipelines.${name}.lambda_handler`,
-        runtime: lambda.Runtime.PYTHON_3_10,
+        runtime: LAMBDA_PYTHON_RUNTIME,
         layers: [lambdaCommonBaseLayer],
         timeout: Duration.minutes(5),
         memorySize: 256,
@@ -95,7 +96,7 @@ export function buildConstructPipelineFunction(
     const fun = new lambda.Function(scope, name, {
         code: lambda.Code.fromAsset(path.join(__dirname, `../../../backend/backend`)),
         handler: `handlers.visualizerpipelines.${name}.lambda_handler`,
-        runtime: lambda.Runtime.PYTHON_3_10,
+        runtime: LAMBDA_PYTHON_RUNTIME,
         layers: [lambdaCommonBaseLayer],
         timeout: Duration.minutes(5),
         memorySize: 128,
@@ -124,7 +125,7 @@ export function buildPipelineEndFunction(
     const fun = new lambda.Function(scope, name, {
         code: lambda.Code.fromAsset(path.join(__dirname, `../../../backend/backend`)),
         handler: `handlers.visualizerpipelines.${name}.lambda_handler`,
-        runtime: lambda.Runtime.PYTHON_3_10,
+        runtime: LAMBDA_PYTHON_RUNTIME,
         layers: [lambdaCommonBaseLayer],
         timeout: Duration.minutes(5),
         memorySize: 256,

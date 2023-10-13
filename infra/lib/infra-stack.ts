@@ -30,10 +30,10 @@ import { LocationServiceConstruct } from "./constructs/location-service-construc
 import { streamsBuilder } from "./streams-builder";
 import customResources = require('aws-cdk-lib/custom-resources');
 import * as Config from '../config/config';
+import { LAMBDA_PYTHON_RUNTIME } from '../config/config';
 import { VAMS_APP_FEATURES } from '../config/common/vamsAppFeatures';
 import { VpcSecurityGroupGatewayVisualizerPipelineConstruct } from "./constructs/vpc-securitygroup-gateway-visualizerPipeline-construct";
 import { VisualizationPipelineConstruct } from "./constructs/visualizerPipeline-construct";
-import { Code, LayerVersion, Runtime } from 'aws-cdk-lib/aws-lambda';
 import * as pylambda from "@aws-cdk/aws-lambda-python-alpha";
 
 
@@ -78,7 +78,7 @@ export class VAMS extends cdk.Stack {
             {
               layerVersionName: "vams_layer_base",
               entry: "../backend/lambdaLayers/base", 
-              compatibleRuntimes: [Runtime.PYTHON_3_10],
+              compatibleRuntimes: [LAMBDA_PYTHON_RUNTIME],
               removalPolicy: cdk.RemovalPolicy.DESTROY
             }
           );
@@ -90,7 +90,7 @@ export class VAMS extends cdk.Stack {
             {
               layerVersionName: "vams_layer_servicesdk",
               entry: "../backend/lambdaLayers/serviceSDK", 
-              compatibleRuntimes: [Runtime.PYTHON_3_10],
+              compatibleRuntimes: [LAMBDA_PYTHON_RUNTIME],
               removalPolicy: cdk.RemovalPolicy.DESTROY
             }
           );

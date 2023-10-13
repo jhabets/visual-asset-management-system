@@ -15,6 +15,7 @@ import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as path from "path";
 import { Config } from "../../config/config";
 import { LayerVersion } from 'aws-cdk-lib/aws-lambda';
+import { LAMBDA_PYTHON_RUNTIME } from '../../config/config';
 
 export interface SamlSettings {
     metadata: cognito.UserPoolIdentityProviderSamlMetadata;
@@ -53,7 +54,7 @@ export class CognitoWebNativeConstruct extends Construct {
         const preTokenGeneration = new lambda.Function(this, handlerName, {
             code: lambda.Code.fromAsset(path.join(__dirname, `../../../backend/backend`)),
             handler: `handlers.auth.${handlerName}.lambda_handler`,
-            runtime: lambda.Runtime.PYTHON_3_10,
+            runtime: LAMBDA_PYTHON_RUNTIME,
             layers: [props.lambdaCommonBaseLayer],
             timeout: Duration.minutes(2),
             memorySize: 1000,

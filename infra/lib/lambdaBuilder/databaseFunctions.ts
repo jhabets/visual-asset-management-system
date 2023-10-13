@@ -9,6 +9,7 @@ import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import { Construct } from "constructs";
 import { Duration } from "aws-cdk-lib";
 import { LayerVersion } from 'aws-cdk-lib/aws-lambda';
+import { LAMBDA_PYTHON_RUNTIME } from '../../config/config';
 
 export function buildCreateDatabaseLambdaFunction(
     scope: Construct,
@@ -19,7 +20,7 @@ export function buildCreateDatabaseLambdaFunction(
     const createDatabaseFunction = new lambda.Function(scope, name, {
         code: lambda.Code.fromAsset(path.join(__dirname, `../../../backend/backend`)),
         handler: `handlers.databases.${name}.lambda_handler`,
-        runtime: lambda.Runtime.PYTHON_3_10,
+        runtime: LAMBDA_PYTHON_RUNTIME,
         layers: [lambdaCommonBaseLayer],
         timeout: Duration.minutes(15),
         memorySize: 3008,
@@ -43,7 +44,7 @@ export function buildDatabaseService(
     const databaseService = new lambda.Function(scope, name, {
         code: lambda.Code.fromAsset(path.join(__dirname, `../../../backend/backend`)),
         handler: `handlers.databases.${name}.lambda_handler`,
-        runtime: lambda.Runtime.PYTHON_3_10,
+        runtime: LAMBDA_PYTHON_RUNTIME,
         layers: [lambdaCommonBaseLayer],
         timeout: Duration.minutes(15),
         memorySize: 3008,

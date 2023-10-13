@@ -5,6 +5,7 @@ import { Construct } from "constructs";
 import { Duration } from "aws-cdk-lib";
 import { suppressCdkNagErrorsByGrantReadWrite } from "../security";
 import { LayerVersion } from 'aws-cdk-lib/aws-lambda';
+import { LAMBDA_PYTHON_RUNTIME } from '../../config/config';
 
 export function buildAddCommentLambdaFunction(
     scope: Construct,
@@ -15,7 +16,7 @@ export function buildAddCommentLambdaFunction(
     const addCommentFunction = new lambda.Function(scope, name, {
         code: lambda.Code.fromAsset(path.join(__dirname, `../../../backend/backend`)),
         handler: `handlers.comments.${name}.lambda_handler`,
-        runtime: lambda.Runtime.PYTHON_3_10,
+        runtime: LAMBDA_PYTHON_RUNTIME,
         layers: [lambdaCommonBaseLayer],
         timeout: Duration.minutes(15),
         memorySize: 3008,
@@ -36,7 +37,7 @@ export function buildEditCommentLambdaFunction(
     const editCommentFunction = new lambda.Function(scope, name, {
         code: lambda.Code.fromAsset(path.join(__dirname, `../../../backend/backend`)),
         handler: `handlers.comments.${name}.lambda_handler`,
-        runtime: lambda.Runtime.PYTHON_3_10,
+        runtime: LAMBDA_PYTHON_RUNTIME,
         layers: [lambdaCommonBaseLayer],
         timeout: Duration.minutes(15),
         memorySize: 3008,
@@ -58,7 +59,7 @@ export function buildCommentService(
     const commentService = new lambda.Function(scope, name, {
         code: lambda.Code.fromAsset(path.join(__dirname, `../../../backend/backend`)),
         handler: `handlers.comments.${name}.lambda_handler`,
-        runtime: lambda.Runtime.PYTHON_3_10,
+        runtime: LAMBDA_PYTHON_RUNTIME,
         layers: [lambdaCommonBaseLayer],
         timeout: Duration.minutes(15),
         memorySize: 3008,

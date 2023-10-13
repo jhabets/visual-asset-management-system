@@ -14,6 +14,7 @@ import { suppressCdkNagErrorsByGrantReadWrite } from "../security";
 import { storageResources } from "../storage-builder";
 import { IAMArn, Service } from "../helper/service-helper";
 import { LayerVersion } from 'aws-cdk-lib/aws-lambda';
+import { LAMBDA_PYTHON_RUNTIME } from '../../config/config';
 
 export function buildCreatePipelineFunction(
     scope: Construct,
@@ -29,7 +30,7 @@ export function buildCreatePipelineFunction(
     const createPipelineFunction = new lambda.Function(scope, name, {
         code: lambda.Code.fromAsset(path.join(__dirname, `../../../backend/backend`)),
         handler: `handlers.pipelines.${name}.lambda_handler`,
-        runtime: lambda.Runtime.PYTHON_3_10,
+        runtime: LAMBDA_PYTHON_RUNTIME,
         layers: [lambdaCommonBaseLayer],
         timeout: Duration.minutes(15),
         memorySize: 3008,
@@ -168,7 +169,7 @@ export function buildPipelineService(
     const pipelineService = new lambda.Function(scope, name, {
         code: lambda.Code.fromAsset(path.join(__dirname, `../../../backend/backend`)),
         handler: `handlers.pipelines.${name}.lambda_handler`,
-        runtime: lambda.Runtime.PYTHON_3_10,
+        runtime: LAMBDA_PYTHON_RUNTIME,
         layers: [lambdaCommonBaseLayer],
         timeout: Duration.minutes(15),
         memorySize: 3008,
@@ -247,7 +248,7 @@ export function buildEnablePipelineFunction(
     const enablePipelineFunction = new lambda.Function(scope, name, {
         code: lambda.Code.fromAsset(path.join(__dirname, `../../../backend/backend`)),
         handler: `handlers.pipelines.${name}.lambda_handler`,
-        runtime: lambda.Runtime.PYTHON_3_10,
+        runtime: LAMBDA_PYTHON_RUNTIME,
         layers: [lambdaCommonBaseLayer],
         timeout: Duration.minutes(15),
         memorySize: 3008,

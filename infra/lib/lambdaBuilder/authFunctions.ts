@@ -10,6 +10,7 @@ import { Construct } from "constructs";
 import { Duration } from "aws-cdk-lib";
 import { storageResources } from "../storage-builder";
 import { LayerVersion } from 'aws-cdk-lib/aws-lambda';
+import { LAMBDA_PYTHON_RUNTIME } from '../../config/config';
 
 interface AuthFunctions {
     groups: lambda.Function;
@@ -58,7 +59,7 @@ export function buildAuthFunction(
     const fun = new lambda.Function(scope, name, {
         code: lambda.Code.fromAsset(path.join(__dirname, `../../../backend/backend`)),
         handler: `handlers.auth.${name}.lambda_handler`,
-        runtime: lambda.Runtime.PYTHON_3_10,
+        runtime: LAMBDA_PYTHON_RUNTIME,
         layers: [lambdaCommonBaseLayer],
         timeout: Duration.minutes(1),
         memorySize: 512,

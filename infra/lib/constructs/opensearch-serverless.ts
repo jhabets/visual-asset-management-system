@@ -12,6 +12,7 @@ import * as njslambda from "aws-cdk-lib/aws-lambda-nodejs";
 import * as path from "path";
 import { CustomResource, Names } from "aws-cdk-lib";
 import * as iam from "aws-cdk-lib/aws-iam";
+import { LAMBDA_NODE_RUNTIME } from '../../config/config';
 
 interface OpensearchServerlessConstructProps extends cdk.StackProps {
     principalArn: string[];
@@ -34,7 +35,7 @@ export class OpensearchServerlessConstruct extends Construct {
                 bundling: {
                     externalModules: ["aws-sdk"],
                 },
-                runtime: lambda.Runtime.NODEJS_18_X,
+                runtime: LAMBDA_NODE_RUNTIME,
             }
         );
 

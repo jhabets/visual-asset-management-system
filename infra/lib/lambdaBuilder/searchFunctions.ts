@@ -11,6 +11,7 @@ import { OpensearchServerlessConstruct } from "../constructs/opensearch-serverle
 import { storageResources } from "../storage-builder";
 import * as cdk from "aws-cdk-lib";
 import { LayerVersion } from 'aws-cdk-lib/aws-lambda';
+import { LAMBDA_PYTHON_RUNTIME } from '../../config/config';
 
 export function buildSearchFunction(
     scope: Construct,
@@ -24,7 +25,7 @@ export function buildSearchFunction(
     const fun = new lambda.Function(scope, name, {
         code: lambda.Code.fromAsset(path.join(__dirname, `../../../backend/backend`)),
         handler: `handlers.search.${name}.lambda_handler`,
-        runtime: lambda.Runtime.PYTHON_3_10,
+        runtime: LAMBDA_PYTHON_RUNTIME,
         layers: [lambdaCommonBaseLayer],
         timeout: Duration.minutes(15),
         memorySize: 3008,

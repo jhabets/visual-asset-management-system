@@ -10,6 +10,7 @@ import { Duration } from "aws-cdk-lib";
 import { storageResources } from "../storage-builder";
 import * as cdk from "aws-cdk-lib";
 import { LayerVersion } from 'aws-cdk-lib/aws-lambda';
+import { LAMBDA_PYTHON_RUNTIME } from '../../config/config';
 
 export function buildMetadataFunctions(
     scope: Construct,
@@ -30,7 +31,7 @@ export function buildMetadataFunction(
     const fun = new lambda.Function(scope, name+"-metadata", {
         code: lambda.Code.fromAsset(path.join(__dirname, `../../../backend/backend`)),
         handler: `handlers.metadata.${name}.lambda_handler`,
-        runtime: lambda.Runtime.PYTHON_3_10,
+        runtime: LAMBDA_PYTHON_RUNTIME,
         layers: [lambdaCommonBaseLayer],
         timeout: Duration.minutes(15),
         memorySize: 3008,
@@ -57,7 +58,7 @@ export function buildMetadataIndexingFunction(
     const fun = new lambda.Function(scope, "idx" + handlerType, {
             code: lambda.Code.fromAsset(path.join(__dirname, `../../../backend/backend`)),
             handler: `handlers.indexing.streams.lambda_handler_${handlerType}`,
-            runtime: lambda.Runtime.PYTHON_3_10,
+            runtime: LAMBDA_PYTHON_RUNTIME,
             layers: [lambdaCommonBaseLayer],
         timeout: Duration.minutes(15),
         memorySize: 3008,

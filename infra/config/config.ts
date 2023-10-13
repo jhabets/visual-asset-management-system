@@ -4,13 +4,16 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import { RemovalPolicy } from 'aws-cdk-lib';
+import { Runtime } from 'aws-cdk-lib/aws-lambda';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import * as dotenv from 'dotenv';
 import * as cdk from "aws-cdk-lib";
 
-
+//Top level configurations
 dotenv.config();
+export const LAMBDA_PYTHON_RUNTIME = Runtime.PYTHON_3_10
+export const LAMBDA_NODE_RUNTIME = Runtime.NODEJS_18_X
 
 export function getConfig(
     app: cdk.App,

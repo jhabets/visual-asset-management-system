@@ -100,7 +100,8 @@ export function buildCreateWorkflowFunction(
     lambdaCommonServiceSDKLayer: LayerVersion,
     workflowStorageTable: dynamodb.Table,
     assetStorageBucket: s3.Bucket,
-    uploadAllAssetFunction: lambda.Function
+    uploadAllAssetFunction: lambda.Function,
+    stackName: string
 ): lambda.Function {
     const role = buildWorkflowRole(scope, assetStorageBucket, uploadAllAssetFunction);
     const name = "createWorkflow";
@@ -114,6 +115,7 @@ export function buildCreateWorkflowFunction(
         environment: {
             WORKFLOW_STORAGE_TABLE_NAME: workflowStorageTable.tableName,
             UPLOAD_ALL_LAMBDA_FUNCTION_NAME: uploadAllAssetFunction.functionName,
+            VAMS_STACK_NAME: stackName,
             LAMBDA_ROLE_ARN: role.roleArn,
         },
     });

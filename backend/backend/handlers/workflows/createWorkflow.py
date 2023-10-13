@@ -45,6 +45,7 @@ client = boto3.client('lambda')
 sf_client = boto3.client('stepfunctions')
 try:
     workflow_Database = os.environ["WORKFLOW_STORAGE_TABLE_NAME"]
+    stack_name = os.environ["VAMS_STACK_NAME"]
     upload_all_function = os.environ['UPLOAD_ALL_LAMBDA_FUNCTION_NAME']
 except:
     print("Failed Loading Environment Variables")
@@ -225,7 +226,7 @@ def create_step_function(pipelines, databaseId, workflowId):
 
     workflow_graph = Chain(steps)
     branching_workflow = Workflow(
-        name=workflowId,
+        name=stack_name + "-" + workflowId,
         definition=workflow_graph,
         role=role,
     )

@@ -37,7 +37,7 @@ import { Code, LayerVersion, Runtime } from 'aws-cdk-lib/aws-lambda';
 import * as pylambda from "@aws-cdk/aws-lambda-python-alpha";
 
 
-interface EnvProps {
+export interface EnvProps {
     env: cdk.Environment;
     stackName: string;
     ssmWafArnParameterName: string;
@@ -290,7 +290,7 @@ export class VAMS extends cdk.Stack {
         }
         
         //Deploy Backend API framework
-        apiBuilder(this, api.apiGatewayV2, storageResources, lambdaCommonBaseLayer, lambdaCommonServiceSDKLayer);
+        apiBuilder(this, api.apiGatewayV2, storageResources, lambdaCommonBaseLayer, lambdaCommonServiceSDKLayer, props);
 
         //Deploy OpenSearch Serverless
         if(props.config.app.useOpenSearchServerless.enabled) {

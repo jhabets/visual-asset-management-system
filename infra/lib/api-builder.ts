@@ -51,6 +51,7 @@ import { buildMetadataSchemaService } from "./lambdaBuilder/metadataSchemaFuncti
 import { buildMetadataFunctions } from "./lambdaBuilder/metadataFunctions";
 import { buildUploadAssetWorkflow } from "./uploadAssetWorkflowBuilder";
 import { buildAuthFunctions } from "./lambdaBuilder/authFunctions";
+import { EnvProps } from "./infra-stack";
 
 interface apiGatewayLambdaConfiguration {
     routePath: string;
@@ -81,7 +82,8 @@ export function apiBuilder(
     api: apigwv2.HttpApi,
     storageResources: storageResources,
     lambdaCommonBaseLayer: LayerVersion,
-    lambdaCommonServiceSDKLayer: LayerVersion
+    lambdaCommonServiceSDKLayer: LayerVersion,
+    props: EnvProps
 ) {
     //config resources
     const createConfigFunction = buildConfigService(scope, lambdaCommonBaseLayer, storageResources.s3.assetBucket, storageResources.dynamo.appFeatureEnabledStorageTable);
@@ -391,7 +393,8 @@ export function apiBuilder(
         lambdaCommonServiceSDKLayer,
         storageResources.dynamo.workflowStorageTable,
         storageResources.s3.assetBucket,
-        uploadAllAssetFunction
+        uploadAllAssetFunction,
+        props.stackName
     );
     attachFunctionToApi(scope, createWorkflowFunction, {
         routePath: "/workflows",

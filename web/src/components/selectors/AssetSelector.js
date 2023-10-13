@@ -76,11 +76,12 @@ const AssetSelector = (props) => {
             selectedOption={asset || null}
             onChange={({ detail }) => {
                 if (pathViewType) {
+                    const assetFileName = detail.selectedOption.label;
                     const assetId = detail.selectedOption.value;
                     const databaseId = allItems.find(
                         (item) => item.assetId === assetId
                     )?.databaseId;
-                    window.location = `/databases/${databaseId}/assets/${assetId}#${pathViewType}`;
+                    window.location = `#/databases/${databaseId}/assets/${assetId}/file`;
                 } else {
                     setAsset(detail.selectedOption);
                     setActiveTab("asset");

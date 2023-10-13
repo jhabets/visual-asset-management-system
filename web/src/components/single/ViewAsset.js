@@ -66,7 +66,7 @@ export default function ViewAsset() {
     const [assetDownloadError, setAssetDownloadError] = useState("");
 
     const handleCreateWorkflow = () => {
-        window.location = `/databases/${databaseId}/workflows/create`;
+        window.location = `#/databases/${databaseId}/workflows/create`;
     };
 
     const WorkflowHeaderControls = () => {

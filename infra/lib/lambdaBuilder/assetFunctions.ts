@@ -268,7 +268,7 @@ export function buildUploadAssetWorkflowFunction(
     //TODO: Currently only passing this as part of the infra change.
     const uploadAssetWorkflowFunction = new lambda.Function(scope, name, {
         code: lambda.Code.fromAsset(path.join(__dirname, `../../../backend/backend`)),
-        handler: `handlers.assets.${name}.lambda_handler`,
+        handler: `functions.assets.${name}.lambda_handler.lambda_handler`,
         runtime: lambda.Runtime.PYTHON_3_10,
         layers: [lambdaCommonBaseLayer],
         timeout: Duration.minutes(15),

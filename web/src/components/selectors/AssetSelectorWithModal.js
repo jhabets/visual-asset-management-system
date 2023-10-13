@@ -12,7 +12,7 @@ export default function AssetSelectorWithModal(props) {
     const [open, setOpen] = useState(true);
     const handleClose = () => {
         setOpen(false);
-        window.location = "/assets";
+        window.location = "#/assets";
     };
 
     return (

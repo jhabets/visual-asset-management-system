@@ -45,16 +45,16 @@ describe("Navigation", () => {
             "#/pipelines",
             "#/workflows",
             "#/auth/constraints",
-            "#/visualizers/column",
-            "#/visualizers/model",
-            "#/visualizers/pc",
-            "#/visualizers/plot"
+            // "#/visualizers/column",
+            // "#/visualizers/model",
+            // "#/visualizers/pc",
+            // "#/visualizers/plot"
         );
     });
 
     it("should render assets and visualizer links for the assets role", async () => {
         const { container } = render(
-            <Navigation activeHref={"#/assets"} user={createUser(["assets", "visualizers"])} />
+            <Navigation activeHref={"#/assets"} user={createUser(["assets"])} />
         );
         const wrapper = createWrapper(container);
         expectSideNavLinks(
@@ -62,10 +62,10 @@ describe("Navigation", () => {
             "#/assets",
             "#/upload",
             "#/comments",
-            "#/visualizers/column",
-            "#/visualizers/model",
-            "#/visualizers/pc",
-            "#/visualizers/plot"
+            // "#/visualizers/column",
+            // "#/visualizers/model",
+            // "#/visualizers/pc",
+            // "#/visualizers/plot"
         );
         expectNoSideNavLinks(wrapper, "#/pipelines", "#/workflows", "#/auth/constraints");
     });
@@ -83,10 +83,10 @@ describe("Navigation", () => {
             "#/comments",
             "#/workflows",
             "#/auth/constraints",
-            "#/visualizers/model",
-            "#/visualizers/pc",
-            "#/visualizers/plot",
-            "#/visualizers/column"
+            // "#/visualizers/model",
+            // "#/visualizers/pc",
+            // "#/visualizers/plot",
+            // "#/visualizers/column"
         );
     });
 
@@ -102,10 +102,10 @@ describe("Navigation", () => {
             "#/comments",
             "#/pipelines",
             "#/auth/constraints",
-            "#/visualizers/column",
-            "#/visualizers/model",
-            "#/visualizers/pc",
-            "#/visualizers/plot"
+            // "#/visualizers/column",
+            // "#/visualizers/model",
+            // "#/visualizers/pc",
+            // "#/visualizers/plot"
         );
     });
 
@@ -123,10 +123,10 @@ describe("Navigation", () => {
             "#/comments",
             "#/pipelines",
             "#/workflows",
-            "#/visualizers/column",
-            "#/visualizers/model",
-            "#/visualizers/pc",
-            "#/visualizers/plot"
+            // "#/visualizers/column",
+            // "#/visualizers/model",
+            // "#/visualizers/pc",
+            // "#/visualizers/plot"
         );
         expectNoSideNavLinks(wrapper, "#/auth/constraints");
     });

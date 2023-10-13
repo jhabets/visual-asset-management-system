@@ -73,7 +73,7 @@ const routeTable: RouteOption[] = [
     },
     { path: "/comments", Page: Comments, active: "/comments" },
     { path: "/upload", Page: AssetUploadPage, active: "/upload", roles: ["assets", "upload"] },
-    { path: "/visualizers/:pathViewType", Page: ViewAsset, active: "/assets", roles: ["assets"] },
+    //{ path: "/visualizers/:pathViewType", Page: ViewAsset, active: "/assets", roles: ["assets"] },
     {
         path: "/databases/:databaseId/pipelines",
         Page: Pipelines,
@@ -163,22 +163,35 @@ export const AppRoutes = ({ navigationOpen, setNavigationOpen, user }: AppRoutes
     const navigate = useNavigate();
 
     useEffect(() => {
-        console.log('Location changed', window.location.href);
+        console.log('Location changed: ', window.location.href);
 
         const hashes = window.location.href.match(/#/g) || [];
-        console.log('hashes', hashes);
+        console.log('Hash Count in URL: ', hashes.length );
 
         if (hashes.length > 1) {
+
+            const {state} = location
+            console.log("Previous State Recorded: ", state);
+
             const segments = window.location.href.split('#/');
 
-            const fragmentWeWant = segments.pop();
+            //console.log('Total URL Segments Found: ', segments);
 
-            console.log('fragmentWeWant', `#/${fragmentWeWant}`);
+            const fragmentWeWant = segments.pop();
+            console.log('HashRoute Duplicate Detected, Re-routing to Last Hash:', `#/${fragmentWeWant}`);
 
             const url = new URL(window.location.href);
             url.hash = `#/${fragmentWeWant}`;
 
+            console.log('Full URL Redirect:', url.href);
+
             window.location.href = url.toString();
+
+            // //Navigate while preserving state
+            // navigate(url.href, {
+            //     state: state,
+            //     relative: "path"
+            // });
         }
     }, [location, navigate]);
 

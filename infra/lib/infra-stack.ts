@@ -25,7 +25,7 @@ import { Construct } from "constructs";
 import { NagSuppressions } from "cdk-nag";
 import { CustomCognitoConfigConstruct } from "./constructs/custom-cognito-config-construct";
 import { CustomFeatureEnabledConfigConstruct } from "./constructs/custom-featureEnabled-config-construct";
-import { samlSettings } from "./saml-config";
+import { samlSettings } from "../config/saml-config";
 import { LocationServiceConstruct } from "./constructs/location-service-construct";
 import { streamsBuilder } from "./streams-builder";
 import customResources = require('aws-cdk-lib/custom-resources');

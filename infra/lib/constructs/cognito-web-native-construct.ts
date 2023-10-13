@@ -26,8 +26,8 @@ export interface SamlSettings {
 export interface CognitoWebNativeConstructProps extends cdk.StackProps {
     lambdaCommonBaseLayer: LayerVersion;
     storageResources: storageResources;
-    samlSettings?: SamlSettings;
     config: Config;
+    samlSettings?: SamlSettings;
 }
 
 /**
@@ -101,7 +101,7 @@ export class CognitoWebNativeConstruct extends Construct {
 
         const cfnUserPool = userPool.node.defaultChild as cognito.CfnUserPool;
 
-        if(!props.config.app.govCloud) {
+        if(!props.config.app.govCloud.enabled) {
             // Only enable advanced security where it's available
             const userPoolAddOnsProperty: cognito.CfnUserPool.UserPoolAddOnsProperty = {
                 advancedSecurityMode: "ENFORCED",

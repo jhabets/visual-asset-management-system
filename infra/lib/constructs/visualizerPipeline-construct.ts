@@ -11,7 +11,7 @@ import * as iam from "aws-cdk-lib/aws-iam";
 import * as path from "path";
 import { LambdaSubscription } from "aws-cdk-lib/aws-sns-subscriptions";
 import * as cdk from "aws-cdk-lib";
-import { Duration, Stack } from "aws-cdk-lib";
+import { Duration, Stack, Names } from "aws-cdk-lib";
 import { Construct } from "constructs";
 import {
     buildConstructPipelineFunction,
@@ -310,9 +310,9 @@ export class VisualizationPipelineConstruct extends Construct {
             this,
             "PointCloudVisualizerPipelineProcessing-StateMachineLogGroup",
             {
-                logGroupName: "/aws/vendedlogs/stateMachine-VizPipeline/"+Math.floor(Math.random() * 10000000),
+                logGroupName: "/aws/vendedlogs/VAMSstateMachine-VizPipeline"+Math.floor(Math.random() * 100000000),
                 retention: logs.RetentionDays.TWO_YEARS,
-                //removalPolicy: cdk.RemovalPolicy.DESTROY,
+                removalPolicy: cdk.RemovalPolicy.DESTROY,
             }
         );
 

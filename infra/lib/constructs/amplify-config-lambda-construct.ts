@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2023 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -60,7 +60,11 @@ interface InlineLambdaProps {
      * Additional configuration needed for federated auth
      */
     federatedConfig?: AmplifyConfigFederatedIdentityProps;
-
+    /**
+     * External OATH IDP URL Configuration
+     */
+    externalOathIdpURL?: string
+    
     stackName: string;
 }
 
@@ -89,6 +93,10 @@ export interface AmplifyConfigLambdaConstructProps extends cdk.StackProps {
      * Additional configuration needed for federated auth
      */
     federatedConfig?: AmplifyConfigFederatedIdentityProps;
+    /**
+     * External OATH IDP URL Configuration
+     */
+    externalOathIdpURL?: string
 }
 
 /**
@@ -102,7 +110,7 @@ export class AmplifyConfigLambdaConstruct extends Construct {
 
         props = { ...props };
 
-        const lambdaFn = new lambda.Function(this, "Lambda", {
+        const lambdaFn = new lambda.Function(this, "AmplifyConfigLambda", {
             runtime: LAMBDA_NODE_RUNTIME,
             handler: "index.handler",
             code: lambda.Code.fromInline(
@@ -113,6 +121,7 @@ export class AmplifyConfigLambdaConstruct extends Construct {
                     identityPoolId: props.identityPoolId,
                     api: props.api.url || "us-east-1",
                     federatedConfig: props.federatedConfig,
+                    externalOathIdpURL: props.externalOathIdpURL || "undefined",
                     stackName: props.stackName!,
                 })
             ),

@@ -4,19 +4,19 @@
  */
 import * as cdk from "aws-cdk-lib";
 import { Construct } from "constructs";
-import { CfnOutput } from "aws-cdk-lib";
+import { CfnOutput, Names } from "aws-cdk-lib";
 import { Stack } from "aws-cdk-lib";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import { LogGroup, RetentionDays } from "aws-cdk-lib/aws-logs";
 import { NagSuppressions } from "cdk-nag";
 
 /* eslint-disable @typescript-eslint/no-empty-interface */
-export interface VpcGatewayGovCloudDeployConstructProps extends cdk.StackProps {
+export interface VpcGatewayAlbDeployConstructProps extends cdk.StackProps {
     vpcCidrRange: string
     setupPublicAccess:boolean
 }
 
-const defaultProps: Partial<VpcGatewayGovCloudDeployConstructProps> = {
+const defaultProps: Partial<VpcGatewayAlbDeployConstructProps> = {
     stackName: "",
     env: {},
 };
@@ -24,7 +24,7 @@ const defaultProps: Partial<VpcGatewayGovCloudDeployConstructProps> = {
 /**
  * Custom configuration to Cognito.
  */
-export class VpcGatewayGovCloudDeployConstruct extends Construct {
+export class VpcGatewayAlbDeployConstruct extends Construct {
     readonly vpc: ec2.Vpc;
     readonly subnets: {
         webApp: ec2.ISubnet[];
@@ -33,7 +33,7 @@ export class VpcGatewayGovCloudDeployConstruct extends Construct {
     constructor(
         parent: Construct,
         name: string,
-        props: VpcGatewayGovCloudDeployConstructProps
+        props: VpcGatewayAlbDeployConstructProps
     ) {
         super(parent, name);
 
@@ -43,9 +43,9 @@ export class VpcGatewayGovCloudDeployConstruct extends Construct {
          * VPC + Logs
          */
         const vpcLogsGroups = new LogGroup(this, "CloudWatchVPCWebDistroLogs", {
-            logGroupName: "/aws/vendedlogs/CloudWatchVPCWebDistroLogs"+Math.floor(Math.random() * 10000000),
+            logGroupName: "/aws/vendedlogs/VAMSCloudWatchVPCWebDistroLogs"+Math.floor(Math.random() * 100000000),
             retention: RetentionDays.ONE_WEEK,
-            //removalPolicy: cdk.RemovalPolicy.RETAIN,
+            removalPolicy: cdk.RemovalPolicy.DESTROY,
         });
 
         //const cidrRange = "10.1.0.0/16"; // 4096

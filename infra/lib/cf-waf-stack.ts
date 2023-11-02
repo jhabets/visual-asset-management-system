@@ -24,8 +24,6 @@ interface EnvProps {
 }
 
 export class CfWafStack extends cdk.Stack {
-    //This can only be made in us-east-1, so it'll be made in a separate region from the region agnostic VAMS stack
-    //but we can take the info from here and place it into the cloudfront construct in that stack
     public ssmWafArnParameterName: string;
     public wafArn: string;
 

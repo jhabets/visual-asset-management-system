@@ -126,7 +126,7 @@ class MetadataTable():
         return resp['Item']
 
 
-class AOSSIndexS3Objects():
+class AOSIndexS3Objects():
     def __init__(self, bucketName, s3client,
                  aosclient, indexName, metadataTable=MetadataTable.from_env):
         self.bucketName = bucketName
@@ -140,12 +140,12 @@ class AOSSIndexS3Objects():
         bucketName = env.get("ASSET_BUCKET_NAME")
         s3client = boto3.client('s3')
         region = env.get('AWS_REGION')
-        service = 'aoss'
+        service = env.get('AOS_TYPE')  # aoss (serverless) or es (provisioned)
         credentials = boto3.Session().get_credentials()
         auth = AWSV4SignerAuth(credentials, region, service)
-        host = get_ssm_parameter_value('AOSS_ENDPOINT_PARAM', region, env)
+        host = get_ssm_parameter_value('AOS_ENDPOINT_PARAM', region, env)
         indexName = get_ssm_parameter_value(
-            'AOSS_INDEX_NAME_PARAM', region, env)
+            'AOS_INDEX_NAME_PARAM', region, env)
         aosclient = OpenSearch(
             hosts=[{'host': urlparse(host).hostname, 'port': 443}],
             http_auth=auth,
@@ -154,7 +154,7 @@ class AOSSIndexS3Objects():
             connection_class=RequestsHttpConnection,
             pool_maxsize=20,
         )
-        return AOSSIndexS3Objects(bucketName, s3client, aosclient, indexName)
+        return AOSIndexS3Objects(bucketName, s3client, aosclient, indexName)
 
     def _get_s3_object_keys_generator(self, prefix):
         paginator = self.s3client.get_paginator('list_objects')
@@ -177,10 +177,10 @@ class AOSSIndexS3Objects():
         result = {
             x: y
             for k, v in (s3object | metadata).items()
-            for x, y in AOSSIndexAssetMetadata._determine_field_name(k, v)
+            for x, y in AOSIndexAssetMetadata._determine_field_name(k, v)
         }
         result['_rectype'] = 's3object'
-        print("aoss s3", result)
+        print("aos s3", result)
         return result
 
     def get_asset_fields(self, databaseId, assetId):
@@ -248,7 +248,7 @@ class AOSSIndexS3Objects():
                                           s3object, asset_fields)
 
 
-class AOSSIndexAssetMetadata():
+class AOSIndexAssetMetadata():
 
     def __init__(self, host, auth, region, service, indexName):
         self.client = OpenSearch(
@@ -266,17 +266,17 @@ class AOSSIndexAssetMetadata():
         print("env", env.get("METADATA_STORAGE_TABLE_NAME"))
         print("env", env.get("ASSET_STORAGE_TABLE_NAME"))
         print("env", env.get("DATABASE_STORAGE_TABLE_NAME"))
-        print("env", env.get("AOSS_ENDPOINT"))
+        print("env", env.get("AOS_ENDPOINT"))
         print("env", env.get("AWS_REGION"))
         region = env.get('AWS_REGION')
-        service = 'aoss'
+        service = env.get('AOS_TYPE')  # aoss (serverless) or es (provisioned)
         credentials = boto3.Session().get_credentials()
         auth = AWSV4SignerAuth(credentials, region, service)
-        host = get_ssm_parameter_value('AOSS_ENDPOINT_PARAM', region, env)
+        host = get_ssm_parameter_value('AOS_ENDPOINT_PARAM', region, env)
         indexName = get_ssm_parameter_value(
-            'AOSS_INDEX_NAME_PARAM', region, env)
+            'AOS_INDEX_NAME_PARAM', region, env)
 
-        return AOSSIndexAssetMetadata(
+        return AOSIndexAssetMetadata(
             host=host,
             region=region,
             service=service,
@@ -329,7 +329,7 @@ class AOSSIndexAssetMetadata():
             return []
 
         field_name = field.lower().replace(" ", "_")
-        data_type = AOSSIndexAssetMetadata._determine_field_type(data)
+        data_type = AOSIndexAssetMetadata._determine_field_type(data)
         if data_type == "geo_point_and_polygon":
             j = json.loads(data)
             return [
@@ -373,7 +373,7 @@ class AOSSIndexAssetMetadata():
         result = {
             x: y
             for k, v in item["dynamodb"]["NewImage"].items()
-            for x, y in AOSSIndexAssetMetadata._determine_field_name(
+            for x, y in AOSIndexAssetMetadata._determine_field_name(
                 k, deserialize(v))
         }
         result['_rectype'] = 'asset'
@@ -381,7 +381,7 @@ class AOSSIndexAssetMetadata():
 
     def process_item(self, item):
         try:
-            body = AOSSIndexAssetMetadata._process_item(item)
+            body = AOSIndexAssetMetadata._process_item(item)
             return self.client.index(
                 index=self.indexName,
                 body=body,
@@ -464,12 +464,12 @@ def get_asset_fields(keys):
 
 
 def lambda_handler_a(event, context,
-                     index=AOSSIndexAssetMetadata.from_env,
-                     s3index=AOSSIndexS3Objects.from_env,
+                     index=AOSIndexAssetMetadata.from_env,
+                     s3index=AOSIndexS3Objects.from_env,
                      get_asset_fields_fn=get_asset_fields):
 
     print("asset table event", event)
-    # we need to catch delete events here and delete by query on aoss.
+    # we need to catch delete events here and delete by query on aos.
     client = index()
 
     if event.get("eventName") == "REMOVE":
@@ -497,7 +497,7 @@ def handle_s3_event_record(record,
                            s3=boto3.client("s3"),
                            metadata_fn=MetadataTable.from_env,
                            get_asset_fields_fn=get_asset_fields,
-                           s3index_fn=AOSSIndexS3Objects.from_env,
+                           s3index_fn=AOSIndexS3Objects.from_env,
                            sleep_fn=time.sleep):
 
     handle_s3_event_record_removed(record, s3, s3index_fn)
@@ -567,8 +567,8 @@ def handle_s3_event_record(record,
 
 
 def lambda_handler_m(event, context,
-                     index=AOSSIndexAssetMetadata.from_env,
-                     s3index=AOSSIndexS3Objects.from_env,
+                     index=AOSIndexAssetMetadata.from_env,
+                     s3index=AOSIndexS3Objects.from_env,
                      get_asset_fields_fn=get_asset_fields):
 
     print("the event", event)

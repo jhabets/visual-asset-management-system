@@ -5,6 +5,7 @@
  */
 
 import { Construct } from "constructs";
+import { Names } from "aws-cdk-lib";
 import * as apigateway from "aws-cdk-lib/aws-apigatewayv2";
 import * as apigwv2 from "@aws-cdk/aws-apigatewayv2-alpha";
 import * as logs from "aws-cdk-lib/aws-logs";
@@ -13,6 +14,7 @@ import * as lambda from "aws-cdk-lib/aws-lambda";
 import { storageResources } from "./storage-builder";
 import { buildConfigService } from "./lambdaBuilder/configFunctions";
 import { LayerVersion} from 'aws-cdk-lib/aws-lambda';
+import * as cdk from "aws-cdk-lib";
 import {
     buildCreateDatabaseLambdaFunction,
     buildDatabaseService,
@@ -51,7 +53,7 @@ import { buildMetadataSchemaService } from "./lambdaBuilder/metadataSchemaFuncti
 import { buildMetadataFunctions } from "./lambdaBuilder/metadataFunctions";
 import { buildUploadAssetWorkflow } from "./uploadAssetWorkflowBuilder";
 import { buildAuthFunctions } from "./lambdaBuilder/authFunctions";
-import { EnvProps } from "./infra-stack";
+import { EnvProps } from "./core-stack";
 
 interface apiGatewayLambdaConfiguration {
     routePath: string;
@@ -511,10 +513,9 @@ export function apiBuilder(
     //https://github.com/aws/aws-cdk/issues/11100#issuecomment-904627081
     
     const accessLogs = new logs.LogGroup(scope, "VAMS-API-AccessLogs", {
-        logGroupName: "/aws/vendedlogs/VAMS-API-AccessLogs"+Math.floor(Math.random() * 10000000),
+        logGroupName: "/aws/vendedlogs/VAMS-API-AccessLogs"+Math.floor(Math.random() * 100000000),
         retention: logs.RetentionDays.TWO_YEARS,
-        //removalPolicy: cdk.RemovalPolicy.DESTROY,
-        
+        removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
     const stage = api.defaultStage?.node.defaultChild as apigateway.CfnStage;
     stage.accessLogSettings = {

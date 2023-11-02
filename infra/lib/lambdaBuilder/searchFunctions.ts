@@ -8,6 +8,7 @@ import * as path from "path";
 import { Construct } from "constructs";
 import { Duration } from "aws-cdk-lib";
 import { OpensearchServerlessConstruct } from "../constructs/opensearch-serverless";
+import { OpensearchProvisionedConstruct } from "../constructs/opensearch-provisioned";
 import { storageResources } from "../storage-builder";
 import * as cdk from "aws-cdk-lib";
 import { LayerVersion } from 'aws-cdk-lib/aws-lambda';
@@ -16,10 +17,10 @@ import { LAMBDA_PYTHON_RUNTIME } from '../../config/config';
 export function buildSearchFunction(
     scope: Construct,
     lambdaCommonBaseLayer: LayerVersion,
-    aossEndpoint: string,
+    aosEndpoint: string,
     indexNameParam: string,
-    aossConstruct: OpensearchServerlessConstruct,
-    storageResources: storageResources
+    storageResources: storageResources,
+    useProvisioned: boolean
 ): lambda.Function {
     const name = "search";
     const fun = new lambda.Function(scope, name, {
@@ -30,14 +31,15 @@ export function buildSearchFunction(
         timeout: Duration.minutes(15),
         memorySize: 3008,
         environment: {
-            AOSS_ENDPOINT_PARAM: aossEndpoint,
-            AOSS_INDEX_NAME_PARAM: indexNameParam,
+            AOS_ENDPOINT_PARAM: aosEndpoint,
+            AOS_INDEX_NAME_PARAM: indexNameParam,
+            AOS_TYPE: useProvisioned? "es" : "aoss",
             AUTH_ENTITIES_TABLE: storageResources.dynamo.authEntitiesStorageTable.tableName,
             DATABASE_STORAGE_TABLE_NAME: storageResources.dynamo.databaseStorageTable.tableName,
         },
     });
 
-    // add access to read the parameter store param aossEndpoint
+    // add access to read the parameter store param aosEndpoint
     fun.role?.addToPrincipalPolicy(
         new cdk.aws_iam.PolicyStatement({
             actions: ["ssm:GetParameter"],
@@ -51,7 +53,6 @@ export function buildSearchFunction(
 
     storageResources.dynamo.authEntitiesStorageTable.grantReadData(fun);
     storageResources.dynamo.databaseStorageTable.grantReadData(fun);
-    aossConstruct.grantCollectionAccess(fun);
 
     return fun;
 }

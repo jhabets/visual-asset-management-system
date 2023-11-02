@@ -4,7 +4,7 @@
  */
 import * as cdk from "aws-cdk-lib";
 import { Construct } from "constructs";
-import { CfnOutput } from "aws-cdk-lib";
+import { CfnOutput, Names } from "aws-cdk-lib";
 import { Stack } from "aws-cdk-lib";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import { LogGroup, RetentionDays } from "aws-cdk-lib/aws-logs";
@@ -55,9 +55,9 @@ export class VpcSecurityGroupGatewayVisualizerPipelineConstruct extends Construc
          */
 
         const vpcLogsGroups = new LogGroup(this, "CloudWatchVPCVisualizerLogs", {
-            logGroupName: "/aws/vendedlogs/CloudWatchVPCVisualizerLogs"+Math.floor(Math.random() * 10000000),
+            logGroupName: "/aws/vendedlogs/VAMSCloudWatchVPCVisualizerLogs"+Math.floor(Math.random() * 100000000),
             retention: RetentionDays.ONE_WEEK,
-            //removalPolicy: cdk.RemovalPolicy.DESTROY,
+            removalPolicy: cdk.RemovalPolicy.DESTROY,
         });
 
         //const cidrRange = "10.0.0.0/16"; // 4096

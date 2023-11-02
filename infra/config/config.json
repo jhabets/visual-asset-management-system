@@ -12,8 +12,10 @@
 		"govCloud": {
 			"enabled": false
 		},
-		"useOpenSearchServerless": {
-			"enabled": false
+		"openSearch": {
+			"useProvisioned": {
+				"enabled": true
+			}
 		},
 		"useLocationService": {
 			"enabled": false
@@ -29,7 +31,7 @@
 		},
 		"pipelines": {
 			"usePointCloudVisualization": {
-				"enabled": true,
+				"enabled": false,
 				"vpcCidrRange": "10.2.0.0/16",
 				"optionalVPCID": null
 			}
@@ -38,6 +40,10 @@
 			"useCognito": {
 				"enabled": true,
 				"useSaml": false
+			},
+			"useExternalOATHIdp": {
+				"enabled": false,
+				"idpAuthProviderUrl": null
 			}
 		}
 	}

@@ -21,7 +21,7 @@ import * as acm from "aws-cdk-lib/aws-certificatemanager";
 import * as route53targets from "aws-cdk-lib/aws-route53-targets";
 import { NagSuppressions } from "cdk-nag";
 
-export interface AlbS3WebsiteGovCloudDeployConstructProps extends cdk.StackProps {
+export interface AlbS3WebsiteAlbDeployConstructProps extends cdk.StackProps {
     /**
      * The path to the build directory of the web site, relative to the project root
      * ex: "./app/build"
@@ -41,7 +41,7 @@ export interface AlbS3WebsiteGovCloudDeployConstructProps extends cdk.StackProps
 /**
  * Default input properties
  */
-const defaultProps: Partial<AlbS3WebsiteGovCloudDeployConstructProps> = {
+const defaultProps: Partial<AlbS3WebsiteAlbDeployConstructProps> = {
     stackName: "",
     env: {},
 };
@@ -53,14 +53,14 @@ const defaultProps: Partial<AlbS3WebsiteGovCloudDeployConstructProps> = {
  * - ALB
  *
  */
-export class AlbS3WebsiteGovCloudDeployConstruct extends Construct {
+export class AlbS3WebsiteAlbDeployConstruct extends Construct {
 
     /**
      * Returns the ALB URL instance for the static webpage
      */
     public websiteUrl: string;
 
-    constructor(parent: Construct, name: string, props: AlbS3WebsiteGovCloudDeployConstructProps) {
+    constructor(parent: Construct, name: string, props: AlbS3WebsiteAlbDeployConstructProps) {
         super(parent, name);
 
         props = { ...defaultProps, ...props };

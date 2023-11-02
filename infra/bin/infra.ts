@@ -7,7 +7,7 @@
 
 import "source-map-support/register";
 import * as cdk from "aws-cdk-lib";
-import { VAMS } from "../lib/infra-stack";
+import { CoreVAMSStack } from "../lib/core-stack";
 import { CfWafStack } from "../lib/cf-waf-stack";
 import { AwsSolutionsChecks, NagSuppressions, NIST80053R5Checks} from "cdk-nag";
 import { Aspects, Annotations } from "aws-cdk-lib";
@@ -43,9 +43,10 @@ const cfWafStack = new CfWafStack(app, wafStackName, {
     wafScope: wafScope,
 });
 
-const vamsStackName = `${config.name}-${config.app.baseStackName || process.env.DEMO_LABEL || "dev"}`;
-const vamsStack = new VAMS(app, vamsStackName, {
-    stackName: vamsStackName,
+//Core VAMS Stack
+const vamsCoreStackName = `${config.name}-core-${config.app.baseStackName || process.env.DEMO_LABEL || "dev"}`;
+const coreVamsStack = new CoreVAMSStack(app, vamsCoreStackName, {
+    stackName: vamsCoreStackName,
     env: {
         account: config.env.account,
         region: config.env.region,
@@ -56,15 +57,24 @@ const vamsStack = new VAMS(app, vamsStackName, {
     config: config
 });
 
-vamsStack.addDependency(cfWafStack);
+//Static Website VAMS Stack
+const vamsStatisWebStackName = `${config.name}-staticweb-${config.app.baseStackName || process.env.DEMO_LABEL || "dev"}`;
 
+//Pipelines VAMS Stack
+const vamsPipelinesStackName = `${config.name}-pipelines-${config.app.baseStackName || process.env.DEMO_LABEL || "dev"}`;
+
+//...
+
+coreVamsStack.addDependency(cfWafStack);
+
+//Stack level NAG supressions
 if(config.app.govCloud) {
     // Enable checks for NIST 800-53 R5
     // TODO: RE-ENABLE WHEN WORKING THROUGH ISSUES
     // Aspects.of(app).add(new NIST80053R5Checks({verbose: true}));
 
     // Feature check suppression
-    NagSuppressions.addStackSuppressions(vamsStack, [
+    NagSuppressions.addStackSuppressions(coreVamsStack, [
         {
             id: 'AwsSolutions-COG3',
             reason: "Cognito AdvancedSecurityMode feature does not exist"

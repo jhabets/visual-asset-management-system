@@ -14,8 +14,8 @@ import {
     AmplifyConfigLambdaConstructProps,
 } from "./constructs/amplify-config-lambda-construct";
 import { CloudFrontS3WebSiteConstruct } from "./constructs/cloudfront-s3-website-construct";
-import { VpcGatewayGovCloudDeployConstruct } from "./constructs/vpc-gateway-govCloudDeploy-construct";
-import { AlbS3WebsiteGovCloudDeployConstruct } from "./constructs/alb-s3-website-govCloudDeploy-construct";
+import { VpcGatewayAlbDeployConstruct } from "./constructs/vpc-gateway-albDeploy-construct";
+import { AlbS3WebsiteAlbDeployConstruct } from "./constructs/alb-s3-website-albDeploy-construct";
 import {
     CognitoWebNativeConstruct,
     CognitoWebNativeConstructProps,
@@ -28,7 +28,7 @@ import { CustomFeatureEnabledConfigConstruct } from "./constructs/custom-feature
 import { samlSettings } from "../config/saml-config";
 import { LocationServiceConstruct } from "./constructs/location-service-construct";
 import { streamsBuilder } from "./streams-builder";
-import customResources = require('aws-cdk-lib/custom-resources');
+//import customResources = require('aws-cdk-lib/custom-resources');
 import * as Config from '../config/config';
 import { LAMBDA_PYTHON_RUNTIME } from '../config/config';
 import { VAMS_APP_FEATURES } from '../config/common/vamsAppFeatures';
@@ -46,7 +46,7 @@ export interface EnvProps {
     config: Config.Config;
 }
 
-export class VAMS extends cdk.Stack {
+export class CoreVAMSStack extends cdk.Stack {
     constructor(scope: Construct, id: string, props: EnvProps) {
         super(scope, id, { ...props, crossRegionReferences: true });
 
@@ -79,7 +79,10 @@ export class VAMS extends cdk.Stack {
               layerVersionName: "vams_layer_base",
               entry: "../backend/lambdaLayers/base", 
               compatibleRuntimes: [LAMBDA_PYTHON_RUNTIME],
-              removalPolicy: cdk.RemovalPolicy.DESTROY
+              removalPolicy: cdk.RemovalPolicy.DESTROY,
+              bundling: {
+                
+              }
             }
           );
 
@@ -91,7 +94,10 @@ export class VAMS extends cdk.Stack {
               layerVersionName: "vams_layer_servicesdk",
               entry: "../backend/lambdaLayers/serviceSDK", 
               compatibleRuntimes: [LAMBDA_PYTHON_RUNTIME],
-              removalPolicy: cdk.RemovalPolicy.DESTROY
+              removalPolicy: cdk.RemovalPolicy.DESTROY,
+              bundling: {
+                
+              }
             }
           );
 
@@ -107,7 +113,10 @@ export class VAMS extends cdk.Stack {
         {
             enabledFeatures.push(VAMS_APP_FEATURES.AUTHPROVIDER_COGNITO)
         }
-        //else if ...
+        else if(props.config.app.authProvider.useExternalOATHIdp.enabled)
+        {
+            enabledFeatures.push(VAMS_APP_FEATURES.AUTHPROVIDER_EXTERNALOATHIDP)
+        }
 
         //See if we have enabled SAML settings
         //TODO: Migrate rest of settings to main config file
@@ -228,9 +237,8 @@ export class VAMS extends cdk.Stack {
         }
         else {
             //Deploy with ALB (aka, use ALB->VPCEndpoint->S3 as path for web deployment)
-
             const webAppDistroNetwork =
-                new VpcGatewayGovCloudDeployConstruct(
+                new VpcGatewayAlbDeployConstruct(
                     this,
                     "WebAppDistroNetwork",
                     {
@@ -240,7 +248,7 @@ export class VAMS extends cdk.Stack {
                     }
                 );
                 
-            const website = new AlbS3WebsiteGovCloudDeployConstruct(this, "WebApp", {
+            const website = new AlbS3WebsiteAlbDeployConstruct(this, "WebApp", {
                 ...props,
                 artefactsBucket: storageResources.s3.artefactsBucket,
                 domainHostName: props.config.app.useAlb.domainHost,
@@ -293,10 +301,7 @@ export class VAMS extends cdk.Stack {
         apiBuilder(this, api.apiGatewayV2, storageResources, lambdaCommonBaseLayer, lambdaCommonServiceSDKLayer, props);
 
         //Deploy OpenSearch Serverless
-        if(props.config.app.useOpenSearchServerless.enabled) {
-            streamsBuilder(this, cognitoResources, api.apiGatewayV2, storageResources, lambdaCommonBaseLayer);
-            enabledFeatures.push(VAMS_APP_FEATURES.OPENSEARCH)
-        }
+        streamsBuilder(this, api.apiGatewayV2, storageResources, lambdaCommonBaseLayer, props.config.app.openSearch.useProvisioned.enabled);
 
 
         // required by AWS internal accounts.  Can be removed in customer Accounts
@@ -320,6 +325,7 @@ export class VAMS extends cdk.Stack {
             identityPoolId: cognitoResources.identityPoolId,
             userPoolId: cognitoResources.userPoolId,
             region: props.config.env.region,
+            externalOathIdpURL: props.config.app.authProvider.useExternalOATHIdp.idpAuthProviderUrl
         };
 
         if (props.config.app.authProvider.useCognito.useSaml) {
@@ -415,9 +421,9 @@ export class VAMS extends cdk.Stack {
         this.node.findAll().forEach((item) => {
             if (item instanceof cdk.aws_lambda.Function) {
                 const fn = item as cdk.aws_lambda.Function;
-                // python3.9 suppressed for CDK Bucket Deployment
+                // python3.10 suppressed for CDK Bucket Deployment
                 // nodejs14.x suppressed for use of custom resource to deploy saml in CustomCognitoConfigConstruct
-                if (fn.runtime.name === "python3.9" || fn.runtime.name === "nodejs14.x") {
+                if (fn.runtime.name === "python3.10" || fn.runtime.name === "nodejs14.x") {
                     NagSuppressions.addResourceSuppressions(fn, [
                         {
                             id: "AwsSolutions-L1",
@@ -455,10 +461,9 @@ export class VAMS extends cdk.Stack {
             `/${props.stackName}/listExecutions`,
         ];
 
-        if(!props.config.app.govCloud.enabled) {
-            refactorPaths.concat(`/${props.stackName}/idxa`);
-            refactorPaths.concat(`/${props.stackName}/idxm`);
-        }
+        refactorPaths.concat(`/${props.stackName}/idxa`);
+        refactorPaths.concat(`/${props.stackName}/idxm`);
+
 
         for (const path of refactorPaths) {
             const reason = `Intention is to refactor this model away moving forward 
@@ -482,4 +487,8 @@ export class VAMS extends cdk.Stack {
             );
         }
     }
+
+    afterBundling(inputDir: string, outputDir: string): string[]{
+        return [`cd ${outputDir} && find . -type d -name __pycache__ -prune -exec rm -rf {} \; && find . -type d -name tests -prune -exec rm -rf {} \; && find . -type d -name *boto* -prune -exec rm -rf {} \;`];
+      }
 }

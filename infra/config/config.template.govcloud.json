@@ -12,8 +12,10 @@
 		"govCloud": {
 			"enabled": true
 		},
-		"useOpenSearchServerless": {
-			"enabled": false
+		"openSearch": {
+			"useProvisioned": {
+				"enabled": true
+			}
 		},
 		"useLocationService": {
 			"enabled": false
@@ -38,6 +40,10 @@
 			"useCognito": {
 				"enabled": true,
 				"useSaml": false
+			},
+			"useExternalOATHIdp": {
+				"enabled": false,
+				"idpAuthProviderUrl": null
 			}
 		}
 	}

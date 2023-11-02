@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2023 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -7,7 +7,6 @@ import * as cdk from "aws-cdk-lib";
 import { Construct } from "constructs";
 import * as aoss from "aws-cdk-lib/aws-opensearchserverless";
 import * as cr from "aws-cdk-lib/custom-resources";
-import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as njslambda from "aws-cdk-lib/aws-lambda-nodejs";
 import * as path from "path";
 import { CustomResource, Names } from "aws-cdk-lib";
@@ -16,6 +15,7 @@ import { LAMBDA_NODE_RUNTIME } from '../../config/config';
 
 interface OpensearchServerlessConstructProps extends cdk.StackProps {
     principalArn: string[];
+    indexName: string;
 }
 
 export class OpensearchServerlessConstruct extends Construct {
@@ -24,13 +24,13 @@ export class OpensearchServerlessConstruct extends Construct {
     constructor(parent: Construct, name: string, props: OpensearchServerlessConstructProps) {
         super(parent, name);
 
-        this.collectionUid = Names.uniqueResourceName(this, { maxLength: 16 }).toLowerCase();
+        this.collectionUid = Names.uniqueResourceName(this, { maxLength: 8 }).toLowerCase();
 
         const schemaDeploy = new njslambda.NodejsFunction(
             this,
             "OpensearchServerlessDeploySchema",
             {
-                entry: path.join(__dirname, "./opensearchserverless/deployschema.ts"),
+                entry: path.join(__dirname, "./opensearch/deployschemaserverless.ts"),
                 handler: "handler",
                 bundling: {
                     externalModules: ["aws-sdk"],
@@ -105,11 +105,11 @@ export class OpensearchServerlessConstruct extends Construct {
         schemaDeployProvider.node.addDependency(collection);
         schemaDeployProvider.node.addDependency(accessPolicy);
 
-        new CustomResource(this, "DeployIndex", {
+        new CustomResource(this, "DeploySSMIndexSchema", {
             serviceToken: schemaDeployProvider.serviceToken,
             properties: {
                 collectionName: collection.name,
-                indexName: "assets1236",
+                indexName: props.indexName,
                 stackName: cdk.Stack.of(this).stackName,
                 version: "1",
             },
@@ -120,7 +120,6 @@ export class OpensearchServerlessConstruct extends Construct {
     public endpointSSMParameterName(): string {
         // look up parameter store value
         return "/" + [cdk.Stack.of(this).stackName, this.collectionUid, "endpoint"].join("/");
-        // return cdk.aws_ssm.StringParameter.valueForStringParameter(this,
     }
 
     // todo rename to grantXxxx

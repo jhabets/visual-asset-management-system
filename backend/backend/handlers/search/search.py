@@ -164,7 +164,7 @@ def property_token_filter_to_opensearch_query(token_filter, start=0, size=100):
     return query
 
 
-class SearchAOSS():
+class SearchAOS():
     def __init__(self, host, auth, indexName):
         self.client = OpenSearch(
             hosts=[{'host': urlparse(host).hostname, 'port': 443}],
@@ -178,25 +178,25 @@ class SearchAOSS():
 
     @staticmethod
     def from_env(env=os.environ):
-        print("env endpoint", env.get("AOSS_ENDPOINT"))
+        print("env endpoint", env.get("AOS_ENDPOINT"))
         print("env region", env.get("AWS_REGION"))
         region = env.get('AWS_REGION')
-        service = 'aoss'
+        service = env.get('AOS_TYPE')  # aoss (serverless) or es (provisioned)
         credentials = boto3.Session().get_credentials()
         auth = AWSV4SignerAuth(credentials, region, service)
 
-        host = get_ssm_parameter_value('AOSS_ENDPOINT_PARAM', region, env)
+        host = get_ssm_parameter_value('AOS_ENDPOINT_PARAM', region, env)
         indexName = get_ssm_parameter_value(
-            'AOSS_INDEX_NAME_PARAM', region, env)
+            'AOS_INDEX_NAME_PARAM', region, env)
 
-        return SearchAOSS(
+        return SearchAOS(
             host=host,
             auth=auth,
             indexName=indexName
         )
 
     def search(self, query):
-        print("aoss query", query)
+        print("aos query", query)
         return self.client.search(
             body=query,
             index=self.indexName,
@@ -222,7 +222,7 @@ def load_tokens_to_database_set():
 def lambda_handler(
     event: APIGatewayProxyEvent,
     context: LambdaContext,
-    search_fn=SearchAOSS.from_env,
+    search_fn=SearchAOS.from_env,
     auth_fn=load_auth_entities,
     database_set_fn=load_tokens_to_database_set,
 

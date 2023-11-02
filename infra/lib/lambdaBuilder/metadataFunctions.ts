@@ -51,9 +51,10 @@ export function buildMetadataIndexingFunction(
     scope: Construct,
     lambdaCommonBaseLayer: LayerVersion,
     storageResources: storageResources,
-    aossEndpoint: string,
+    aosEndpoint: string,
     indexNameParam: string,
-    handlerType: "a" | "m"
+    handlerType: "a" | "m",
+    useProvisioned: boolean
 ): lambda.Function {
     const fun = new lambda.Function(scope, "idx" + handlerType, {
             code: lambda.Code.fromAsset(path.join(__dirname, `../../../backend/backend`)),
@@ -67,8 +68,9 @@ export function buildMetadataIndexingFunction(
             ASSET_STORAGE_TABLE_NAME: storageResources.dynamo.assetStorageTable.tableName,
             DATABASE_STORAGE_TABLE_NAME: storageResources.dynamo.databaseStorageTable.tableName,
             ASSET_BUCKET_NAME: storageResources.s3.assetBucket.bucketName,
-            AOSS_ENDPOINT_PARAM: aossEndpoint,
-            AOSS_INDEX_NAME_PARAM: indexNameParam,
+            AOS_ENDPOINT_PARAM: aosEndpoint,
+            AOS_INDEX_NAME_PARAM: indexNameParam,
+            AOS_TYPE: useProvisioned? "es" : "aoss"
         },
     });
 

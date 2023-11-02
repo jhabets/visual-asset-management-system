@@ -43,7 +43,7 @@ export function getConfig(
 	if(config.app.govCloud.enabled) {
 		config.app.useFips = true;
 		config.app.useAlb.enabled = true;
-		config.app.useOpenSearchServerless.enabled = false;
+		config.app.openSearch.useProvisioned.enabled = true;
 		config.app.useLocationService.enabled = false;
 	}
 
@@ -56,7 +56,14 @@ export function getConfig(
 		throw new Error("Must specify an initial admin email address as part of this deployment configuration!");
 	}
 
-	//Todo: Implement error check when implementing multiple auth providers that only 1 is enabled
+	//Error check when implementing auth providers
+	if(config.app.authProvider.useCognito.enabled && config.app.authProvider.useExternalOATHIdp.enabled) {
+		throw new Error("Must specify only one authentication method!");
+	}
+
+	if(config.app.authProvider.useExternalOATHIdp.enabled && config.app.authProvider.useExternalOATHIdp.idpAuthProviderUrl == 'UNDEFINED') {
+		throw new Error("Must specify a external IDP auth URL when using an external OATH provider!");
+	}
 
 	return config;
 }
@@ -78,8 +85,10 @@ export interface ConfigPublic {
 		govCloud: {
 			enabled: boolean;
 		};
-		useOpenSearchServerless: {
-			enabled: boolean;
+		openSearch: {
+			useProvisioned: {
+				enabled: boolean;
+			}
 		};
 		useLocationService: {
 			enabled: boolean;
@@ -104,6 +113,10 @@ export interface ConfigPublic {
 			useCognito: {
 				enabled: boolean;
 				useSaml: boolean;
+			}
+			useExternalOATHIdp: {
+				enabled: boolean;
+				idpAuthProviderUrl: string;
 			}
 		}
 	};

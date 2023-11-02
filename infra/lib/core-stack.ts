@@ -27,7 +27,7 @@ import { CustomCognitoConfigConstruct } from "./constructs/custom-cognito-config
 import { CustomFeatureEnabledConfigConstruct } from "./constructs/custom-featureEnabled-config-construct";
 import { samlSettings } from "../config/saml-config";
 import { LocationServiceConstruct } from "./constructs/location-service-construct";
-import { streamsBuilder } from "./streams-builder";
+import { searchBuilder } from "./search-builder";
 //import customResources = require('aws-cdk-lib/custom-resources');
 import * as Config from '../config/config';
 import { LAMBDA_PYTHON_RUNTIME } from '../config/config';
@@ -301,7 +301,7 @@ export class CoreVAMSStack extends cdk.Stack {
         apiBuilder(this, api.apiGatewayV2, storageResources, lambdaCommonBaseLayer, lambdaCommonServiceSDKLayer, props);
 
         //Deploy OpenSearch Serverless
-        streamsBuilder(this, api.apiGatewayV2, storageResources, lambdaCommonBaseLayer, props.config.app.openSearch.useProvisioned.enabled);
+        searchBuilder(this, api.apiGatewayV2, storageResources, lambdaCommonBaseLayer, props.config.app.openSearch.useProvisioned.enabled);
 
 
         // required by AWS internal accounts.  Can be removed in customer Accounts

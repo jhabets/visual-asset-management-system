@@ -7,8 +7,6 @@ import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as path from "path";
 import { Construct } from "constructs";
 import { Duration } from "aws-cdk-lib";
-import { OpensearchServerlessConstruct } from "../constructs/opensearch-serverless";
-import { OpensearchProvisionedConstruct } from "../constructs/opensearch-provisioned";
 import { storageResources } from "../storage-builder";
 import * as cdk from "aws-cdk-lib";
 import { LayerVersion } from 'aws-cdk-lib/aws-lambda';

@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2023 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -18,7 +18,7 @@ import * as apigwv2 from "@aws-cdk/aws-apigatewayv2-alpha";
 import * as cdk from "aws-cdk-lib";
 import { LayerVersion} from 'aws-cdk-lib/aws-lambda';
 
-export function streamsBuilder(
+export function searchBuilder(
     scope: Stack,
     api: apigwv2.HttpApi,
     storage: storageResources,

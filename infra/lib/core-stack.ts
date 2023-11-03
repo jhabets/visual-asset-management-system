@@ -421,9 +421,11 @@ export class CoreVAMSStack extends cdk.Stack {
         this.node.findAll().forEach((item) => {
             if (item instanceof cdk.aws_lambda.Function) {
                 const fn = item as cdk.aws_lambda.Function;
-                // python3.10 suppressed for CDK Bucket Deployment
-                // nodejs14.x suppressed for use of custom resource to deploy saml in CustomCognitoConfigConstruct
-                if (fn.runtime.name === "python3.10" || fn.runtime.name === "nodejs14.x") {
+                // python3.9 suppressed for CDK Bucket Deployment
+                // python3.10 suppressed for all lambdas due to restriction on file size when going over 3.10 currently (implement layer code reduction size functionality)
+                // nodejs18.x suppressed for use of custom resource to deploy saml in CustomCognitoConfigConstruct
+                if (fn.runtime.name === "python3.9" || fn.runtime.name === "python3.10" || fn.runtime.name === "nodejs18.x") {
+                    //console.log(item.node.path,fn.runtime.name)
                     NagSuppressions.addResourceSuppressions(fn, [
                         {
                             id: "AwsSolutions-L1",

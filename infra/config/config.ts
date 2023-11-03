@@ -29,7 +29,7 @@ export function getConfig(
 
 	//Debugging Variables
 	config.dockerDefaultPlatform = <string>process.env.DOCKER_DEFAULT_PLATFORM;
-	config.enableCdkNag = false;
+	config.enableCdkNag = true;
 
 	//Main Variables (Parameter fall-back chain: context -> config file -> environment variables -> other fallback)
 	config.env.account = <string>(config.env.account || process.env.CDK_DEFAULT_ACCOUNT);

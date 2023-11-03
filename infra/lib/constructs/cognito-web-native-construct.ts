@@ -72,7 +72,7 @@ export class CognitoWebNativeConstruct extends Construct {
         );
 
         const message =
-            "Hello, Thank you for registering with your instance of Visual Asset Management System! Your verification code is {####}";
+            "Hello, Thank you for registering with your instance of Visual Asset Management System! Your verification code is:  {####}  ";
         const userPool = new cognito.UserPool(this, "UserPool", {
             selfSignUpEnabled: false,
             autoVerify: { email: true },

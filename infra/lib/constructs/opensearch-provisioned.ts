@@ -6,6 +6,7 @@
 import * as cdk from "aws-cdk-lib";
 import { Construct } from "constructs";
 import { Service } from "../helper/service-helper";
+import { NagSuppressions } from "cdk-nag";
 import { CfnOutput, CustomResource, Names, Stack } from "aws-cdk-lib";
 import * as cr from "aws-cdk-lib/custom-resources";
 import * as njslambda from "aws-cdk-lib/aws-lambda-nodejs";
@@ -195,6 +196,22 @@ export class OpensearchProvisionedConstruct extends Construct {
         new CfnOutput(this, "OpenSearchProvisionedDomainEndpoint", {
             value: this.domainEndpoint,
         });
+
+        //NAG Surpressions
+        NagSuppressions.addResourceSuppressionsByPath(
+            cdk.Stack.of(this),
+            `/${cdk.Stack.of(this).stackName}/AOS/OpenSearchDomain/Resource`,
+            [
+                {
+                    id: "AwsSolutions-OS1",
+                    reason: "Configured as intended. Provisioned configuration meant primarily for GovCloud deployment that won't be public and restricted to individual lambda roles for access to the domain.",
+                },
+                {
+                    id: "AwsSolutions-OS3",
+                    reason: "Configured as intended. Provisioned configuration meant primarily for GovCloud deployment that won't be public and restricted to individual lambda roles for access to the domain.",
+                },
+            ]
+        );
 
     }
 

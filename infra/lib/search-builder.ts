@@ -186,7 +186,7 @@ export function searchBuilder(
             api: api,
         });
 
-        NagSuppressions.addResourceSuppressionsByPath(
+    NagSuppressions.addResourceSuppressionsByPath(
             scope,
             `/${scope.stackName}/AOS/OpensearchProvisionedDeploySchemaProvider/framework-onEvent/Resource`,
             [

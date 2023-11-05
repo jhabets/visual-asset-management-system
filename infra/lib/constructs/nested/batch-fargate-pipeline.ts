@@ -12,7 +12,7 @@ import { CfnJobDefinition } from "aws-cdk-lib/aws-batch";
 import path = require("path");
 
 export interface BatchFargatePipelineConstructProps extends cdk.StackProps {
-    vpc: ec2.Vpc;
+    vpc: ec2.IVpc;
     subnets: ec2.ISubnet[];
     securityGroups: ec2.SecurityGroup[];
     jobRole: iam.Role;

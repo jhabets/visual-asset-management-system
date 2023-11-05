@@ -243,6 +243,7 @@ export class CoreVAMSStack extends cdk.Stack {
                     "WebAppDistroNetwork",
                     {
                         ...props,
+                        optionalExistingVPCId: props.config.app.useAlb.optionalVPCID,
                         vpcCidrRange: props.config.app.useAlb.vpcCidrRange,
                         setupPublicAccess: props.config.app.useAlb.publicSubnet
                     }
@@ -353,6 +354,7 @@ export class CoreVAMSStack extends cdk.Stack {
                     "VisualizerPipelineNetwork",
                     {
                         ...props,
+                        optionalExistingVPCId: props.config.app.pipelines.usePointCloudVisualization.optionalVPCID,
                         vpcCidrRange: props.config.app.pipelines.usePointCloudVisualization.vpcCidrRange,
                     }
                 );

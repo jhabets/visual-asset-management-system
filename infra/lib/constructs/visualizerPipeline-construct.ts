@@ -26,7 +26,7 @@ import { LayerVersion} from 'aws-cdk-lib/aws-lambda';
 
 export interface VisualizationPipelineConstructProps extends cdk.StackProps {
     storage: storageResources;
-    vpc: ec2.Vpc;
+    vpc: ec2.IVpc;
     visualizerPipelineSubnets: ec2.ISubnet[];
     visualizerPipelineSecurityGroups: ec2.SecurityGroup[];
     lambdaCommonBaseLayer: LayerVersion;

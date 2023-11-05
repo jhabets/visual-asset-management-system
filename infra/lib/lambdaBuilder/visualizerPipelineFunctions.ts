@@ -49,7 +49,7 @@ export function buildOpenPipelineFunction(
     assetVisualizerBucket: s3.Bucket,
     pipelineStateMachine: sfn.StateMachine,
     allowedPipelineInputExtensions: string,
-    vpc: ec2.Vpc,
+    vpc: ec2.IVpc,
     pipelineSubnets: ec2.ISubnet[]
 ): lambda.Function {
     const name = "openPipeline";
@@ -84,7 +84,7 @@ export function buildOpenPipelineFunction(
 export function buildConstructPipelineFunction(
     scope: Construct,
     lambdaCommonBaseLayer: LayerVersion,
-    vpc: ec2.Vpc,
+    vpc: ec2.IVpc,
     pipelineSubnets: ec2.ISubnet[],
     pipelineSecurityGroups: ec2.SecurityGroup[]
 ): lambda.Function {
@@ -113,7 +113,7 @@ export function buildPipelineEndFunction(
     lambdaCommonBaseLayer: LayerVersion,
     assetBucket: s3.Bucket,
     assetVisualizerBucket: s3.Bucket,
-    vpc: ec2.Vpc,
+    vpc: ec2.IVpc,
     pipelineSubnets: ec2.ISubnet[],
     pipelineSecurityGroups: ec2.SecurityGroup[]
 ): lambda.Function {

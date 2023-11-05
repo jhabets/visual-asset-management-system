@@ -31,7 +31,7 @@ export interface AlbS3WebsiteAlbDeployConstructProps extends cdk.StackProps {
     webSiteBuildPath: string;
     webAcl: string;
     apiUrl: string;
-    vpc: ec2.Vpc;
+    vpc: ec2.IVpc;
     subnets: ec2.ISubnet[];
     setupPublicAccess: boolean;
     acmCertARN: string;
@@ -280,7 +280,7 @@ export class AlbS3WebsiteAlbDeployConstruct extends Construct {
         // Enable a ALB redirect from port 80 to 443
         alb.addRedirect()
 
-        // //Optional: Add alias to ALB if hosted zone ID provided (must match domain root of provided domain host)
+        // Optional: Add alias to ALB if hosted zone ID provided (must match domain root of provided domain host)
         if(props.optionalHostedZoneId != "" && props.optionalHostedZoneId != "UNDEFINED") {
             const zone = route53.HostedZone.fromHostedZoneAttributes(this, 'ExistingRoute53HostedZone', {
                 zoneName: props.domainHostName.substring(props.domainHostName.indexOf(".")+1, props.domainHostName.length),
@@ -311,7 +311,6 @@ export class AlbS3WebsiteAlbDeployConstruct extends Construct {
         });
 
         //Add Bucket policy to only allow read access from VPC Endpoint
-        //TODO?: Specifically add a extra deny policy for anything outside of VPCE
         const webAppBucketPolicy = new iam.PolicyStatement({
             resources: [
             webAppBucket.arnForObjects("*"), 

@@ -12,6 +12,7 @@ import { NagSuppressions } from "cdk-nag";
 
 /* eslint-disable @typescript-eslint/no-empty-interface */
 export interface VpcSecurityGroupGatewayVisualizerPipelineConstructProps extends cdk.StackProps {
+    optionalExistingVPCId: string
     vpcCidrRange: string;
 }
 
@@ -24,7 +25,7 @@ const defaultProps: Partial<VpcSecurityGroupGatewayVisualizerPipelineConstructPr
  * Custom configuration to Cognito.
  */
 export class VpcSecurityGroupGatewayVisualizerPipelineConstruct extends Construct {
-    readonly vpc: ec2.Vpc;
+    readonly vpc: ec2.IVpc;
     readonly subnets: {
         pipeline: ec2.ISubnet[];
     };
@@ -41,46 +42,70 @@ export class VpcSecurityGroupGatewayVisualizerPipelineConstruct extends Construc
 
         props = { ...defaultProps, ...props };
 
-        /**
-         * Subnets
-         */
-        const pipelineSubnetConfig: ec2.SubnetConfiguration = {
-            name: "pipeline-private-subnet",
-            subnetType: ec2.SubnetType.PRIVATE_ISOLATED,
-            cidrMask: 22, // 1024
-        };
+        if(props.optionalExistingVPCId != null && props.optionalExistingVPCId != "undefined")
+        {
+            //Use Existing VPC
+            const getExistingVpc = ec2.Vpc.fromLookup(this, "ImportedVPC", {
+                isDefault: false,
+                vpcId: props.optionalExistingVPCId
+            });
 
-        /**
-         * VPC
-         */
+            if(getExistingVpc.isolatedSubnets.length == 0)
+            {
+                throw new Error("Provided Visualizer Pipeline Optional Existing VPC must have at least 1 private subnet already setup!");
+            }
 
-        const vpcLogsGroups = new LogGroup(this, "CloudWatchVPCVisualizerLogs", {
-            logGroupName: "/aws/vendedlogs/VAMSCloudWatchVPCVisualizerLogs"+Math.floor(Math.random() * 100000000),
-            retention: RetentionDays.ONE_WEEK,
-            removalPolicy: cdk.RemovalPolicy.DESTROY,
-        });
+            this.vpc = getExistingVpc;
 
-        //const cidrRange = "10.0.0.0/16"; // 4096
+            this.subnets = {
+                pipeline: this.vpc.isolatedSubnets
+            };
+            
+        }
+        else
+        {
 
-        this.vpc = new ec2.Vpc(this, "Vpc", {
-            ipAddresses: ec2.IpAddresses.cidr(props.vpcCidrRange),
-            subnetConfiguration: [pipelineSubnetConfig],
-            maxAzs: 1, //One 1AZ as VPC is for a pipeline that can re-generate temporary files
-            enableDnsHostnames: true,
-            enableDnsSupport: true,
-            flowLogs: {
-                "vpc-logs": {
-                    destination: ec2.FlowLogDestination.toCloudWatchLogs(vpcLogsGroups),
-                    trafficType: ec2.FlowLogTrafficType.ALL,
+            /**
+             * Subnets
+             */
+            const pipelineSubnetConfig: ec2.SubnetConfiguration = {
+                name: "pipeline-private-subnet",
+                subnetType: ec2.SubnetType.PRIVATE_ISOLATED,
+                cidrMask: 22, // 1024
+            };
+
+            /**
+             * VPC
+             */
+
+            const vpcLogsGroups = new LogGroup(this, "CloudWatchVPCVisualizerLogs", {
+                logGroupName: "/aws/vendedlogs/VAMSCloudWatchVPCVisualizerLogs"+Math.floor(Math.random() * 100000000),
+                retention: RetentionDays.ONE_WEEK,
+                removalPolicy: cdk.RemovalPolicy.DESTROY,
+            });
+
+            //const cidrRange = "10.0.0.0/16"; // 4096
+
+            this.vpc = new ec2.Vpc(this, "Vpc", {
+                ipAddresses: ec2.IpAddresses.cidr(props.vpcCidrRange),
+                subnetConfiguration: [pipelineSubnetConfig],
+                maxAzs: 1, //One 1AZ as VPC is for a pipeline that can re-generate temporary files
+                enableDnsHostnames: true,
+                enableDnsSupport: true,
+                flowLogs: {
+                    "vpc-logs": {
+                        destination: ec2.FlowLogDestination.toCloudWatchLogs(vpcLogsGroups),
+                        trafficType: ec2.FlowLogTrafficType.ALL,
+                    },
                 },
-            },
-        });
+            });
 
-        this.subnets = {
-            pipeline: this.vpc.selectSubnets({
-                subnetGroupName: pipelineSubnetConfig.name,
-            }).subnets,
-        };
+            this.subnets = {
+                pipeline: this.vpc.selectSubnets({
+                    subnetGroupName: pipelineSubnetConfig.name,
+                }).subnets,
+            };
+        }
 
         /**
          * Security Groups

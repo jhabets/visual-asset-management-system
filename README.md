@@ -75,12 +75,13 @@ Please take note:
 
 ### Requirements
 
--   Python 3.8
+-   Python 3.10
 -   Poetry (for managing python dependencies in the VAMS backend)
 -   Docker
 -   Node >=18.7
 -   Yarn >=1.22.19
 -   Node Version Manager (nvm)
+-   AWS cli
 -   AWS CDK cli
 -   Programatic access to AWS account at minimum access levels outlined above.
 

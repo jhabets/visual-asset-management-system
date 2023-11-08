@@ -160,6 +160,7 @@ export class VisualizationPipelineConstruct extends NestedStack {
                     "..",
                     "..",
                     "..",
+                    "..",
                     "backendVisualizerPipelines",
                     "pc"
                 ),
@@ -181,6 +182,7 @@ export class VisualizationPipelineConstruct extends NestedStack {
                 jobRole: containerJobRole,
                 executionRole: containerExecutionRole,
                 imageAssetPath: path.join(
+                    "..",
                     "..",
                     "..",
                     "..",
@@ -391,25 +393,27 @@ export class VisualizationPipelineConstruct extends NestedStack {
         });
 
         //Nag Supressions
-        NagSuppressions.addResourceSuppressionsByPath(
-            Stack.of(this),
-            `/${this.toString()}/VisualizerPipelineContainerExecutionRole/Resource`,
+        const reason =
+        "Intended Solution. The pipeline lambda functions need appropriate access to S3.";
+        NagSuppressions.addResourceSuppressions(
+            this,
             [
                 {
-                    id: "AwsSolutions-IAM4",
-                    reason: "The IAM role for ECS Container execution uses AWS Managed Policies",
+                    id: "AwsSolutions-IAM5",
+                    reason: reason,
                     appliesTo: [
-                        "Policy::arn:<AWS::Partition>:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy",
-                        "Policy::arn:<AWS::Partition>:iam::aws:policy/AWSXrayWriteOnlyAccess",
+                        {
+                            regex: "/Action::s3:.*/g",
+                        },
                     ],
                 },
                 {
                     id: "AwsSolutions-IAM5",
-                    reason: "ECS Containers require access to objects in the DataBucket",
+                    reason: reason,
                     appliesTo: [
-                        `Resource::arn:<AWS::Partition>:states:${region}:${account}:*`,
                         {
-                            regex: "/^Resource::<DataBucket.*.Arn>/\\*$/g",
+                            // https://github.com/cdklabs/cdk-nag#suppressing-a-rule
+                            regex: "/^Resource::.*/g",
                         },
                     ],
                 },
@@ -417,28 +421,99 @@ export class VisualizationPipelineConstruct extends NestedStack {
             true
         );
 
-        NagSuppressions.addResourceSuppressionsByPath(
-            Stack.of(this),
-            `/${this.toString()}/VisualizerPipelineContainerJobRole/Resource`,
+        NagSuppressions.addResourceSuppressions(
+            this,
+            [
+                {
+                    id: "AwsSolutions-IAM5",
+                    reason: reason,
+                    appliesTo: [
+                        {
+                            // https://github.com/cdklabs/cdk-nag#suppressing-a-rule
+                            regex: "^Resource::.*openPipeline\/ServiceRole\/.*/g",
+                        },
+                    ],
+                },
+            ],
+            true
+        );
+
+        NagSuppressions.addResourceSuppressions(
+            this,
+            [
+                {
+                    id: "AwsSolutions-IAM5",
+                    reason: reason,
+                    appliesTo: [
+                        {
+                            // https://github.com/cdklabs/cdk-nag#suppressing-a-rule
+                            regex: "^Resource::.*PointCloudVisualizerPipelineProcessing-StateMachine\/Role\/.*/g",
+                        },
+                    ],
+                },
+            ],
+            true
+        );
+
+        NagSuppressions.addResourceSuppressions(
+            this,
+            [
+                {
+                    id: "AwsSolutions-IAM5",
+                    reason: reason,
+                    appliesTo: [
+                        {
+                            // https://github.com/cdklabs/cdk-nag#suppressing-a-rule
+                            regex: "^Resource::.*pipelineEnd\/ServiceRole\/.*/g",
+                        },
+                    ],
+                },
+            ],
+            true
+        );
+
+        NagSuppressions.addResourceSuppressions(
+            this,
+            [
+                {
+                    id: "AwsSolutions-IAM5",
+                    reason: reason,
+                    appliesTo: [
+                        {
+                            // https://github.com/cdklabs/cdk-nag#suppressing-a-rule
+                            regex: "^Resource::.*executeVisualizerPCPipeline\/ServiceRole\/.*/g",
+                        },
+                    ],
+                },
+            ],
+            true
+        );
+
+        NagSuppressions.addResourceSuppressions(
+            containerExecutionRole,
             [
                 {
                     id: "AwsSolutions-IAM4",
                     reason: "The IAM role for ECS Container execution uses AWS Managed Policies",
-                    appliesTo: [
-                        "Policy::arn:<AWS::Partition>:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy",
-                        "Policy::arn:<AWS::Partition>:iam::aws:policy/AWSXrayWriteOnlyAccess",
-                    ],
                 },
                 {
                     id: "AwsSolutions-IAM5",
                     reason: "ECS Containers require access to objects in the DataBucket",
-                    appliesTo: [
-                        "Resource::*",
-                        `Resource::arn:<AWS::Partition>:states:${region}:${account}:*`,
-                        {
-                            regex: "/^Resource::<DataBucket.*.Arn>/\\*$/g",
-                        },
-                    ],
+                },
+            ],
+            true
+        );
+
+        NagSuppressions.addResourceSuppressions(
+            containerJobRole,
+            [
+                {
+                    id: "AwsSolutions-IAM4",
+                    reason: "The IAM role for ECS Container execution uses AWS Managed Policies",
+                },
+                {
+                    id: "AwsSolutions-IAM5",
+                    reason: "ECS Containers require access to objects in the DataBucket",
                 },
             ],
             true

@@ -12,6 +12,7 @@ import * as cdk from "aws-cdk-lib";
 import { Duration} from "aws-cdk-lib";
 import { Construct } from "constructs";
 import { requireTLSAddToResourcePolicy } from "../../../helper/security";
+import { NagSuppressions } from "cdk-nag";
 
 
 export interface CloudFrontS3WebSiteConstructProps extends cdk.StackProps {
@@ -198,6 +199,18 @@ export class CloudFrontS3WebSiteConstruct extends Construct {
             distributionPaths: ["/*"],
             memoryLimit: 1024,
         });
+
+        //Nag supressions
+        NagSuppressions.addResourceSuppressions(
+            cloudFrontDistribution,
+            [
+                {
+                    id: "AwsSolutions-CFR4",
+                    reason: "This requires use of a custom viewer certificate which should be provided by customers.",
+                },
+            ],
+            true
+        );
 
         // export any cf outputs
         new cdk.CfnOutput(this, "WebAppBucket", { value: siteBucket.bucketName });

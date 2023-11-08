@@ -101,18 +101,6 @@ export class StaticWebBuilderNestedStack extends NestedStack {
             this.webAppS3BucketName = website.webAppBucketName;
             this.endpointURL = website.endPointURL;
 
-            NagSuppressions.addResourceSuppressionsByPath(
-                this,
-                `/${props.stackName}/WebApp/WebAppDistribution/Resource`,
-                [
-                    {
-                        id: "AwsSolutions-CFR4",
-                        reason: "This requires use of a custom viewer certificate which should be provided by customers.",
-                    },
-                ],
-                true
-            );
-
         }
         else {
             //Deploy with ALB (aka, use ALB->VPCEndpoint->S3 as path for web deployment)

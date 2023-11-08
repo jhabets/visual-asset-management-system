@@ -9,9 +9,10 @@ import * as aoss from "aws-cdk-lib/aws-opensearchserverless";
 import * as cr from "aws-cdk-lib/custom-resources";
 import * as njslambda from "aws-cdk-lib/aws-lambda-nodejs";
 import * as path from "path";
-import { CustomResource, Names } from "aws-cdk-lib";
+import { CustomResource, Names, NestedStack } from "aws-cdk-lib";
 import * as iam from "aws-cdk-lib/aws-iam";
-import { LAMBDA_NODE_RUNTIME } from '../../config/config';
+import { LAMBDA_NODE_RUNTIME } from '../../../../config/config';
+import { NagSuppressions } from "cdk-nag";
 
 interface OpensearchServerlessConstructProps extends cdk.StackProps {
     principalArn: string[];
@@ -30,7 +31,7 @@ export class OpensearchServerlessConstruct extends Construct {
             this,
             "OpensearchServerlessDeploySchema",
             {
-                entry: path.join(__dirname, "./opensearch/deployschemaserverless.ts"),
+                entry: path.join(__dirname, "./schemaDeploy/deployschemaserverless.ts"),
                 handler: "handler",
                 bundling: {
                     externalModules: ["aws-sdk"],
@@ -50,7 +51,7 @@ export class OpensearchServerlessConstruct extends Construct {
             new cdk.aws_iam.PolicyStatement({
                 actions: ["ssm:*"],
                 resources: ["*"],
-                // resources: [`arn:aws:ssm:::parameter/${cdk.Stack.of(this).stackName}/*`],
+                // resources: [`arn:${Service.Partition()}:ssm:::parameter/${cdk.Stack.of(this).stackName}/*`],
                 effect: cdk.aws_iam.Effect.ALLOW,
             })
         );
@@ -114,6 +115,17 @@ export class OpensearchServerlessConstruct extends Construct {
                 version: "1",
             },
         });
+
+        NagSuppressions.addResourceSuppressions(
+            schemaDeployProvider,
+            [
+                {
+                    id: "AwsSolutions-L1",
+                    reason: "Configured as intended.",
+                },
+            ]
+        );
+
     }
 
     // type ConstructWithRole = Construct & { role?: cdk.aws_iam.IRole };

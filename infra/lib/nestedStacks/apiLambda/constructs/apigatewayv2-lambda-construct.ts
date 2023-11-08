@@ -10,7 +10,7 @@ import * as lambdaPython from "@aws-cdk/aws-lambda-python-alpha";
 import * as lambdaNodejs from "aws-cdk-lib/aws-lambda-nodejs";
 import * as cdk from "aws-cdk-lib";
 import { Construct } from "constructs";
-import { Service } from "../helper/service-helper";
+import { Service } from "../../../helper/service-helper";
 
 export interface ApiGatewayV2LambdaConstructProps extends cdk.StackProps {
     /**

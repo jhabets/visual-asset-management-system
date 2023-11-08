@@ -20,6 +20,7 @@ POST /auth/scopeds3access
 """
 
 ROLE_ARN = os.environ['ROLE_ARN']
+AWS_PARTITION = os.environ['AWS_PARTITION']
 
 
 def lambda_handler(event, context):
@@ -96,9 +97,9 @@ def lambda_handler(event, context):
                     "s3:DeleteObject",
                 ],
                 "Resource": [
-                    "arn:aws:s3:::" +
+                    "arn:"+AWS_PARTITION+":s3:::" +
                     os.environ['S3_BUCKET'] + "/" + assetId + "/*",
-                    "arn:aws:s3:::" +
+                    "arn:"+AWS_PARTITION+":s3:::" +
                     os.environ['S3_BUCKET'] + "/previews/" + assetId + "/*"
                 ]
             }, {
@@ -109,7 +110,7 @@ def lambda_handler(event, context):
                     "s3:ListBucket",
                 ],
                 "Resource": [
-                    "arn:aws:s3:::" + os.environ['S3_BUCKET']
+                    "arn:"+AWS_PARTITION+":s3:::" + os.environ['S3_BUCKET']
                 ]
             }]
         }

@@ -9,9 +9,10 @@ import * as s3 from "aws-cdk-lib/aws-s3";
 import { BlockPublicAccess } from "aws-cdk-lib/aws-s3";
 import * as s3deployment from "aws-cdk-lib/aws-s3-deployment";
 import * as cdk from "aws-cdk-lib";
-import { Duration } from "aws-cdk-lib";
+import { Duration} from "aws-cdk-lib";
 import { Construct } from "constructs";
-import { requireTLSAddToResourcePolicy } from "../security";
+import { requireTLSAddToResourcePolicy } from "../../../helper/security";
+
 
 export interface CloudFrontS3WebSiteConstructProps extends cdk.StackProps {
     /**
@@ -52,6 +53,9 @@ export class CloudFrontS3WebSiteConstruct extends Construct {
      * The cloud front distribution to attach additional behaviors like `/api`
      */
     public cloudFrontDistribution: cloudfront.Distribution;
+
+    public endPointURL: string;
+    public webAppBucketName: string;
 
     constructor(parent: Construct, name: string, props: CloudFrontS3WebSiteConstructProps) {
         super(parent, name);
@@ -210,5 +214,44 @@ export class CloudFrontS3WebSiteConstruct extends Construct {
         // assign public properties
         this.originAccessIdentity = originAccessIdentity;
         this.cloudFrontDistribution = cloudFrontDistribution;
+        this.endPointURL = `https://${cloudFrontDistribution.distributionDomainName}`
+        this.webAppBucketName = siteBucket.bucketName
     }
+}
+
+/**
+ * Adds a proxy route from CloudFront /api to the api gateway url
+ * 
+ * Deploys Api gateway (proxied through a CloudFront distribution at route `/api` if deploying through cloudfront)
+ *
+ * Any Api's attached to the gateway should be located at `/api/*` so that requests are correctly proxied.
+ * Make sure Api's return the header `"Cache-Control" = "no-cache, no-store"` or CloudFront will cache responses
+ *
+ */
+export function addBehaviorToCloudFrontDistribution(scope: Construct, cloudFrontDistribution: cloudfront.Distribution, apiUrl: string) {
+    cloudFrontDistribution.addBehavior(
+        "/api/*",
+        new cloudfrontOrigins.HttpOrigin(apiUrl, {
+            originSslProtocols: [cloudfront.OriginSslPolicy.TLS_V1_2],
+            protocolPolicy: cloudfront.OriginProtocolPolicy.HTTPS_ONLY,
+        }),
+        {
+            cachePolicy: new cloudfront.CachePolicy(scope, "CachePolicy", {
+                // required or CloudFront will strip the Authorization token from the request.
+                // must be in the cache policy
+                headerBehavior: cloudfront.CacheHeaderBehavior.allowList("Authorization"),
+                enableAcceptEncodingGzip: true,
+            }),
+            originRequestPolicy: new cloudfront.OriginRequestPolicy(
+                scope,
+                "OriginRequestPolicy",
+                {
+                    // required or CloudFront will strip all query strings off the request
+                    queryStringBehavior: cloudfront.OriginRequestQueryStringBehavior.all(),
+                }
+            ),
+            allowedMethods: cloudfront.AllowedMethods.ALLOW_ALL,
+            viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+        }
+    );
 }

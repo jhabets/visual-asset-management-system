@@ -3,23 +3,38 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { storageResources } from "./storage-builder";
-import { buildMetadataIndexingFunction } from "./lambdaBuilder/metadataFunctions";
+import { storageResources } from "../storage/storageBuilder-nestedStack";
+import { buildMetadataIndexingFunction } from "../../lambdaBuilder/metadataFunctions";
 import * as eventsources from "aws-cdk-lib/aws-lambda-event-sources";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import { LambdaSubscription } from "aws-cdk-lib/aws-sns-subscriptions";
 import { NagSuppressions } from "cdk-nag";
 import { OpensearchServerlessConstruct } from "./constructs/opensearch-serverless";
 import { OpensearchProvisionedConstruct } from "./constructs/opensearch-provisioned";
-import { Stack } from "aws-cdk-lib";
-import { buildSearchFunction } from "./lambdaBuilder/searchFunctions";
-import { attachFunctionToApi } from "./api-builder";
+import { Stack, NestedStack} from "aws-cdk-lib";
+import { Construct } from "constructs";
+import { buildSearchFunction } from "../../lambdaBuilder/searchFunctions";
+import { attachFunctionToApi } from "../apiLambda/apiBuilder-nestedStack";
 import * as apigwv2 from "@aws-cdk/aws-apigatewayv2-alpha";
 import * as cdk from "aws-cdk-lib";
 import { LayerVersion} from 'aws-cdk-lib/aws-lambda';
 
+export class SearchBuilderNestedStack extends NestedStack {
+    constructor(
+    parent: Construct, 
+    name: string,
+    api: apigwv2.HttpApi,
+    storageResources: storageResources,
+    lambdaCommonBaseLayer: LayerVersion,
+    useProvisioned: boolean
+    ) {
+        super(parent, name);
+        searchBuilder(this,api,storageResources, lambdaCommonBaseLayer, useProvisioned);
+    }
+}
+
 export function searchBuilder(
-    scope: Stack,
+    scope: Construct,
     api: apigwv2.HttpApi,
     storage: storageResources,
     lambdaCommonBaseLayer: LayerVersion,
@@ -102,16 +117,6 @@ export function searchBuilder(
             api: api,
         });
 
-        NagSuppressions.addResourceSuppressionsByPath(
-            scope,
-            `/${scope.stackName}/AOSS/OpensearchServerlessDeploySchemaProvider/framework-onEvent/Resource`,
-            [
-                {
-                    id: "AwsSolutions-L1",
-                    reason: "Configured as intended.",
-                },
-            ]
-        );
 
     }
     else {
@@ -186,16 +191,6 @@ export function searchBuilder(
             api: api,
         });
 
-    NagSuppressions.addResourceSuppressionsByPath(
-            scope,
-            `/${scope.stackName}/AOS/OpensearchProvisionedDeploySchemaProvider/framework-onEvent/Resource`,
-            [
-                {
-                    id: "AwsSolutions-L1",
-                    reason: "Configured as intended.",
-                },
-            ]
-        );
     }
 
     NagSuppressions.addResourceSuppressions(
@@ -236,4 +231,5 @@ export function searchBuilder(
         ],
         true
     );
+
 }

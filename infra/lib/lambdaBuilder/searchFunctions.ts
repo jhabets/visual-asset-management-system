@@ -7,10 +7,11 @@ import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as path from "path";
 import { Construct } from "constructs";
 import { Duration } from "aws-cdk-lib";
-import { storageResources } from "../storage-builder";
+import { storageResources } from "../nestedStacks/storage/storageBuilder-nestedStack";
 import * as cdk from "aws-cdk-lib";
 import { LayerVersion } from 'aws-cdk-lib/aws-lambda';
 import { LAMBDA_PYTHON_RUNTIME } from '../../config/config';
+import * as Service from '../../lib/helper/service-helper';
 
 export function buildSearchFunction(
     scope: Construct,
@@ -42,7 +43,7 @@ export function buildSearchFunction(
         new cdk.aws_iam.PolicyStatement({
             actions: ["ssm:GetParameter"],
             resources: [
-                `arn:aws:ssm:${cdk.Stack.of(scope).region}:${
+                `arn:${Service.Partition()}:ssm:${cdk.Stack.of(scope).region}:${
                     cdk.Stack.of(scope).account
                 }:parameter/${cdk.Stack.of(scope).stackName}/*`,
             ],

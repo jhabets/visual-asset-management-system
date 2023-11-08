@@ -6,12 +6,12 @@
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import {AwsCustomResource, AwsCustomResourcePolicy, AwsSdkCall, PhysicalResourceId} from "aws-cdk-lib/custom-resources";
 import {Effect, PolicyStatement} from "aws-cdk-lib/aws-iam";
-import { Duration } from "aws-cdk-lib";
+import { Duration, NestedStack } from "aws-cdk-lib";
 import { Construct } from "constructs";
 
 
 /* eslint-disable @typescript-eslint/no-empty-interface */
-export interface CustomFeatureEnabledConfigConstructProps {
+export interface CustomFeatureEnabledConfigNestedStackProps {
     appFeatureEnabledTable: dynamodb.Table;
     featuresEnabled: string[];
 }
@@ -29,14 +29,14 @@ interface RequestItem {
     featureName: { S: string };
   }
 
-const defaultProps: Partial<CustomFeatureEnabledConfigConstructProps> = {};
+const defaultProps: Partial<CustomFeatureEnabledConfigNestedStackProps> = {};
 
 /**
  * Custom configuration for VAMS App Features Enabled.
  */
-export class CustomFeatureEnabledConfigConstruct extends Construct {
+export class CustomFeatureEnabledConfigNestedStack extends NestedStack {
 
-    constructor(parent: Construct, name: string, props: CustomFeatureEnabledConfigConstructProps) {
+    constructor(parent: Construct, name: string, props: CustomFeatureEnabledConfigNestedStackProps) {
         super(parent, name);
 
         props = { ...defaultProps, ...props };

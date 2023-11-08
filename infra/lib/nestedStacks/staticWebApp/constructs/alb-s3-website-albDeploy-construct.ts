@@ -7,10 +7,10 @@ import * as s3 from "aws-cdk-lib/aws-s3";
 import { BlockPublicAccess } from "aws-cdk-lib/aws-s3";
 import * as s3deployment from "aws-cdk-lib/aws-s3-deployment";
 import * as cdk from "aws-cdk-lib";
-import { Duration} from "aws-cdk-lib";
+import { Duration, NestedStack} from "aws-cdk-lib";
 import { Construct } from "constructs";
 import * as iam from "aws-cdk-lib/aws-iam";
-import { requireTLSAddToResourcePolicy } from "../security";
+import { requireTLSAddToResourcePolicy } from "../../../helper/security";
 import { aws_wafv2 as wafv2 } from 'aws-cdk-lib';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as elbv2 from 'aws-cdk-lib/aws-elasticloadbalancingv2';
@@ -19,6 +19,7 @@ import customResources = require('aws-cdk-lib/custom-resources');
 import * as route53 from "aws-cdk-lib/aws-route53";
 import * as acm from "aws-cdk-lib/aws-certificatemanager";
 import * as route53targets from "aws-cdk-lib/aws-route53-targets";
+import * as Config from '../../../../config/config';
 import { NagSuppressions } from "cdk-nag";
 
 export interface AlbS3WebsiteAlbDeployConstructProps extends cdk.StackProps {
@@ -26,16 +27,13 @@ export interface AlbS3WebsiteAlbDeployConstructProps extends cdk.StackProps {
      * The path to the build directory of the web site, relative to the project root
      * ex: "./app/build"
      */
+    config: Config.Config
     artefactsBucket: s3.IBucket;
-    domainHostName: string;
     webSiteBuildPath: string;
     webAcl: string;
     apiUrl: string;
     vpc: ec2.IVpc;
     subnets: ec2.ISubnet[];
-    setupPublicAccess: boolean;
-    acmCertARN: string;
-    optionalHostedZoneId: string;
 }
 
 /**
@@ -58,7 +56,8 @@ export class AlbS3WebsiteAlbDeployConstruct extends Construct {
     /**
      * Returns the ALB URL instance for the static webpage
      */
-    public websiteUrl: string;
+    public endPointURL: string;
+    public webAppBucketName: string;
 
     constructor(parent: Construct, name: string, props: AlbS3WebsiteAlbDeployConstructProps) {
         super(parent, name);
@@ -82,7 +81,7 @@ export class AlbS3WebsiteAlbDeployConstruct extends Construct {
         //Setup S3 WebApp Distro bucket (public website contents) with the name that matches the deployed domain hostname (in order to work with the ALB/Endpoint)
         //Note: Bucket name must match final domain name for the ALB/VPCEndpoint architecture to work as ALB does not support host/path rewriting
         const webAppBucket = new s3.Bucket(this, "WebAppBucket", {
-            bucketName: props.domainHostName,
+            bucketName: props.config.app.useAlb.domainHost,
             encryption: s3.BucketEncryption.S3_MANAGED,
             autoDeleteObjects: true,
             versioned: true,
@@ -95,7 +94,7 @@ export class AlbS3WebsiteAlbDeployConstruct extends Construct {
         requireTLSAddToResourcePolicy(webAppBucket);
 
         //Use provided ACM certificate
-        const acmDomainCertificate = acm.Certificate.fromCertificateArn(this, 'DomainCertificateImported', props.acmCertARN);
+        const acmDomainCertificate = acm.Certificate.fromCertificateArn(this, 'DomainCertificateImported', props.config.app.useAlb.certificateARN);
 
         //Create ALB security group and open to any IP on port 443/80
         const webAppALBSecurityGroup = new ec2.SecurityGroup(
@@ -113,8 +112,8 @@ export class AlbS3WebsiteAlbDeployConstruct extends Construct {
 
         // Create an ALB
         const alb = new elbv2.ApplicationLoadBalancer(this, 'WebAppDistroALB', {
-            loadBalancerName: `${props.stackName}-WebAppALB`.substring(0, 32),
-            internetFacing: props.setupPublicAccess,
+            loadBalancerName: `${props.config.name+"-core-"+props.config.app.baseStackName}-WebAppALB`.substring(0, 32),
+            internetFacing: props.config.app.useAlb.publicSubnet,
             vpc: props.vpc,
             securityGroup: webAppALBSecurityGroup,
 
@@ -163,7 +162,7 @@ export class AlbS3WebsiteAlbDeployConstruct extends Construct {
             vpc: props.vpc,
             privateDnsEnabled: false, 
             service: ec2.InterfaceVpcEndpointAwsService.S3,
-            subnets: { subnetType: props.setupPublicAccess? ec2.SubnetType.PUBLIC : undefined},
+            subnets: { subnetType: props.config.app.useAlb.publicSubnet? ec2.SubnetType.PUBLIC : undefined},
             securityGroups: [webAppVPCESecurityGroup],
         });
 
@@ -281,16 +280,16 @@ export class AlbS3WebsiteAlbDeployConstruct extends Construct {
         alb.addRedirect()
 
         // Optional: Add alias to ALB if hosted zone ID provided (must match domain root of provided domain host)
-        if(props.optionalHostedZoneId != "" && props.optionalHostedZoneId != "UNDEFINED") {
+        if(props.config.app.useAlb.optionalHostedZoneID != "" && props.config.app.useAlb.optionalHostedZoneID != "UNDEFINED") {
             const zone = route53.HostedZone.fromHostedZoneAttributes(this, 'ExistingRoute53HostedZone', {
-                zoneName: props.domainHostName.substring(props.domainHostName.indexOf(".")+1, props.domainHostName.length),
-                hostedZoneId: props.optionalHostedZoneId, 
+                zoneName: props.config.app.useAlb.domainHost.substring(props.config.app.useAlb.domainHost.indexOf(".")+1, props.config.app.useAlb.domainHost.length),
+                hostedZoneId: props.config.app.useAlb.optionalHostedZoneID, 
             });
 
             // Add a Route 53 alias with the Load Balancer as the target (using sub-domain in provided domain host)
             new route53.ARecord(this, "WebAppALBAliasRecord", {
                 zone: zone,
-                recordName: `${props.domainHostName}.`,
+                recordName: `${props.config.app.useAlb.domainHost}.`,
                 target: route53.RecordTarget.fromAlias(
                 new route53targets.LoadBalancerTarget(alb)
                 ),
@@ -328,14 +327,16 @@ export class AlbS3WebsiteAlbDeployConstruct extends Construct {
 
 
         // assign public properties 
-        this.websiteUrl = `https://${props.domainHostName}`;
+        this.endPointURL = `https://${props.config.app.useAlb.domainHost}`;
+        this.webAppBucketName = webAppBucket.bucketName;    
+
 
         new cdk.CfnOutput(this, "webAppAlbDns", {
             value: alb.loadBalancerDnsName, 
         });
 
         new cdk.CfnOutput(this, "webDistributionUrl", {
-            value: this.websiteUrl, 
+            value: this.endPointURL, 
         });
 
         // export any cf outputs

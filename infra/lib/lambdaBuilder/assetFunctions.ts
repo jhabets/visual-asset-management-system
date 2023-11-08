@@ -9,7 +9,7 @@ import * as path from "path";
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import { Construct } from "constructs";
 import { Duration } from "aws-cdk-lib";
-import { suppressCdkNagErrorsByGrantReadWrite } from "../security";
+import { suppressCdkNagErrorsByGrantReadWrite } from "../helper/security";
 import * as sfn from "aws-cdk-lib/aws-stepfunctions";
 import { LayerVersion } from 'aws-cdk-lib/aws-lambda';
 import { LAMBDA_PYTHON_RUNTIME } from '../../config/config';

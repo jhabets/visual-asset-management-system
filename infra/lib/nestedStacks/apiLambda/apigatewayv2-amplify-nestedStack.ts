@@ -5,14 +5,23 @@
 
 import * as apigw from "@aws-cdk/aws-apigatewayv2-alpha";
 import * as apigwAuthorizers from "@aws-cdk/aws-apigatewayv2-authorizers-alpha";
-import * as cloudfront from "aws-cdk-lib/aws-cloudfront";
-import * as cloudfrontOrigins from "aws-cdk-lib/aws-cloudfront-origins";
 import * as cognito from "aws-cdk-lib/aws-cognito";
 import * as cdk from "aws-cdk-lib";
+import * as Config from '../../../config/config';
+import { samlSettings } from "../../../config/saml-config";
+import {
+    AmplifyConfigLambdaConstruct,
+    AmplifyConfigLambdaConstructProps,
+} from "./constructs/amplify-config-lambda-construct";
 import { Construct } from "constructs";
-import { Service } from "../helper/service-helper";
+import { NestedStack } from "aws-cdk-lib";
+import { Service } from "../../helper/service-helper";
 
-export interface ApiGatewayV2CloudFrontProps extends cdk.StackProps {
+export interface ApiGatewayV2AmplifyNestedStackProps extends cdk.StackProps {
+    config: Config.Config
+    cognitoWebClientId: string;
+    cognitoIdentityPoolId: string;
+
     /**
      * The Cognito UserPool to use for the default authorizer
      */
@@ -21,36 +30,35 @@ export interface ApiGatewayV2CloudFrontProps extends cdk.StackProps {
      * The Cognito UserPoolClient to use for the default authorizer
      */
     userPoolClient: cognito.UserPoolClient;
+
+
 }
 
 /**
  * Default input properties
  */
-const defaultProps: Partial<ApiGatewayV2CloudFrontProps> = {
+const defaultProps: Partial<ApiGatewayV2AmplifyNestedStackProps> = {
     stackName: "",
     env: {},
 };
 
 /**
- * Deploys Api gateway proxied through a CloudFront distribution at route `/api`
- *
- * Any Api's attached to the gateway should be located at `/api/*` so that requests are correctly proxied.
- * Make sure Api's return the header `"Cache-Control" = "no-cache, no-store"` or CloudFront will cache responses
- *
+ * Deploys Api gateway 
+ * 
  * CORS: allowed origins for local development:
  * - https://example.com:3000, http://example.com:3000
  *
  * Creates:
  * - ApiGatewayV2 HttpApi
  */
-export class ApiGatewayV2CloudFrontConstruct extends Construct {
+export class ApiGatewayV2AmplifyNestedStack extends NestedStack {
     /**
      * Returns the ApiGatewayV2 instance to attach lambdas or other routes
      */
     public apiGatewayV2: apigw.HttpApi;
     public apiUrl: string;
 
-    constructor(parent: Construct, name: string, props: ApiGatewayV2CloudFrontProps) {
+    constructor(parent: Construct, name: string, props: ApiGatewayV2AmplifyNestedStackProps) {
         super(parent, name);
 
         props = { ...defaultProps, ...props };
@@ -101,6 +109,34 @@ export class ApiGatewayV2CloudFrontConstruct extends Construct {
         const apiUrl = `${api.httpApiId}.${Service("EXECUTE_API").Endpoint}`;
         this.apiUrl = apiUrl;
 
+        
+        //Setup Initial Amplify Config 
+        const amplifyConfigProps: AmplifyConfigLambdaConstructProps = {
+            ...props,
+            api: api,
+            appClientId: props.cognitoWebClientId,
+            identityPoolId: props.cognitoIdentityPoolId,
+            userPoolId: props.userPool.userPoolId,
+            region: props.config.env.region,
+            externalOathIdpURL: props.config.app.authProvider.useExternalOATHIdp.idpAuthProviderUrl
+        };
+
+        if (props.config.app.authProvider.useCognito.useSaml) {
+            amplifyConfigProps.federatedConfig = {
+                customCognitoAuthDomain: `${samlSettings.cognitoDomainPrefix}.auth.${props.config.env.region}.amazoncognito.com`,
+                customFederatedIdentityProviderName: samlSettings.name,
+                // if necessary, the callback urls can be determined here and passed to the UI through the config endpoint
+                // redirectSignIn: callbackUrls[0],
+                // redirectSignOut: callbackUrls[0],
+            };
+        }
+
+        const amplifyConfigFn = new AmplifyConfigLambdaConstruct(
+            this,
+            "AmplifyConfigNestedStack",
+            amplifyConfigProps
+        );
+
         // export any cf outputs
         new cdk.CfnOutput(this, "GatewayUrl", {
             value: `https://${apiUrl}`,
@@ -109,37 +145,5 @@ export class ApiGatewayV2CloudFrontConstruct extends Construct {
         // assign public properties
         this.apiGatewayV2 = api;
     }
-
-    /**
-     * Adds a proxy route from CloudFront /api to the api gateway url
-     * @param cloudFrontDistribution
-     * @param apiUrl
-     */
-    public addBehaviorToCloudFrontDistribution(cloudFrontDistribution: cloudfront.Distribution) {
-        cloudFrontDistribution.addBehavior(
-            "/api/*",
-            new cloudfrontOrigins.HttpOrigin(this.apiUrl, {
-                originSslProtocols: [cloudfront.OriginSslPolicy.TLS_V1_2],
-                protocolPolicy: cloudfront.OriginProtocolPolicy.HTTPS_ONLY,
-            }),
-            {
-                cachePolicy: new cloudfront.CachePolicy(this, "CachePolicy", {
-                    // required or CloudFront will strip the Authorization token from the request.
-                    // must be in the cache policy
-                    headerBehavior: cloudfront.CacheHeaderBehavior.allowList("Authorization"),
-                    enableAcceptEncodingGzip: true,
-                }),
-                originRequestPolicy: new cloudfront.OriginRequestPolicy(
-                    this,
-                    "OriginRequestPolicy",
-                    {
-                        // required or CloudFront will strip all query strings off the request
-                        queryStringBehavior: cloudfront.OriginRequestQueryStringBehavior.all(),
-                    }
-                ),
-                allowedMethods: cloudfront.AllowedMethods.ALLOW_ALL,
-                viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
-            }
-        );
-    }
 }
+

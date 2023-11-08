@@ -7,7 +7,7 @@ import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as path from "path";
 import { Construct } from "constructs";
 import { Duration } from "aws-cdk-lib";
-import { storageResources } from "../storage-builder";
+import { storageResources } from "../nestedStacks/storage/storageBuilder-nestedStack";
 import { LayerVersion } from 'aws-cdk-lib/aws-lambda';
 import { LAMBDA_PYTHON_RUNTIME } from '../../config/config';
 

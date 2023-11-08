@@ -11,20 +11,20 @@ import * as apigwv2 from "@aws-cdk/aws-apigatewayv2-alpha";
 import * as logs from "aws-cdk-lib/aws-logs";
 import { ApiGatewayV2LambdaConstruct } from "./constructs/apigatewayv2-lambda-construct";
 import * as lambda from "aws-cdk-lib/aws-lambda";
-import { storageResources } from "./storage-builder";
-import { buildConfigService } from "./lambdaBuilder/configFunctions";
+import { storageResources } from "../storage/storageBuilder-nestedStack";
+import { buildConfigService } from "../../lambdaBuilder/configFunctions";
 import { LayerVersion} from 'aws-cdk-lib/aws-lambda';
 import * as cdk from "aws-cdk-lib";
 import {
     buildCreateDatabaseLambdaFunction,
     buildDatabaseService,
-} from "./lambdaBuilder/databaseFunctions";
+} from "../../lambdaBuilder/databaseFunctions";
 import {
     buildListlWorkflowExecutionsFunction,
     buildWorkflowService,
     buildCreateWorkflowFunction,
     buildRunWorkflowFunction,
-} from "./lambdaBuilder/workflowFunctions";
+} from "../../lambdaBuilder/workflowFunctions";
 import {
     buildAssetColumnsFunction,
     buildAssetMetadataFunction,
@@ -36,30 +36,49 @@ import {
     buildRevertAssetFunction,
     buildUploadAssetWorkflowFunction,
     buildAssetFiles,
-} from "./lambdaBuilder/assetFunctions";
+} from "../../lambdaBuilder/assetFunctions";
 import {
     buildAddCommentLambdaFunction,
     buildEditCommentLambdaFunction,
     buildCommentService,
-} from "./lambdaBuilder/commentFunctions";
+} from "../../lambdaBuilder/commentFunctions";
 import {
     buildCreatePipelineFunction,
     buildEnablePipelineFunction,
     buildPipelineService,
-} from "./lambdaBuilder/pipelineFunctions";
+} from "../../lambdaBuilder/pipelineFunctions";
+import { NestedStack } from 'aws-cdk-lib';
 
-import { buildMetadataSchemaService } from "./lambdaBuilder/metadataSchemaFunctions";
+import { buildMetadataSchemaService } from "../../lambdaBuilder/metadataSchemaFunctions";
 
-import { buildMetadataFunctions } from "./lambdaBuilder/metadataFunctions";
-import { buildUploadAssetWorkflow } from "./uploadAssetWorkflowBuilder";
-import { buildAuthFunctions } from "./lambdaBuilder/authFunctions";
-import { EnvProps } from "./core-stack";
+import { buildMetadataFunctions } from "../../lambdaBuilder/metadataFunctions";
+import { buildUploadAssetWorkflow } from "./constructs/uploadAssetWorkflowBuilder";
+import { buildAuthFunctions } from "../../lambdaBuilder/authFunctions";
+import { NagSuppressions } from "cdk-nag";
 
 interface apiGatewayLambdaConfiguration {
     routePath: string;
     method: apigwv2.HttpMethod;
     api: apigwv2.HttpApi;
 }
+
+export class ApiBuilderNestedStack extends NestedStack {
+
+    constructor(
+      parent: Construct, 
+      name: string,
+      api: apigwv2.HttpApi,
+      storageResources: storageResources,
+      lambdaCommonBaseLayer: LayerVersion,
+      lambdaCommonServiceSDKLayer: LayerVersion,
+      ) {
+        super(parent, name);
+
+        apiBuilder(this,api,storageResources, lambdaCommonBaseLayer, lambdaCommonServiceSDKLayer);
+
+
+    }
+  }
 
 export function attachFunctionToApi(
     scope: Construct,
@@ -85,7 +104,7 @@ export function apiBuilder(
     storageResources: storageResources,
     lambdaCommonBaseLayer: LayerVersion,
     lambdaCommonServiceSDKLayer: LayerVersion,
-    props: EnvProps
+    //props: EnvProps
 ) {
     //config resources
     const createConfigFunction = buildConfigService(scope, lambdaCommonBaseLayer, storageResources.s3.assetBucket, storageResources.dynamo.appFeatureEnabledStorageTable);
@@ -396,7 +415,7 @@ export function apiBuilder(
         storageResources.dynamo.workflowStorageTable,
         storageResources.s3.assetBucket,
         uploadAllAssetFunction,
-        props.stackName
+        cdk.Stack.of(scope).stackName
     );
     attachFunctionToApi(scope, createWorkflowFunction, {
         routePath: "/workflows",

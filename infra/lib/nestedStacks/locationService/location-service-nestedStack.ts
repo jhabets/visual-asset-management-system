@@ -4,14 +4,14 @@
  */
 
 import * as iam from "aws-cdk-lib/aws-iam";
-import { aws_location, Stack } from "aws-cdk-lib";
+import { aws_location, Stack, NestedStack } from "aws-cdk-lib";
 import { Construct } from "constructs";
 
 interface LocatioServiceConstructProps {
     role: iam.Role;
 }
 
-export class LocationServiceConstruct extends Construct {
+export class LocationServiceNestedStack extends NestedStack {
     map: aws_location.CfnMap;
 
     constructor(scope: Construct, id: string, { role }: LocatioServiceConstructProps) {

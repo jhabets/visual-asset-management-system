@@ -57,13 +57,6 @@ const coreVamsStack = new CoreVAMSStack(app, vamsCoreStackName, {
     config: config
 });
 
-//Static Website VAMS Stack
-const vamsStatisWebStackName = `${config.name}-staticweb-${config.app.baseStackName || process.env.DEMO_LABEL || "dev"}`;
-
-//Pipelines VAMS Stack
-const vamsPipelinesStackName = `${config.name}-pipelines-${config.app.baseStackName || process.env.DEMO_LABEL || "dev"}`;
-
-//...
 
 coreVamsStack.addDependency(cfWafStack);
 

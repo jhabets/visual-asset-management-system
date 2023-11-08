@@ -2,7 +2,7 @@
  * Copyright 2023 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import { storageResources } from "./../storage-builder";
+import { storageResources } from "../../storage/storageBuilder-nestedStack";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as logs from "aws-cdk-lib/aws-logs";
 import * as sfn from "aws-cdk-lib/aws-stepfunctions";
@@ -11,18 +11,19 @@ import * as iam from "aws-cdk-lib/aws-iam";
 import * as path from "path";
 import { LambdaSubscription } from "aws-cdk-lib/aws-sns-subscriptions";
 import * as cdk from "aws-cdk-lib";
-import { Duration, Stack, Names } from "aws-cdk-lib";
+import { Duration, Stack, Names, NestedStack } from "aws-cdk-lib";
 import { Construct } from "constructs";
 import {
     buildConstructPipelineFunction,
     buildOpenPipelineFunction,
     buildExecuteVisualizerPCPipelineFunction,
     buildPipelineEndFunction,
-} from "../lambdaBuilder/visualizerPipelineFunctions";
-import { BatchFargatePipelineConstruct } from "./nested/batch-fargate-pipeline";
+} from "../../../lambdaBuilder/visualizerPipelineFunctions";
+import { BatchFargatePipelineConstruct } from "./batch-fargate-pipeline";
 import { NagSuppressions } from "cdk-nag";
 import { CfnOutput } from "aws-cdk-lib";
 import { LayerVersion} from 'aws-cdk-lib/aws-lambda';
+import * as Service from '../../../../lib/helper/service-helper';
 
 export interface VisualizationPipelineConstructProps extends cdk.StackProps {
     storage: storageResources;
@@ -51,7 +52,7 @@ const defaultProps: Partial<VisualizationPipelineConstructProps> = {
  * - IAM Roles / Policy Documents for permissions to S3 / Lambda
  * On redeployment, will automatically invalidate the CloudFront distribution cache
  */
-export class VisualizationPipelineConstruct extends Construct {
+export class VisualizationPipelineConstruct extends NestedStack {
     constructor(parent: Construct, name: string, props: VisualizationPipelineConstructProps) {
         super(parent, name);
 
@@ -103,7 +104,7 @@ export class VisualizationPipelineConstruct extends Construct {
             statements: [
                 new iam.PolicyStatement({
                     actions: ["states:SendTaskSuccess", "states:SendTaskFailure"],
-                    resources: [`arn:aws:states:${region}:${account}:*`],
+                    resources: [`arn:${Service.Partition()}:states:${region}:${account}:*`],
                 }),
             ],
         });
@@ -406,7 +407,7 @@ export class VisualizationPipelineConstruct extends Construct {
                     id: "AwsSolutions-IAM5",
                     reason: "ECS Containers require access to objects in the DataBucket",
                     appliesTo: [
-                        `Resource::arn:aws:states:${region}:${account}:*`,
+                        `Resource::arn:<AWS::Partition>:states:${region}:${account}:*`,
                         {
                             regex: "/^Resource::<DataBucket.*.Arn>/\\*$/g",
                         },
@@ -433,7 +434,7 @@ export class VisualizationPipelineConstruct extends Construct {
                     reason: "ECS Containers require access to objects in the DataBucket",
                     appliesTo: [
                         "Resource::*",
-                        `Resource::arn:aws:states:${region}:${account}:*`,
+                        `Resource::arn:<AWS::Partition>:states:${region}:${account}:*`,
                         {
                             regex: "/^Resource::<DataBucket.*.Arn>/\\*$/g",
                         },

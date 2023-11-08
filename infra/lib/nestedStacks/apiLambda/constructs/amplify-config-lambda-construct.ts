@@ -8,10 +8,10 @@ import * as apigwIntegrations from "@aws-cdk/aws-apigatewayv2-integrations-alpha
 import * as apigwAuthorizers from "@aws-cdk/aws-apigatewayv2-authorizers-alpha";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as cdk from "aws-cdk-lib";
-import { LAMBDA_NODE_RUNTIME } from '../../config/config';
+import { LAMBDA_NODE_RUNTIME } from '../../../../config/config';
 import { Construct } from "constructs";
 import { IHttpRouteAuthorizer } from "@aws-cdk/aws-apigatewayv2-alpha";
-import { Service } from "../helper/service-helper";
+import { Service } from "../../../helper/service-helper";
 
 /**
  * Additional configuration needed to use federated identities

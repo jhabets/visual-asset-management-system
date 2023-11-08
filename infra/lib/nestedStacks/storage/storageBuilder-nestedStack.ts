@@ -11,10 +11,10 @@ import * as kms from "aws-cdk-lib/aws-kms";
 import * as iam from "aws-cdk-lib/aws-iam";
 import * as s3not from "aws-cdk-lib/aws-s3-notifications";
 import * as cdk from "aws-cdk-lib";
-import { Duration, RemovalPolicy } from "aws-cdk-lib";
+import { Duration, RemovalPolicy, NestedStack } from "aws-cdk-lib";
 import { BlockPublicAccess } from "aws-cdk-lib/aws-s3";
 import { Construct } from "constructs";
-import { requireTLSAddToResourcePolicy } from "./security";
+import { requireTLSAddToResourcePolicy } from "../../helper/security";
 import { NagSuppressions } from "cdk-nag";
 
 export interface storageResources {
@@ -45,6 +45,75 @@ export interface storageResources {
         metadataSchemaStorageTable: dynamodb.Table;
     };
 }
+
+
+export class StorageResourcesBuilderNestedStack extends NestedStack {
+
+    public storageResources: storageResources;
+
+    constructor(
+    parent: Construct, 
+    name: string,
+    staging_bucket?: string
+    ) {
+        
+        super(parent, name);
+
+        this.storageResources = storageResourcesBuilder(this,staging_bucket);
+
+        //Nag supressions
+        const reason =
+        "The custom resource CDK bucket deployment needs full access to the bucket to deploy files";
+        NagSuppressions.addResourceSuppressions(
+            this,
+            [
+                {
+                    id: "AwsSolutions-IAM5",
+                    reason: reason,
+                    appliesTo: [
+                        {
+                            regex: "/Action::s3:.*/g",
+                        },
+                    ],
+                },
+                {
+                    id: "AwsSolutions-IAM5",
+                    reason: reason,
+                    appliesTo: [
+                        {
+                            // https://github.com/cdklabs/cdk-nag#suppressing-a-rule
+                            regex: "/^Resource::.*/g",
+                        },
+                    ],
+                },
+            ],
+            true
+        );
+
+        //Write final outputs
+        const assetBucketOutput = new cdk.CfnOutput(this, "AssetBucketNameOutput", {
+            value: this.storageResources.s3.assetBucket.bucketName,
+            description: "S3 bucket for asset storage",
+        });
+
+        const assetVisualizerBucketOutput = new cdk.CfnOutput(
+            this,
+            "AssetVisualizerBucketNameOutput",
+            {
+                value: this.storageResources.s3.assetVisualizerBucket.bucketName,
+                description: "S3 bucket for visualization asset storage",
+            }
+        );
+
+        const artefactsBucketOutput = new cdk.CfnOutput(this, "ArtefactsBucketNameOutput", {
+            value: this.storageResources.s3.artefactsBucket.bucketName,
+            description: "S3 bucket for template notebooks",
+        });
+
+    }
+
+}
+
 export function storageResourcesBuilder(
     scope: Construct,
     staging_bucket?: string

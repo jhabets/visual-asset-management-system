@@ -156,7 +156,7 @@ def create_step_function(pipelines, databaseId, workflowId):
     # SageMaker Execution Role
     # You can use sagemaker.get_execution_role() if running inside sagemaker's notebook instance
     role = os.environ['LAMBDA_ROLE_ARN']
-    # step_role = "arn:aws:iam::611143256665:role/AmazonSageMaker-StepFunctionsWorkflowExecutionRole"
+
 
     client = boto3.client('sts')
     account_id = client.get_caller_identity()['Account']

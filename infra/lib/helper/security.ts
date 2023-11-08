@@ -21,8 +21,8 @@ import { NagSuppressions } from "cdk-nag";
           "Action": "s3:*",
           "Effect": "Deny",
           "Resource": [
-            "arn:aws:s3:::DOC-EXAMPLE-BUCKET",
-            "arn:aws:s3:::DOC-EXAMPLE-BUCKET/*"
+            `arn:${Service.Partition()}:s3:::DOC-EXAMPLE-BUCKET`,
+            `arn:${Service.Partition()}:s3:::DOC-EXAMPLE-BUCKET/*`
           ],
           "Condition": {
             "Bool": {

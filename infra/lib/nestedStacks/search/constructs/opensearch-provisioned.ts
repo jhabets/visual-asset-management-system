@@ -5,13 +5,13 @@
 
 import * as cdk from "aws-cdk-lib";
 import { Construct } from "constructs";
-import { Service } from "../helper/service-helper";
+import { Service } from "../../../helper/service-helper";
 import { NagSuppressions } from "cdk-nag";
-import { CfnOutput, CustomResource, Names, Stack } from "aws-cdk-lib";
+import { CfnOutput, CustomResource, Names, Stack, NestedStack } from "aws-cdk-lib";
 import * as cr from "aws-cdk-lib/custom-resources";
 import * as njslambda from "aws-cdk-lib/aws-lambda-nodejs";
 import * as path from "path";
-import { LAMBDA_NODE_RUNTIME } from '../../config/config';
+import { LAMBDA_NODE_RUNTIME } from '../../../../config/config';
 import {
     Port,
     SecurityGroup,
@@ -140,7 +140,7 @@ export class OpensearchProvisionedConstruct extends Construct {
             this,
             "OpensearchProvisionedDeploySchema",
             {
-                entry: path.join(__dirname, "./opensearch/deployschemaprovisioned.ts"),
+                entry: path.join(__dirname, "./schemaDeploy/deployschemaprovisioned.ts"),
                 handler: "handler",
                 bundling: {
                     externalModules: ["aws-sdk"],
@@ -160,7 +160,7 @@ export class OpensearchProvisionedConstruct extends Construct {
             new cdk.aws_iam.PolicyStatement({
                 actions: ["ssm:*"],
                 resources: ["*"],
-                // resources: [`arn:aws:ssm:::parameter/${cdk.Stack.of(this).stackName}/*`],
+                // resources: [`arn:<AWS::Partition>:ssm:::parameter/${cdk.Stack.of(this).stackName}/*`],
                 effect: cdk.aws_iam.Effect.ALLOW,
             })
         );
@@ -198,9 +198,18 @@ export class OpensearchProvisionedConstruct extends Construct {
         });
 
         //NAG Surpressions
-        NagSuppressions.addResourceSuppressionsByPath(
-            cdk.Stack.of(this),
-            `/${cdk.Stack.of(this).stackName}/AOS/OpenSearchDomain/Resource`,
+        NagSuppressions.addResourceSuppressions(
+            schemaDeployProvider,
+            [
+                {
+                    id: "AwsSolutions-L1",
+                    reason: "Configured as intended.",
+                },
+            ]
+        );
+
+        NagSuppressions.addResourceSuppressions(
+            osDomain,
             [
                 {
                     id: "AwsSolutions-OS1",

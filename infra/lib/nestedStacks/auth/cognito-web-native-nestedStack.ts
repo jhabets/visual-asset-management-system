@@ -8,14 +8,15 @@ import * as cognito from "aws-cdk-lib/aws-cognito";
 import * as iam from "aws-cdk-lib/aws-iam";
 import * as ssm from "aws-cdk-lib/aws-ssm";
 import * as cdk from "aws-cdk-lib";
-import { storageResources } from "../storage-builder";
+import { storageResources } from "../storage/storageBuilder-nestedStack";
 import { Construct } from "constructs";
-import { Duration } from "aws-cdk-lib";
+import { Duration, NestedStack } from "aws-cdk-lib";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as path from "path";
-import { Config } from "../../config/config";
+import { Config } from "../../../config/config";
 import { LayerVersion } from 'aws-cdk-lib/aws-lambda';
-import { LAMBDA_PYTHON_RUNTIME } from '../../config/config';
+import { LAMBDA_PYTHON_RUNTIME } from '../../../config/config';
+import { NagSuppressions } from "cdk-nag";
 
 export interface SamlSettings {
     metadata: cognito.UserPoolIdentityProviderSamlMetadata;
@@ -24,7 +25,7 @@ export interface SamlSettings {
     cognitoDomainPrefix: string;
 }
 
-export interface CognitoWebNativeConstructProps extends cdk.StackProps {
+export interface CognitoWebNativeNestedStackProps extends cdk.StackProps {
     lambdaCommonBaseLayer: LayerVersion;
     storageResources: storageResources;
     config: Config;
@@ -34,7 +35,7 @@ export interface CognitoWebNativeConstructProps extends cdk.StackProps {
 /**
  * Deploys Cognito with an Authenticated & UnAuthenticated Role with a Web and Native client
  */
-export class CognitoWebNativeConstruct extends Construct {
+export class CognitoWebNativeNestedStack extends NestedStack {
     public userPool: cognito.UserPool;
     public webClientUserPool: cognito.UserPoolClient;
     public nativeClientUserPool: cognito.UserPoolClient;
@@ -47,12 +48,12 @@ export class CognitoWebNativeConstruct extends Construct {
     public superAdminRole: iam.Role;
     public unauthenticatedRole: iam.Role;
 
-    constructor(parent: Construct, name: string, props: CognitoWebNativeConstructProps) {
+    constructor(parent: Construct, name: string, props: CognitoWebNativeNestedStackProps) {
         super(parent, name);
 
         const handlerName = "pretokengen";
         const preTokenGeneration = new lambda.Function(this, handlerName, {
-            code: lambda.Code.fromAsset(path.join(__dirname, `../../../backend/backend`)),
+            code: lambda.Code.fromAsset(path.join(__dirname, `../../../../backend/backend`)),
             handler: `handlers.auth.${handlerName}.lambda_handler`,
             runtime: LAMBDA_PYTHON_RUNTIME,
             layers: [props.lambdaCommonBaseLayer],
@@ -229,21 +230,61 @@ export class CognitoWebNativeConstruct extends Construct {
             }
         );
 
+        const cognitoUser = new cognito.CfnUserPoolUser(this, "AdminUser", {
+            username: props.config.app.adminEmailAddress,
+            userPoolId: userPool.userPoolId,
+            desiredDeliveryMediums: ["EMAIL"],
+            userAttributes: [
+                {
+                    name: "email",
+                    value: props.config.app.adminEmailAddress,
+                },
+            ],
+        });
+
+        const userPoolGroup = new cognito.CfnUserPoolGroup(this, "AdminGroup", {
+            groupName: "super-admin",
+            userPoolId: userPool.userPoolId,
+            roleArn: superAdminRole.roleArn,
+        });
+
+        userPoolGroup.node.addDependency(userPool);
+
+        const userGroupAttachment = new cognito.CfnUserPoolUserToGroupAttachment(
+            this,
+            "AdminUserToGroupAttachment",
+            {
+                userPoolId: userPool.userPoolId,
+                username: props.config.app.adminEmailAddress,
+                groupName: "super-admin",
+            }
+        );
+        userGroupAttachment.addDependency(cognitoUser);
+        userGroupAttachment.addDependency(userPoolGroup);
+
+
         // Assign Cfn Outputs
-        new cdk.CfnOutput(this, "UserPoolId", {
+        new cdk.CfnOutput(this, "AuthCognito_UserPoolId", {
             value: userPool.userPoolId,
         });
-        new cdk.CfnOutput(this, "IdentityPoolId", {
+        new cdk.CfnOutput(this, "AuthCognito_IdentityPoolId", {
             value: identityPool.ref,
         });
-        new cdk.CfnOutput(this, "WebClientId", {
+        new cdk.CfnOutput(this, "AuthCognito_WebClientId", {
             value: userPoolWebClient.userPoolClientId,
         });
 
         if (props.samlSettings) {
-            new cdk.CfnOutput(this, "SAML_urn", {
+            new cdk.CfnOutput(this, "AuthCognito_SAML_urn", {
                 value: `urn:amazon:cognito:sp:${userPool.userPoolId}`,
                 description: "SP urn / Audience URI / SP entity ID",
+            });
+        }
+
+        if (props.config.app.authProvider.useCognito.useSaml && props.samlSettings) {
+            const samlIdpResponseUrl = new cdk.CfnOutput(this, "AuthCognito_SAML_IdpResponseUrl", {
+                value: `https://${props.samlSettings!.cognitoDomainPrefix}.auth.${props.config.env.region}.amazoncognito.com/saml2/idpresponse`,
+                description: "SAML IdP Response URL",
             });
         }
 
@@ -271,10 +312,11 @@ export class CognitoWebNativeConstruct extends Construct {
         this.webClientId = userPoolWebClient.userPoolClientId;
     }
 
+
     private createAuthenticatedRole(
         id: string,
         identityPool: cognito.CfnIdentityPool,
-        props: CognitoWebNativeConstructProps
+        props: CognitoWebNativeNestedStackProps
     ) {
         const authenticatedRole = new iam.Role(this, id, {
             assumedBy: new iam.FederatedPrincipal(

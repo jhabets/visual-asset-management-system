@@ -23,8 +23,8 @@ export interface BatchFargatePipelineConstructProps extends cdk.StackProps {
 }
 
 const defaultProps: Partial<BatchFargatePipelineConstructProps> = {
-    stackName: "",
-    env: {},
+    //stackName: "",
+    //env: {},
 };
 
 export class BatchFargatePipelineConstruct extends Construct {

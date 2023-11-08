@@ -12,9 +12,9 @@ import { Construct } from "constructs";
 import { Duration } from "aws-cdk-lib";
 import { suppressCdkNagErrorsByGrantReadWrite } from "../helper/security";
 import { storageResources } from "../nestedStacks/storage/storageBuilder-nestedStack";
-import { Service, IAMArn} from "../helper/service-helper";
-import { LayerVersion } from 'aws-cdk-lib/aws-lambda';
-import { LAMBDA_PYTHON_RUNTIME } from '../../config/config';
+import { Service, IAMArn } from "../helper/service-helper";
+import { LayerVersion } from "aws-cdk-lib/aws-lambda";
+import { LAMBDA_PYTHON_RUNTIME } from "../../config/config";
 
 export function buildWorkflowService(
     scope: Construct,
@@ -54,7 +54,7 @@ export function buildWorkflowService(
 export function buildRunProcessingJobFunction(
     scope: Construct,
     lambdaCommonBaseLayer: LayerVersion
-    ): lambda.Function {
+): lambda.Function {
     const name = "runProcessingJob";
     const runProcessingJobFunction = new lambda.Function(scope, name, {
         code: lambda.Code.fromAsset(path.join(__dirname, `../../../backend/backend`)),

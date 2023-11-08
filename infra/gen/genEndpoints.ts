@@ -3,24 +3,24 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-const https = require('https');
-const fs = require('fs');
+const https = require("https");
+const fs = require("fs");
 
 let url = "https://raw.githubusercontent.com/boto/botocore/master/botocore/data/endpoints.json";
 
 interface IServiceInfo {
-    arn: string,
-    principal: string,
-    hostname: string,
-    fipsHostname: string,
+    arn: string;
+    principal: string;
+    hostname: string;
+    fipsHostname: string;
 }
 
 interface IServices {
-    key: string,
-    typedName: string,
+    key: string;
+    typedName: string;
     partition: {
-        [partition: string]: IServiceInfo
-    }
+        [partition: string]: IServiceInfo;
+    };
 }
 
 function processJson(json: any): IServices[] {
@@ -29,9 +29,9 @@ function processJson(json: any): IServices[] {
     let partition: {
         [partition: string]: {
             service: {
-                [key: string]: IServiceInfo
-            }
-        }
+                [key: string]: IServiceInfo;
+            };
+        };
     } = {};
 
     // Get all services
@@ -44,17 +44,18 @@ function processJson(json: any): IServices[] {
             const element = v["services"][s];
             const name = v["partition"];
 
-            services.push(s)
+            services.push(s);
 
             if (!partition[name]) {
                 partition[name] = {
-                    service: {}
-                }
+                    service: {},
+                };
             }
 
-            let newServiceName = s, newPrincipalPrefix = s;
+            let newServiceName = s,
+                newPrincipalPrefix = s;
 
-            if(s == "es") {
+            if (s == "es") {
                 //rename to opensearch
                 newServiceName = "opensearch";
                 newPrincipalPrefix = "opensearchservice";
@@ -65,14 +66,13 @@ function processJson(json: any): IServices[] {
                 principal: `${newPrincipalPrefix}.${v["dnsSuffix"]}`,
                 hostname: `${newPrincipalPrefix}.{region}.${v["dnsSuffix"]}`,
                 fipsHostname: `${newPrincipalPrefix}-fips.{region}.${v["dnsSuffix"]}`,
-            }
+            };
         }
     });
 
-
     const unique = [...new Set(services)].map((s): IServices => {
         let partitionsForService: {
-            [partition: string]: IServiceInfo
+            [partition: string]: IServiceInfo;
         } = {};
 
         for (const p in partition) {
@@ -84,32 +84,39 @@ function processJson(json: any): IServices[] {
             }
         }
 
-
         return {
             key: s,
             typedName: s.replace(/[-.]/gi, "_").toUpperCase(),
-            partition: partitionsForService
-        }
+            partition: partitionsForService,
+        };
     });
-
 
     return unique;
 }
 
 function writeFiles(services: IServices[]) {
-    let serviceLookup : {[key: string] : {
-        [partition: string]: IServiceInfo
-    }} = {};
+    let serviceLookup: {
+        [key: string]: {
+            [partition: string]: IServiceInfo;
+        };
+    } = {};
 
-    let typeToKeyLookup : {[typedKey: string] : string} = {};
+    let typeToKeyLookup: { [typedKey: string]: string } = {};
 
-    services.forEach(v => {
+    services.forEach((v) => {
         serviceLookup[v.key] = v.partition;
         typeToKeyLookup[v.typedName] = v.key;
-    });    
+    });
 
-    const serviceType = `export type SERVICE = ${services.map(s => `'${s.typedName}'`).sort().join(" | \n\t")};`;
-    const seviceKeyLookup = `export const TYPE_SERVICE_LOOKUP = ${JSON.stringify(typeToKeyLookup, null, 3)};`;
+    const serviceType = `export type SERVICE = ${services
+        .map((s) => `'${s.typedName}'`)
+        .sort()
+        .join(" | \n\t")};`;
+    const seviceKeyLookup = `export const TYPE_SERVICE_LOOKUP = ${JSON.stringify(
+        typeToKeyLookup,
+        null,
+        3
+    )};`;
     const serviceLookupInterface = `export interface IServiceInfo {     
     arn: string,
     principal: string,
@@ -117,31 +124,39 @@ function writeFiles(services: IServices[]) {
     fipsHostname: string, 
 };`;
 
-    const serviceLookupOut = `export const SERVICE_LOOKUP : {[key: string] : { [partition: string]: IServiceInfo }} = ${JSON.stringify(serviceLookup, null, 3)};`;
+    const serviceLookupOut = `export const SERVICE_LOOKUP : {[key: string] : { [partition: string]: IServiceInfo }} = ${JSON.stringify(
+        serviceLookup,
+        null,
+        3
+    )};`;
 
-    fs.writeFileSync('./lib/helper/const.ts', `${[serviceType, seviceKeyLookup, serviceLookupInterface, serviceLookupOut].join('\n')}`);
+    fs.writeFileSync(
+        "./lib/helper/const.ts",
+        `${[serviceType, seviceKeyLookup, serviceLookupInterface, serviceLookupOut].join("\n")}`
+    );
     console.log(serviceLookupOut);
     // console.log(serviceType)
 }
 
-https.get(url, (res: any) => {
-    let body = "";
+https
+    .get(url, (res: any) => {
+        let body = "";
 
-    res.on("data", (chunk: any) => {
-        body += chunk;
+        res.on("data", (chunk: any) => {
+            body += chunk;
+        });
+
+        res.on("end", () => {
+            try {
+                let json = JSON.parse(body);
+                // do something with JSON
+                const services = processJson(json);
+                writeFiles(services);
+            } catch (error: any) {
+                console.error(error.message);
+            }
+        });
+    })
+    .on("error", (error: any) => {
+        console.error(error.message);
     });
-
-    res.on("end", () => {
-        try {
-            let json = JSON.parse(body);
-            // do something with JSON
-            const services = processJson(json);
-            writeFiles(services);
-        } catch (error: any) {
-            console.error(error.message);
-        };
-    });
-
-}).on("error", (error: any) => {
-    console.error(error.message);
-});

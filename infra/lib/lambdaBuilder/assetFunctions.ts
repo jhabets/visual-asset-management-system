@@ -11,8 +11,8 @@ import { Construct } from "constructs";
 import { Duration } from "aws-cdk-lib";
 import { suppressCdkNagErrorsByGrantReadWrite } from "../helper/security";
 import * as sfn from "aws-cdk-lib/aws-stepfunctions";
-import { LayerVersion } from 'aws-cdk-lib/aws-lambda';
-import { LAMBDA_PYTHON_RUNTIME } from '../../config/config';
+import { LayerVersion } from "aws-cdk-lib/aws-lambda";
+import { LAMBDA_PYTHON_RUNTIME } from "../../config/config";
 
 export function buildAssetService(
     scope: Construct,

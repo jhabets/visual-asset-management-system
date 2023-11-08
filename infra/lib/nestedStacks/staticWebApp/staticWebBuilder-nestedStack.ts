@@ -5,26 +5,23 @@
  */
 
 import { Construct } from "constructs";
-import { NestedStack } from 'aws-cdk-lib';
+import { NestedStack } from "aws-cdk-lib";
 import * as cdk from "aws-cdk-lib";
-import * as Config from '../../../config/config';
+import * as Config from "../../../config/config";
 import { samlSettings } from "../../../config/saml-config";
 import { storageResources } from "../storage/storageBuilder-nestedStack";
 import { CloudFrontS3WebSiteConstruct } from "./constructs/cloudfront-s3-website-construct";
 import { VpcGatewayAlbDeployConstruct } from "./constructs/vpc-gateway-albDeploy-construct";
 import { AlbS3WebsiteAlbDeployConstruct } from "./constructs/alb-s3-website-albDeploy-construct";
 import { CustomCognitoConfigConstruct } from "./constructs/custom-cognito-config-construct";
-import {
-    addBehaviorToCloudFrontDistribution
-} from "./constructs/cloudfront-s3-website-construct";
+import { addBehaviorToCloudFrontDistribution } from "./constructs/cloudfront-s3-website-construct";
 import { NagSuppressions } from "cdk-nag";
 
-
 export interface StaticWebBuilderNestedStackProps extends cdk.StackProps {
-    config: Config.Config
+    config: Config.Config;
     webAppBuildPath: string;
     apiUrl: string;
-    storageResources: storageResources
+    storageResources: storageResources;
     ssmWafArn: string;
     cognitoWebClientId: string;
     cognitoUserPoolId: string;
@@ -34,12 +31,11 @@ export interface StaticWebBuilderNestedStackProps extends cdk.StackProps {
  * Default input properties
  */
 const defaultProps: Partial<StaticWebBuilderNestedStackProps> = {
-    stackName: "",
-    env: {},
+    //stackName: "",
+    //env: {},
 };
 
 export class StaticWebBuilderNestedStack extends NestedStack {
-
     public endpointURL: string;
     public webAppS3BucketName: string;
 
@@ -49,11 +45,12 @@ export class StaticWebBuilderNestedStack extends NestedStack {
         props = { ...defaultProps, ...props };
 
         //Deploy website distribution infrastructure and authentication tie-ins
-        if(!props.config.app.useAlb.enabled) {
+        if (!props.config.app.useAlb.enabled) {
             //Deploy through CloudFront (default)
 
             const website = new CloudFrontS3WebSiteConstruct(this, "WebApp", {
                 ...props,
+                config: props.config,
                 webSiteBuildPath: props.webAppBuildPath,
                 webAcl: props.ssmWafArn,
                 apiUrl: props.apiUrl,
@@ -100,22 +97,19 @@ export class StaticWebBuilderNestedStack extends NestedStack {
 
             this.webAppS3BucketName = website.webAppBucketName;
             this.endpointURL = website.endPointURL;
-
-        }
-        else {
+        } else {
             //Deploy with ALB (aka, use ALB->VPCEndpoint->S3 as path for web deployment)
-            const webAppDistroNetwork =
-                new VpcGatewayAlbDeployConstruct(
-                    this,
-                    "WebAppDistroNetwork",
-                    {
-                        ...props,
-                        optionalExistingVPCId: props.config.app.useAlb.optionalVPCID,
-                        vpcCidrRange: props.config.app.useAlb.vpcCidrRange,
-                        setupPublicAccess: props.config.app.useAlb.publicSubnet
-                    }
-                );
-                
+            const webAppDistroNetwork = new VpcGatewayAlbDeployConstruct(
+                this,
+                "WebAppDistroNetwork",
+                {
+                    ...props,
+                    optionalExistingVPCId: props.config.app.useAlb.optionalVPCID,
+                    vpcCidrRange: props.config.app.useAlb.vpcCidrRange,
+                    setupPublicAccess: props.config.app.useAlb.publicSubnet,
+                }
+            );
+
             const website = new AlbS3WebsiteAlbDeployConstruct(this, "WebApp", {
                 ...props,
                 config: props.config,
@@ -165,7 +159,7 @@ export class StaticWebBuilderNestedStack extends NestedStack {
 
         //Nag supressions
         const reason =
-        "The custom resource CDK bucket deployment needs full access to the bucket to deploy web static files";
+            "The custom resource CDK bucket deployment needs full access to the bucket to deploy web static files";
         NagSuppressions.addResourceSuppressions(
             this,
             [
@@ -191,7 +185,5 @@ export class StaticWebBuilderNestedStack extends NestedStack {
             ],
             true
         );
-
     }
 }
-

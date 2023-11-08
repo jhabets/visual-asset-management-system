@@ -9,17 +9,18 @@ import * as s3 from "aws-cdk-lib/aws-s3";
 import { BlockPublicAccess } from "aws-cdk-lib/aws-s3";
 import * as s3deployment from "aws-cdk-lib/aws-s3-deployment";
 import * as cdk from "aws-cdk-lib";
-import { Duration} from "aws-cdk-lib";
+import { Duration } from "aws-cdk-lib";
 import { Construct } from "constructs";
 import { requireTLSAddToResourcePolicy } from "../../../helper/security";
 import { NagSuppressions } from "cdk-nag";
-
+import * as Config from "../../../../config/config";
 
 export interface CloudFrontS3WebSiteConstructProps extends cdk.StackProps {
     /**
      * The path to the build directory of the web site, relative to the project root
      * ex: "./app/build"
      */
+    config: Config.Config;
     webSiteBuildPath: string;
     webAcl: string;
     apiUrl: string;
@@ -106,11 +107,11 @@ export class CloudFrontS3WebSiteConstruct extends Construct {
         const connectSrc = [
             "'self'",
             props.cognitoDomain,
-            `https://cognito-idp.${props.env?.region}.amazonaws.com/`,
-            `https://cognito-identity.${props.env?.region}.amazonaws.com/`,
+            `https://cognito-idp.${props.config.env.region}.amazonaws.com/`,
+            `https://cognito-identity.${props.config.env.region}.amazonaws.com/`,
             `https://${props.apiUrl}`,
             `https://${props.assetBucketUrl}`,
-            `https://maps.geo.${props.env?.region}.amazonaws.com/`,
+            `https://maps.geo.${props.config.env.region}.amazonaws.com/`,
         ];
 
         const scriptSrc = [
@@ -118,8 +119,8 @@ export class CloudFrontS3WebSiteConstruct extends Construct {
             "blob:",
             "'sha256-fUpTbA+CO0BMxLmoVHffhbh3ZTLkeobgwlFl5ICCQmg='", // script in index.html
             props.cognitoDomain,
-            `https://cognito-idp.${props.env?.region}.amazonaws.com/`,
-            `https://cognito-identity.${props.env?.region}.amazonaws.com/`,
+            `https://cognito-idp.${props.config.env.region}.amazonaws.com/`,
+            `https://cognito-identity.${props.config.env.region}.amazonaws.com/`,
             `https://${props.apiUrl}`,
             `https://${props.assetBucketUrl}`,
         ];
@@ -227,21 +228,25 @@ export class CloudFrontS3WebSiteConstruct extends Construct {
         // assign public properties
         this.originAccessIdentity = originAccessIdentity;
         this.cloudFrontDistribution = cloudFrontDistribution;
-        this.endPointURL = `https://${cloudFrontDistribution.distributionDomainName}`
-        this.webAppBucketName = siteBucket.bucketName
+        this.endPointURL = `https://${cloudFrontDistribution.distributionDomainName}`;
+        this.webAppBucketName = siteBucket.bucketName;
     }
 }
 
 /**
  * Adds a proxy route from CloudFront /api to the api gateway url
- * 
+ *
  * Deploys Api gateway (proxied through a CloudFront distribution at route `/api` if deploying through cloudfront)
  *
  * Any Api's attached to the gateway should be located at `/api/*` so that requests are correctly proxied.
  * Make sure Api's return the header `"Cache-Control" = "no-cache, no-store"` or CloudFront will cache responses
  *
  */
-export function addBehaviorToCloudFrontDistribution(scope: Construct, cloudFrontDistribution: cloudfront.Distribution, apiUrl: string) {
+export function addBehaviorToCloudFrontDistribution(
+    scope: Construct,
+    cloudFrontDistribution: cloudfront.Distribution,
+    apiUrl: string
+) {
     cloudFrontDistribution.addBehavior(
         "/api/*",
         new cloudfrontOrigins.HttpOrigin(apiUrl, {
@@ -255,14 +260,10 @@ export function addBehaviorToCloudFrontDistribution(scope: Construct, cloudFront
                 headerBehavior: cloudfront.CacheHeaderBehavior.allowList("Authorization"),
                 enableAcceptEncodingGzip: true,
             }),
-            originRequestPolicy: new cloudfront.OriginRequestPolicy(
-                scope,
-                "OriginRequestPolicy",
-                {
-                    // required or CloudFront will strip all query strings off the request
-                    queryStringBehavior: cloudfront.OriginRequestQueryStringBehavior.all(),
-                }
-            ),
+            originRequestPolicy: new cloudfront.OriginRequestPolicy(scope, "OriginRequestPolicy", {
+                // required or CloudFront will strip all query strings off the request
+                queryStringBehavior: cloudfront.OriginRequestQueryStringBehavior.all(),
+            }),
             allowedMethods: cloudfront.AllowedMethods.ALLOW_ALL,
             viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
         }

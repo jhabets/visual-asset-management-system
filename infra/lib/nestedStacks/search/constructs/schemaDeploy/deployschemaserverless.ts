@@ -2,12 +2,12 @@
  * Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import { Handler} from "aws-lambda";
+import { Handler } from "aws-lambda";
 import {
     BatchGetCollectionCommand,
     OpenSearchServerlessClient,
 } from "@aws-sdk/client-opensearchserverless";
-import { Client} from "@opensearch-project/opensearch";
+import { Client } from "@opensearch-project/opensearch";
 import { AwsSigv4Signer } from "@opensearch-project/opensearch/aws";
 import { defaultProvider } from "@aws-sdk/credential-provider-node";
 

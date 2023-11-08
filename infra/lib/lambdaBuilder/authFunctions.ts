@@ -9,9 +9,9 @@ import * as path from "path";
 import { Construct } from "constructs";
 import { Duration } from "aws-cdk-lib";
 import { storageResources } from "../nestedStacks/storage/storageBuilder-nestedStack";
-import { LayerVersion } from 'aws-cdk-lib/aws-lambda';
-import { LAMBDA_PYTHON_RUNTIME } from '../../config/config';
-import * as Service from '../../lib/helper/service-helper';
+import { LayerVersion } from "aws-cdk-lib/aws-lambda";
+import { LAMBDA_PYTHON_RUNTIME } from "../../config/config";
+import * as Service from "../../lib/helper/service-helper";
 
 interface AuthFunctions {
     groups: lambda.Function;
@@ -30,11 +30,17 @@ export function buildAuthFunctions(
 
     storageResources.s3.assetBucket.grantReadWrite(storageBucketRole);
 
-    const scopeds3access = buildAuthFunction(scope, lambdaCommonBaseLayer, storageResources, "scopeds3access", {
-        AWS_PARTITION: Service.Partition(),
-        ROLE_ARN: storageBucketRole.roleArn,
-        S3_BUCKET: storageResources.s3.assetBucket.bucketName,
-    });
+    const scopeds3access = buildAuthFunction(
+        scope,
+        lambdaCommonBaseLayer,
+        storageResources,
+        "scopeds3access",
+        {
+            AWS_PARTITION: Service.Partition(),
+            ROLE_ARN: storageBucketRole.roleArn,
+            S3_BUCKET: storageResources.s3.assetBucket.bucketName,
+        }
+    );
 
     storageBucketRole.assumeRolePolicy?.addStatements(
         new iam.PolicyStatement({
@@ -46,7 +52,12 @@ export function buildAuthFunctions(
 
     return {
         groups: buildAuthFunction(scope, lambdaCommonBaseLayer, storageResources, "groups"),
-        constraints: buildAuthFunction(scope, lambdaCommonBaseLayer, storageResources, "finegrainedaccessconstraints"),
+        constraints: buildAuthFunction(
+            scope,
+            lambdaCommonBaseLayer,
+            storageResources,
+            "finegrainedaccessconstraints"
+        ),
         scopeds3access,
     };
 }

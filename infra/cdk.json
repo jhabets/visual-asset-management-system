@@ -7,17 +7,17 @@
         "@aws-cdk/aws-lambda:recognizeVersionProps": true,
         "@aws-cdk/aws-cloudfront:defaultSecurityPolicyTLSv1.2_2021": true,
         "@aws-cdk/customresources:installLatestAwsSdkDefault": false,
-        "environments":{
-            "common":{
-              "SolutionName":"AWSVisualAssetManagementSystem",
-              "Owner":"",
-              "CostCenter":"",
-              "BusinessUnit":""
+        "environments": {
+            "common": {
+                "SolutionName": "AWSVisualAssetManagementSystem",
+                "Owner": "",
+                "CostCenter": "",
+                "BusinessUnit": ""
             },
-            "aws":{
-              "PermissionBoundaryArn":"",
-              "IamRoleNamePrefix":""
+            "aws": {
+                "PermissionBoundaryArn": "",
+                "IamRoleNamePrefix": ""
             }
-          }
+        }
     }
 }

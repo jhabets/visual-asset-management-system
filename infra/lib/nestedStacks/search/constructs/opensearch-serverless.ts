@@ -11,7 +11,7 @@ import * as njslambda from "aws-cdk-lib/aws-lambda-nodejs";
 import * as path from "path";
 import { CustomResource, Names, NestedStack } from "aws-cdk-lib";
 import * as iam from "aws-cdk-lib/aws-iam";
-import { LAMBDA_NODE_RUNTIME } from '../../../../config/config';
+import { LAMBDA_NODE_RUNTIME } from "../../../../config/config";
 import { NagSuppressions } from "cdk-nag";
 
 interface OpensearchServerlessConstructProps extends cdk.StackProps {
@@ -25,7 +25,7 @@ export class OpensearchServerlessConstruct extends Construct {
     constructor(parent: Construct, name: string, props: OpensearchServerlessConstructProps) {
         super(parent, name);
 
-        this.collectionUid = Names.uniqueResourceName(this, { maxLength: 8 }).toLowerCase();
+        this.collectionUid = ("Collection" + Math.floor(Math.random() * 100000000)).toLowerCase();
 
         const schemaDeploy = new njslambda.NodejsFunction(
             this,
@@ -60,7 +60,7 @@ export class OpensearchServerlessConstruct extends Construct {
 
         const accessPolicy = this._grantCollectionAccess(principalsForAOSS);
 
-        const collection = new aoss.CfnCollection(this, "OpensearchCollection", {
+        const collection = new aoss.CfnCollection(this, "OSCollection", {
             name: this.collectionUid,
             type: "SEARCH",
         });
@@ -69,8 +69,8 @@ export class OpensearchServerlessConstruct extends Construct {
             Rules: [{ ResourceType: "collection", Resource: [`collection/${collection.name}`] }],
             AWSOwnedKey: true,
         };
-        const encryptionPolicyCfn = new aoss.CfnSecurityPolicy(this, "OpensearchEncryptionPolicy", {
-            name: `EncryptPolicy${this.collectionUid}`.toLowerCase(),
+        const encryptionPolicyCfn = new aoss.CfnSecurityPolicy(this, "OSEncryptionPolicy", {
+            name: (`ep` + Math.floor(Math.random() * 100000000)).toLowerCase(),
             policy: JSON.stringify(encryptionPolicy),
             type: "encryption",
         });
@@ -85,8 +85,8 @@ export class OpensearchServerlessConstruct extends Construct {
             },
         ];
 
-        const networkPolicyCfn = new aoss.CfnSecurityPolicy(this, "OpensearchNetworkPolicy", {
-            name: `NetworkPolicy${this.collectionUid}`.toLowerCase(),
+        const networkPolicyCfn = new aoss.CfnSecurityPolicy(this, "OSNetworkPolicy", {
+            name: (`np` + Math.floor(Math.random() * 100000000)).toLowerCase(),
             policy: JSON.stringify(networkPolicy),
             type: "network",
         });
@@ -94,13 +94,9 @@ export class OpensearchServerlessConstruct extends Construct {
         collection.addDependency(encryptionPolicyCfn);
         collection.addDependency(networkPolicyCfn);
 
-        const schemaDeployProvider = new cr.Provider(
-            this,
-            "OpensearchServerlessDeploySchemaProvider",
-            {
-                onEventHandler: schemaDeploy,
-            }
-        );
+        const schemaDeployProvider = new cr.Provider(this, "OSSDeploySchemaProvider", {
+            onEventHandler: schemaDeploy,
+        });
 
         schemaDeployProvider.node.addDependency(schemaDeploy);
         schemaDeployProvider.node.addDependency(collection);
@@ -116,16 +112,12 @@ export class OpensearchServerlessConstruct extends Construct {
             },
         });
 
-        NagSuppressions.addResourceSuppressions(
-            schemaDeployProvider,
-            [
-                {
-                    id: "AwsSolutions-L1",
-                    reason: "Configured as intended.",
-                },
-            ]
-        );
-
+        NagSuppressions.addResourceSuppressions(schemaDeployProvider, [
+            {
+                id: "AwsSolutions-L1",
+                reason: "Configured as intended.",
+            },
+        ]);
     }
 
     // type ConstructWithRole = Construct & { role?: cdk.aws_iam.IRole };
@@ -171,7 +163,7 @@ export class OpensearchServerlessConstruct extends Construct {
         ];
 
         const accessPolicy = new aoss.CfnAccessPolicy(construct, "Policy", {
-            name: "acc" + Names.uniqueResourceName(construct, { maxLength: 8 }).toLowerCase(),
+            name: "ac" + Math.floor(Math.random() * 100000000),
             type: "data",
             policy: JSON.stringify(policy),
         });
@@ -208,7 +200,7 @@ export class OpensearchServerlessConstruct extends Construct {
         ];
 
         const accessPolicy = new aoss.CfnAccessPolicy(this, "Policy", {
-            name: "acc" + Names.uniqueResourceName(this, { maxLength: 8 }).toLowerCase(),
+            name: "ac" + Math.floor(Math.random() * 100000000),
             type: "data",
             policy: JSON.stringify(policy),
         });

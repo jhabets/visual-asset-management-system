@@ -11,25 +11,25 @@ import { LambdaSubscription } from "aws-cdk-lib/aws-sns-subscriptions";
 import { NagSuppressions } from "cdk-nag";
 import { OpensearchServerlessConstruct } from "./constructs/opensearch-serverless";
 import { OpensearchProvisionedConstruct } from "./constructs/opensearch-provisioned";
-import { Stack, NestedStack} from "aws-cdk-lib";
+import { Stack, NestedStack } from "aws-cdk-lib";
 import { Construct } from "constructs";
 import { buildSearchFunction } from "../../lambdaBuilder/searchFunctions";
 import { attachFunctionToApi } from "../apiLambda/apiBuilder-nestedStack";
 import * as apigwv2 from "@aws-cdk/aws-apigatewayv2-alpha";
 import * as cdk from "aws-cdk-lib";
-import { LayerVersion} from 'aws-cdk-lib/aws-lambda';
+import { LayerVersion } from "aws-cdk-lib/aws-lambda";
 
 export class SearchBuilderNestedStack extends NestedStack {
     constructor(
-    parent: Construct, 
-    name: string,
-    api: apigwv2.HttpApi,
-    storageResources: storageResources,
-    lambdaCommonBaseLayer: LayerVersion,
-    useProvisioned: boolean
+        parent: Construct,
+        name: string,
+        api: apigwv2.HttpApi,
+        storageResources: storageResources,
+        lambdaCommonBaseLayer: LayerVersion,
+        useProvisioned: boolean
     ) {
         super(parent, name);
-        searchBuilder(this,api,storageResources, lambdaCommonBaseLayer, useProvisioned);
+        searchBuilder(this, api, storageResources, lambdaCommonBaseLayer, useProvisioned);
     }
 }
 
@@ -40,18 +40,15 @@ export function searchBuilder(
     lambdaCommonBaseLayer: LayerVersion,
     useProvisioned: boolean
 ) {
-    
-    const indexName = "assets1236"
+    const indexName = "assets1236";
     const indexNameParam = "/" + [cdk.Stack.of(scope).stackName, "indexName"].join("/");
 
-
-    if(!useProvisioned) {
+    if (!useProvisioned) {
         //Serverless Deployment
         const aoss = new OpensearchServerlessConstruct(scope, "AOSS", {
             principalArn: [],
-            indexName: indexName
+            indexName: indexName,
         });
-
 
         const indexingFunction = buildMetadataIndexingFunction(
             scope,
@@ -62,7 +59,7 @@ export function searchBuilder(
             "m",
             useProvisioned
         );
-    
+
         const assetIndexingFunction = buildMetadataIndexingFunction(
             scope,
             lambdaCommonBaseLayer,
@@ -72,16 +69,16 @@ export function searchBuilder(
             "a",
             useProvisioned
         );
-    
+
         //Add subscriptions to kick-off lambda function for indexing
         storage.sns.assetBucketObjectCreatedTopic.addSubscription(
             new LambdaSubscription(indexingFunction)
         );
-    
+
         storage.sns.assetBucketObjectRemovedTopic.addSubscription(
             new LambdaSubscription(indexingFunction)
         );
-    
+
         indexingFunction.addEventSource(
             new eventsources.DynamoEventSource(storage.dynamo.metadataStorageTable, {
                 startingPosition: lambda.StartingPosition.TRIM_HORIZON,
@@ -92,10 +89,10 @@ export function searchBuilder(
                 startingPosition: lambda.StartingPosition.TRIM_HORIZON,
             })
         );
-    
+
         aoss.grantCollectionAccess(indexingFunction);
         aoss.grantCollectionAccess(assetIndexingFunction);
-    
+
         const searchFun = buildSearchFunction(
             scope,
             lambdaCommonBaseLayer,
@@ -116,15 +113,11 @@ export function searchBuilder(
             method: apigwv2.HttpMethod.GET,
             api: api,
         });
-
-
-    }
-    else {
+    } else {
         //Provisioned Deployment
         const aos = new OpensearchProvisionedConstruct(scope, "AOS", {
-            indexName: indexName
+            indexName: indexName,
         });
-
 
         const indexingFunction = buildMetadataIndexingFunction(
             scope,
@@ -135,7 +128,7 @@ export function searchBuilder(
             "m",
             useProvisioned
         );
-    
+
         const assetIndexingFunction = buildMetadataIndexingFunction(
             scope,
             lambdaCommonBaseLayer,
@@ -148,16 +141,16 @@ export function searchBuilder(
 
         aos.grantDomainAccess(assetIndexingFunction);
         aos.grantDomainAccess(indexingFunction);
-    
+
         //Add subscriptions to kick-off lambda function for indexing
         storage.sns.assetBucketObjectCreatedTopic.addSubscription(
             new LambdaSubscription(indexingFunction)
         );
-    
+
         storage.sns.assetBucketObjectRemovedTopic.addSubscription(
             new LambdaSubscription(indexingFunction)
         );
-    
+
         indexingFunction.addEventSource(
             new eventsources.DynamoEventSource(storage.dynamo.metadataStorageTable, {
                 startingPosition: lambda.StartingPosition.TRIM_HORIZON,
@@ -178,7 +171,7 @@ export function searchBuilder(
             useProvisioned
         );
 
-        aos.grantDomainAccess(searchFun)
+        aos.grantDomainAccess(searchFun);
 
         attachFunctionToApi(scope, searchFun, {
             routePath: "/search",
@@ -190,7 +183,6 @@ export function searchBuilder(
             method: apigwv2.HttpMethod.GET,
             api: api,
         });
-
     }
 
     NagSuppressions.addResourceSuppressions(
@@ -231,5 +223,4 @@ export function searchBuilder(
         ],
         true
     );
-
 }

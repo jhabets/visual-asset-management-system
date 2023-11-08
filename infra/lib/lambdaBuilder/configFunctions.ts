@@ -9,14 +9,14 @@ import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import * as path from "path";
 import { Construct } from "constructs";
 import { Duration } from "aws-cdk-lib";
-import { LayerVersion } from 'aws-cdk-lib/aws-lambda';
-import { LAMBDA_PYTHON_RUNTIME } from '../../config/config';
+import { LayerVersion } from "aws-cdk-lib/aws-lambda";
+import { LAMBDA_PYTHON_RUNTIME } from "../../config/config";
 
 export function buildConfigService(
     scope: Construct,
     lambdaCommonBaseLayer: LayerVersion,
     assetStorageBucket: s3.Bucket,
-    appFeatureEnabledStorageTable: dynamodb.Table,
+    appFeatureEnabledStorageTable: dynamodb.Table
 ): lambda.Function {
     const name = "configService";
     const configService = new lambda.Function(scope, name, {

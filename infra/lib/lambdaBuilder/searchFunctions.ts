@@ -9,9 +9,9 @@ import { Construct } from "constructs";
 import { Duration } from "aws-cdk-lib";
 import { storageResources } from "../nestedStacks/storage/storageBuilder-nestedStack";
 import * as cdk from "aws-cdk-lib";
-import { LayerVersion } from 'aws-cdk-lib/aws-lambda';
-import { LAMBDA_PYTHON_RUNTIME } from '../../config/config';
-import * as Service from '../../lib/helper/service-helper';
+import { LayerVersion } from "aws-cdk-lib/aws-lambda";
+import { LAMBDA_PYTHON_RUNTIME } from "../../config/config";
+import * as Service from "../../lib/helper/service-helper";
 
 export function buildSearchFunction(
     scope: Construct,
@@ -32,7 +32,7 @@ export function buildSearchFunction(
         environment: {
             AOS_ENDPOINT_PARAM: aosEndpoint,
             AOS_INDEX_NAME_PARAM: indexNameParam,
-            AOS_TYPE: useProvisioned? "es" : "aoss",
+            AOS_TYPE: useProvisioned ? "es" : "aoss",
             AUTH_ENTITIES_TABLE: storageResources.dynamo.authEntitiesStorageTable.tableName,
             DATABASE_STORAGE_TABLE_NAME: storageResources.dynamo.databaseStorageTable.tableName,
         },

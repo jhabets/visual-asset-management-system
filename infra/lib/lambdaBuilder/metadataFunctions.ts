@@ -9,9 +9,9 @@ import { Construct } from "constructs";
 import { Duration } from "aws-cdk-lib";
 import { storageResources } from "../nestedStacks/storage/storageBuilder-nestedStack";
 import * as cdk from "aws-cdk-lib";
-import { LayerVersion } from 'aws-cdk-lib/aws-lambda';
-import { LAMBDA_PYTHON_RUNTIME } from '../../config/config';
-import * as Service from '../../lib/helper/service-helper';
+import { LayerVersion } from "aws-cdk-lib/aws-lambda";
+import { LAMBDA_PYTHON_RUNTIME } from "../../config/config";
+import * as Service from "../../lib/helper/service-helper";
 
 export function buildMetadataFunctions(
     scope: Construct,
@@ -29,7 +29,7 @@ export function buildMetadataFunction(
     storageResources: storageResources,
     name: string
 ): lambda.Function {
-    const fun = new lambda.Function(scope, name+"-metadata", {
+    const fun = new lambda.Function(scope, name + "-metadata", {
         code: lambda.Code.fromAsset(path.join(__dirname, `../../../backend/backend`)),
         handler: `handlers.metadata.${name}.lambda_handler`,
         runtime: LAMBDA_PYTHON_RUNTIME,
@@ -58,10 +58,10 @@ export function buildMetadataIndexingFunction(
     useProvisioned: boolean
 ): lambda.Function {
     const fun = new lambda.Function(scope, "idx" + handlerType, {
-            code: lambda.Code.fromAsset(path.join(__dirname, `../../../backend/backend`)),
-            handler: `handlers.indexing.streams.lambda_handler_${handlerType}`,
-            runtime: LAMBDA_PYTHON_RUNTIME,
-            layers: [lambdaCommonBaseLayer],
+        code: lambda.Code.fromAsset(path.join(__dirname, `../../../backend/backend`)),
+        handler: `handlers.indexing.streams.lambda_handler_${handlerType}`,
+        runtime: LAMBDA_PYTHON_RUNTIME,
+        layers: [lambdaCommonBaseLayer],
         timeout: Duration.minutes(15),
         memorySize: 3008,
         environment: {
@@ -71,7 +71,7 @@ export function buildMetadataIndexingFunction(
             ASSET_BUCKET_NAME: storageResources.s3.assetBucket.bucketName,
             AOS_ENDPOINT_PARAM: aosEndpoint,
             AOS_INDEX_NAME_PARAM: indexNameParam,
-            AOS_TYPE: useProvisioned? "es" : "aoss"
+            AOS_TYPE: useProvisioned ? "es" : "aoss",
         },
     });
 

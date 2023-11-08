@@ -44,7 +44,7 @@ describe("Navigation", () => {
             "#/comments",
             "#/pipelines",
             "#/workflows",
-            "#/auth/constraints",
+            "#/auth/constraints"
             // "#/visualizers/column",
             // "#/visualizers/model",
             // "#/visualizers/pc",
@@ -61,7 +61,7 @@ describe("Navigation", () => {
             wrapper,
             "#/assets",
             "#/upload",
-            "#/comments",
+            "#/comments"
             // "#/visualizers/column",
             // "#/visualizers/model",
             // "#/visualizers/pc",
@@ -82,7 +82,7 @@ describe("Navigation", () => {
             "#/upload",
             "#/comments",
             "#/workflows",
-            "#/auth/constraints",
+            "#/auth/constraints"
             // "#/visualizers/model",
             // "#/visualizers/pc",
             // "#/visualizers/plot",
@@ -101,7 +101,7 @@ describe("Navigation", () => {
             "#/assets",
             "#/comments",
             "#/pipelines",
-            "#/auth/constraints",
+            "#/auth/constraints"
             // "#/visualizers/column",
             // "#/visualizers/model",
             // "#/visualizers/pc",
@@ -122,7 +122,7 @@ describe("Navigation", () => {
             "#/assets",
             "#/comments",
             "#/pipelines",
-            "#/workflows",
+            "#/workflows"
             // "#/visualizers/column",
             // "#/visualizers/model",
             // "#/visualizers/pc",

@@ -7,7 +7,7 @@ import * as apigw from "@aws-cdk/aws-apigatewayv2-alpha";
 import * as apigwAuthorizers from "@aws-cdk/aws-apigatewayv2-authorizers-alpha";
 import * as cognito from "aws-cdk-lib/aws-cognito";
 import * as cdk from "aws-cdk-lib";
-import * as Config from '../../../config/config';
+import * as Config from "../../../config/config";
 import { samlSettings } from "../../../config/saml-config";
 import {
     AmplifyConfigLambdaConstruct,
@@ -18,7 +18,7 @@ import { NestedStack } from "aws-cdk-lib";
 import { Service } from "../../helper/service-helper";
 
 export interface ApiGatewayV2AmplifyNestedStackProps extends cdk.StackProps {
-    config: Config.Config
+    config: Config.Config;
     cognitoWebClientId: string;
     cognitoIdentityPoolId: string;
 
@@ -30,21 +30,19 @@ export interface ApiGatewayV2AmplifyNestedStackProps extends cdk.StackProps {
      * The Cognito UserPoolClient to use for the default authorizer
      */
     userPoolClient: cognito.UserPoolClient;
-
-
 }
 
 /**
  * Default input properties
  */
 const defaultProps: Partial<ApiGatewayV2AmplifyNestedStackProps> = {
-    stackName: "",
-    env: {},
+    //stackName: "",
+    //env: {},
 };
 
 /**
- * Deploys Api gateway 
- * 
+ * Deploys Api gateway
+ *
  * CORS: allowed origins for local development:
  * - https://example.com:3000, http://example.com:3000
  *
@@ -109,8 +107,7 @@ export class ApiGatewayV2AmplifyNestedStack extends NestedStack {
         const apiUrl = `${api.httpApiId}.${Service("EXECUTE_API").Endpoint}`;
         this.apiUrl = apiUrl;
 
-        
-        //Setup Initial Amplify Config 
+        //Setup Initial Amplify Config
         const amplifyConfigProps: AmplifyConfigLambdaConstructProps = {
             ...props,
             api: api,
@@ -118,7 +115,7 @@ export class ApiGatewayV2AmplifyNestedStack extends NestedStack {
             identityPoolId: props.cognitoIdentityPoolId,
             userPoolId: props.userPool.userPoolId,
             region: props.config.env.region,
-            externalOathIdpURL: props.config.app.authProvider.useExternalOATHIdp.idpAuthProviderUrl
+            externalOathIdpURL: props.config.app.authProvider.useExternalOATHIdp.idpAuthProviderUrl,
         };
 
         if (props.config.app.authProvider.useCognito.useSaml) {
@@ -146,4 +143,3 @@ export class ApiGatewayV2AmplifyNestedStack extends NestedStack {
         this.apiGatewayV2 = api;
     }
 }
-

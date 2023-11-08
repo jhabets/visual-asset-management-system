@@ -13,7 +13,7 @@ import { ApiGatewayV2LambdaConstruct } from "./constructs/apigatewayv2-lambda-co
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import { storageResources } from "../storage/storageBuilder-nestedStack";
 import { buildConfigService } from "../../lambdaBuilder/configFunctions";
-import { LayerVersion} from 'aws-cdk-lib/aws-lambda';
+import { LayerVersion } from "aws-cdk-lib/aws-lambda";
 import * as cdk from "aws-cdk-lib";
 import {
     buildCreateDatabaseLambdaFunction,
@@ -47,7 +47,7 @@ import {
     buildEnablePipelineFunction,
     buildPipelineService,
 } from "../../lambdaBuilder/pipelineFunctions";
-import { NestedStack } from 'aws-cdk-lib';
+import { NestedStack } from "aws-cdk-lib";
 
 import { buildMetadataSchemaService } from "../../lambdaBuilder/metadataSchemaFunctions";
 
@@ -63,22 +63,19 @@ interface apiGatewayLambdaConfiguration {
 }
 
 export class ApiBuilderNestedStack extends NestedStack {
-
     constructor(
-      parent: Construct, 
-      name: string,
-      api: apigwv2.HttpApi,
-      storageResources: storageResources,
-      lambdaCommonBaseLayer: LayerVersion,
-      lambdaCommonServiceSDKLayer: LayerVersion,
-      ) {
+        parent: Construct,
+        name: string,
+        api: apigwv2.HttpApi,
+        storageResources: storageResources,
+        lambdaCommonBaseLayer: LayerVersion,
+        lambdaCommonServiceSDKLayer: LayerVersion
+    ) {
         super(parent, name);
 
-        apiBuilder(this,api,storageResources, lambdaCommonBaseLayer, lambdaCommonServiceSDKLayer);
-
-
+        apiBuilder(this, api, storageResources, lambdaCommonBaseLayer, lambdaCommonServiceSDKLayer);
     }
-  }
+}
 
 export function attachFunctionToApi(
     scope: Construct,
@@ -103,11 +100,16 @@ export function apiBuilder(
     api: apigwv2.HttpApi,
     storageResources: storageResources,
     lambdaCommonBaseLayer: LayerVersion,
-    lambdaCommonServiceSDKLayer: LayerVersion,
+    lambdaCommonServiceSDKLayer: LayerVersion
     //props: EnvProps
 ) {
     //config resources
-    const createConfigFunction = buildConfigService(scope, lambdaCommonBaseLayer, storageResources.s3.assetBucket, storageResources.dynamo.appFeatureEnabledStorageTable);
+    const createConfigFunction = buildConfigService(
+        scope,
+        lambdaCommonBaseLayer,
+        storageResources.s3.assetBucket,
+        storageResources.dynamo.appFeatureEnabledStorageTable
+    );
 
     attachFunctionToApi(scope, createConfigFunction, {
         routePath: "/secure-config",
@@ -441,7 +443,11 @@ export function apiBuilder(
     //https://github.com/aws/aws-cdk/issues/11100#issuecomment-904627081
 
     // metdata
-    const metadataCrudFunctions = buildMetadataFunctions(scope, lambdaCommonBaseLayer, storageResources);
+    const metadataCrudFunctions = buildMetadataFunctions(
+        scope,
+        lambdaCommonBaseLayer,
+        storageResources
+    );
     const methods = [
         apigwv2.HttpMethod.PUT,
         apigwv2.HttpMethod.GET,
@@ -456,7 +462,11 @@ export function apiBuilder(
         });
     }
 
-    const metadataSchemaFunctions = buildMetadataSchemaService(scope, lambdaCommonBaseLayer, storageResources);
+    const metadataSchemaFunctions = buildMetadataSchemaService(
+        scope,
+        lambdaCommonBaseLayer,
+        storageResources
+    );
 
     const metadataSchemaMethods = [
         apigwv2.HttpMethod.GET,
@@ -530,9 +540,9 @@ export function apiBuilder(
 
     //Enabling API Gateway Access Logging: Currently the only way to do this is via V1 constructs
     //https://github.com/aws/aws-cdk/issues/11100#issuecomment-904627081
-    
+
     const accessLogs = new logs.LogGroup(scope, "VAMS-API-AccessLogs", {
-        logGroupName: "/aws/vendedlogs/VAMS-API-AccessLogs"+Math.floor(Math.random() * 100000000),
+        logGroupName: "/aws/vendedlogs/VAMS-API-AccessLogs" + Math.floor(Math.random() * 100000000),
         retention: logs.RetentionDays.TWO_YEARS,
         removalPolicy: cdk.RemovalPolicy.DESTROY,
     });

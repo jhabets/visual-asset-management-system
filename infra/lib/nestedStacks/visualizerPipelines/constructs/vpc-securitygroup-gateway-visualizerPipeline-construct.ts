@@ -12,13 +12,13 @@ import { NagSuppressions } from "cdk-nag";
 
 /* eslint-disable @typescript-eslint/no-empty-interface */
 export interface VpcSecurityGroupGatewayVisualizerPipelineConstructProps extends cdk.StackProps {
-    optionalExistingVPCId: string
+    optionalExistingVPCId: string;
     vpcCidrRange: string;
 }
 
 const defaultProps: Partial<VpcSecurityGroupGatewayVisualizerPipelineConstructProps> = {
-    stackName: "",
-    env: {},
+    //stackName: "",
+    //env: {},
 };
 
 /**
@@ -42,29 +42,25 @@ export class VpcSecurityGroupGatewayVisualizerPipelineConstruct extends Construc
 
         props = { ...defaultProps, ...props };
 
-        if(props.optionalExistingVPCId != null && props.optionalExistingVPCId != "undefined")
-        {
+        if (props.optionalExistingVPCId != null && props.optionalExistingVPCId != "undefined") {
             //Use Existing VPC
             const getExistingVpc = ec2.Vpc.fromLookup(this, "ImportedVPC", {
                 isDefault: false,
-                vpcId: props.optionalExistingVPCId
+                vpcId: props.optionalExistingVPCId,
             });
 
-            if(getExistingVpc.isolatedSubnets.length == 0)
-            {
-                throw new Error("Provided Visualizer Pipeline Optional Existing VPC must have at least 1 private subnet already setup!");
+            if (getExistingVpc.isolatedSubnets.length == 0) {
+                throw new Error(
+                    "Provided Visualizer Pipeline Optional Existing VPC must have at least 1 private subnet already setup!"
+                );
             }
 
             this.vpc = getExistingVpc;
 
             this.subnets = {
-                pipeline: this.vpc.isolatedSubnets
+                pipeline: this.vpc.isolatedSubnets,
             };
-            
-        }
-        else
-        {
-
+        } else {
             /**
              * Subnets
              */
@@ -79,7 +75,9 @@ export class VpcSecurityGroupGatewayVisualizerPipelineConstruct extends Construc
              */
 
             const vpcLogsGroups = new LogGroup(this, "CloudWatchVPCVisualizerLogs", {
-                logGroupName: "/aws/vendedlogs/VAMSCloudWatchVPCVisualizerLogs"+Math.floor(Math.random() * 100000000),
+                logGroupName:
+                    "/aws/vendedlogs/VAMSCloudWatchVPCVisualizerLogs" +
+                    Math.floor(Math.random() * 100000000),
                 retention: RetentionDays.ONE_WEEK,
                 removalPolicy: cdk.RemovalPolicy.DESTROY,
             });

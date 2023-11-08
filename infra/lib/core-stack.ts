@@ -20,12 +20,12 @@ import { samlSettings } from "../config/saml-config";
 import { LocationServiceNestedStack } from "./nestedStacks/locationService/location-service-nestedStack";
 import { SearchBuilderNestedStack } from "./nestedStacks/search/searchBuilder-nestedStack";
 import { StaticWebBuilderNestedStack } from "./nestedStacks/staticWebApp/staticWebBuilder-nestedStack";
-import * as Config from '../config/config';
-import { VAMS_APP_FEATURES } from '../config/common/vamsAppFeatures';
+import * as Config from "../config/config";
+import { VAMS_APP_FEATURES } from "../config/common/vamsAppFeatures";
 import { VisualizerPipelineBuilderNestedStack } from "./nestedStacks/visualizerPipelines/visualizerPipelineBuilder-nestedStack";
 import { LambdaLayersBuilderNestedStack } from "./nestedStacks/apiLambda/lambdaLayersBuilder-nestedStack";
-import { IamRoleTransform} from "./aspects/iam-role-transform.aspect";
-import { Aspects } from 'aws-cdk-lib';
+import { IamRoleTransform } from "./aspects/iam-role-transform.aspect";
+import { Aspects } from "aws-cdk-lib";
 
 export interface EnvProps {
     env: cdk.Environment;
@@ -40,7 +40,7 @@ export class CoreVAMSStack extends cdk.Stack {
     constructor(scope: Construct, id: string, props: EnvProps) {
         super(scope, id, { ...props, crossRegionReferences: true });
 
-        const enabledFeatures: string[] = []
+        const enabledFeatures: string[] = [];
         const webAppBuildPath = "../web/build";
 
         const adminEmailAddress = new cdk.CfnParameter(this, "adminEmailAddress", {
@@ -57,37 +57,44 @@ export class CoreVAMSStack extends cdk.Stack {
         const awsEnv = environments["aws"] || undefined;
         if (commonEnv) {
             Object.keys(commonEnv).forEach(function (key) {
-                if(commonEnv[key]!=""){
-                    cdk.Tags.of(scope).add(key, commonEnv[key])
+                if (commonEnv[key] != "") {
+                    cdk.Tags.of(scope).add(key, commonEnv[key]);
                 }
             });
         }
         if (awsEnv) {
-            Aspects.of(this).add(new IamRoleTransform(this, awsEnv["IamRoleNamePrefix"], awsEnv["PermissionBoundaryArn"]))
+            Aspects.of(this).add(
+                new IamRoleTransform(
+                    this,
+                    awsEnv["IamRoleNamePrefix"],
+                    awsEnv["PermissionBoundaryArn"]
+                )
+            );
         }
 
         //Setup GovCloud Feature Enabled
-        if(props.config.app.govCloud.enabled) {
-            enabledFeatures.push(VAMS_APP_FEATURES.GOVCLOUD)
+        if (props.config.app.govCloud.enabled) {
+            enabledFeatures.push(VAMS_APP_FEATURES.GOVCLOUD);
         }
 
         //Setup ALB Feature Enabled
-        if(props.config.app.useAlb.enabled) {
-            enabledFeatures.push(VAMS_APP_FEATURES.ALBDEPLOY)
+        if (props.config.app.useAlb.enabled) {
+            enabledFeatures.push(VAMS_APP_FEATURES.ALBDEPLOY);
         }
 
         //Select auth provider
-        if(props.config.app.authProvider.useCognito.enabled)
-        {
-            enabledFeatures.push(VAMS_APP_FEATURES.AUTHPROVIDER_COGNITO)
-        }
-        else if(props.config.app.authProvider.useExternalOATHIdp.enabled)
-        {
-            enabledFeatures.push(VAMS_APP_FEATURES.AUTHPROVIDER_EXTERNALOATHIDP)
+        if (props.config.app.authProvider.useCognito.enabled) {
+            enabledFeatures.push(VAMS_APP_FEATURES.AUTHPROVIDER_COGNITO);
+        } else if (props.config.app.authProvider.useExternalOATHIdp.enabled) {
+            enabledFeatures.push(VAMS_APP_FEATURES.AUTHPROVIDER_EXTERNALOATHIDP);
         }
 
         //Deploy Storage Resources (nested stack)
-        const storageResourcesNestedStack = new StorageResourcesBuilderNestedStack(this, "StorageResourcesBuilder", props.config.app.stagingBucketName);
+        const storageResourcesNestedStack = new StorageResourcesBuilderNestedStack(
+            this,
+            "StorageResourcesBuilder",
+            props.config.app.stagingBucketName
+        );
 
         //Setup cloud trail
         const trail = new cloudTrail.Trail(this, "CloudTrail-VAMS", {
@@ -99,26 +106,28 @@ export class CoreVAMSStack extends cdk.Stack {
         trail.logAllS3DataEvents();
 
         //Deploy Lambda Layers (nested stack)
-        const lambdaLayers = new LambdaLayersBuilderNestedStack(this, "LambdaLayers", {
-        });
+        const lambdaLayers = new LambdaLayersBuilderNestedStack(this, "LambdaLayers", {});
 
         //Setup Cognito (Nested Stack)
         const cognitoProps: CognitoWebNativeNestedStackProps = {
             ...props,
             lambdaCommonBaseLayer: lambdaLayers.lambdaCommonBaseLayer,
             storageResources: storageResourcesNestedStack.storageResources,
-            config: props.config
+            config: props.config,
         };
 
         //See if we have enabled SAML settings
         //TODO: Migrate rest of settings to main config file
         if (props.config.app.authProvider.useCognito.useSaml) {
             cognitoProps.samlSettings = samlSettings;
-            enabledFeatures.push(VAMS_APP_FEATURES.AUTHPROVIDER_COGNITO_SAML)
+            enabledFeatures.push(VAMS_APP_FEATURES.AUTHPROVIDER_COGNITO_SAML);
         }
 
-        const cognitoResourcesNestedStack = new CognitoWebNativeNestedStack(this, "Cognito", cognitoProps);
-
+        const cognitoResourcesNestedStack = new CognitoWebNativeNestedStack(
+            this,
+            "Cognito",
+            cognitoProps
+        );
 
         // Deploy api gateway + amplify configuration endpoints (nested stack)
         const apiNestedStack = new ApiGatewayV2AmplifyNestedStack(this, "Api", {
@@ -127,7 +136,7 @@ export class CoreVAMSStack extends cdk.Stack {
             userPoolClient: cognitoResourcesNestedStack.webClientUserPool,
             config: props.config,
             cognitoWebClientId: cognitoResourcesNestedStack.webClientId,
-            cognitoIdentityPoolId: cognitoResourcesNestedStack.identityPoolId
+            cognitoIdentityPoolId: cognitoResourcesNestedStack.identityPoolId,
         });
 
         //Deploy Static Website and any API proxies (nested stack)
@@ -138,54 +147,72 @@ export class CoreVAMSStack extends cdk.Stack {
             storageResources: storageResourcesNestedStack.storageResources,
             ssmWafArn: props.ssmWafArn,
             cognitoWebClientId: cognitoResourcesNestedStack.webClientId,
-            cognitoUserPoolId: cognitoResourcesNestedStack.userPoolId
+            cognitoUserPoolId: cognitoResourcesNestedStack.userPoolId,
         });
-        
+
         //Deploy Backend API framework (nested stack)
-        const apiBuilderNestedStack = new ApiBuilderNestedStack(this, "ApiBuilder", apiNestedStack.apiGatewayV2, storageResourcesNestedStack.storageResources, lambdaLayers.lambdaCommonBaseLayer, lambdaLayers.lambdaCommonServiceSDKLayer)
+        const apiBuilderNestedStack = new ApiBuilderNestedStack(
+            this,
+            "ApiBuilder",
+            apiNestedStack.apiGatewayV2,
+            storageResourcesNestedStack.storageResources,
+            lambdaLayers.lambdaCommonBaseLayer,
+            lambdaLayers.lambdaCommonServiceSDKLayer
+        );
 
         //Deploy OpenSearch Serverless (nested stack)
-        const searchBuilderNestedStack = new SearchBuilderNestedStack(this, "SearchBuilder", apiNestedStack.apiGatewayV2, storageResourcesNestedStack.storageResources, lambdaLayers.lambdaCommonBaseLayer, props.config.app.openSearch.useProvisioned.enabled)
-
+        const searchBuilderNestedStack = new SearchBuilderNestedStack(
+            this,
+            "SearchBuilder",
+            apiNestedStack.apiGatewayV2,
+            storageResourcesNestedStack.storageResources,
+            lambdaLayers.lambdaCommonBaseLayer,
+            props.config.app.openSearch.useProvisioned.enabled
+        );
 
         //Deploy Location Services (Nested Stack) and setup feature enabled
-        if(props.config.app.useLocationService.enabled) {
-            const locationServiceNestedStack = new LocationServiceNestedStack(this, "LocationService", {
-                role: cognitoResourcesNestedStack.authenticatedRole,
-            });
-            enabledFeatures.push(VAMS_APP_FEATURES.LOCATIONSERVICES)
+        if (props.config.app.useLocationService.enabled) {
+            const locationServiceNestedStack = new LocationServiceNestedStack(
+                this,
+                "LocationService",
+                {
+                    role: cognitoResourcesNestedStack.authenticatedRole,
+                }
+            );
+            enabledFeatures.push(VAMS_APP_FEATURES.LOCATIONSERVICES);
         }
-
 
         ///Optional Pipelines (Nested Stack)
         if (props.config.app.pipelines.usePointCloudVisualization.enabled) {
-            const visualizerPipelineNetworkNestedStack =
-                new VisualizerPipelineBuilderNestedStack(
-                    this,
-                    "VisualizerPipelineBuilder",
-                    {
-                        ...props,
-                        storageResources: storageResourcesNestedStack.storageResources,
-                        lambdaCommonBaseLayer: lambdaLayers.lambdaCommonBaseLayer,
-                        optionalVPCID: props.config.app.pipelines.usePointCloudVisualization.optionalVPCID,
-                        vpcCidrRange: props.config.app.pipelines.usePointCloudVisualization.vpcCidrRange,
-                    }
-                );
-
+            const visualizerPipelineNetworkNestedStack = new VisualizerPipelineBuilderNestedStack(
+                this,
+                "VisualizerPipelineBuilder",
+                {
+                    ...props,
+                    storageResources: storageResourcesNestedStack.storageResources,
+                    lambdaCommonBaseLayer: lambdaLayers.lambdaCommonBaseLayer,
+                    optionalVPCID:
+                        props.config.app.pipelines.usePointCloudVisualization.optionalVPCID,
+                    vpcCidrRange:
+                        props.config.app.pipelines.usePointCloudVisualization.vpcCidrRange,
+                }
+            );
         }
 
         //Deploy Enabled Feature Tracking (Nested Stack)
-        const customFeatureEnabledConfigNestedStack= new CustomFeatureEnabledConfigNestedStack(
-        this,
-        "CustomFeatureEnabledConfig",
-        {
-            appFeatureEnabledTable: storageResourcesNestedStack.storageResources.dynamo.appFeatureEnabledStorageTable,
-            featuresEnabled: enabledFeatures
-        });
-
+        const customFeatureEnabledConfigNestedStack = new CustomFeatureEnabledConfigNestedStack(
+            this,
+            "CustomFeatureEnabledConfig",
+            {
+                appFeatureEnabledTable:
+                    storageResourcesNestedStack.storageResources.dynamo
+                        .appFeatureEnabledStorageTable,
+                featuresEnabled: enabledFeatures,
+            }
+        );
 
         //Write final output configurations (pulling forward from nested stacks)
-          const endPointURLParamsOutput = new cdk.CfnOutput(this, "WebsiteEndpointURLOutput", {
+        const endPointURLParamsOutput = new cdk.CfnOutput(this, "WebsiteEndpointURLOutput", {
             value: staticWebBuilderNestedStack.endpointURL,
             description: "Website endpoint URL",
         });
@@ -195,15 +222,27 @@ export class CoreVAMSStack extends cdk.Stack {
             description: "API Gateway endpoint URL",
         });
 
-        const authCognitoUserPoolIdParamsOutput = new cdk.CfnOutput(this, "AuthCognito_UserPoolId", {
-            value: cognitoResourcesNestedStack.userPoolId,
-        });
-        const authCognitoIdentityPoolIdParamsOutput = new cdk.CfnOutput(this, "AuthCognito_IdentityPoolId", {
-            value: cognitoResourcesNestedStack.identityPoolId,
-        });
-        const authCognitoUserWebClientIdParamsOutput = new cdk.CfnOutput(this, "AuthCognito_WebClientId", {
-            value: cognitoResourcesNestedStack.webClientId,
-        });
+        const authCognitoUserPoolIdParamsOutput = new cdk.CfnOutput(
+            this,
+            "AuthCognito_UserPoolId",
+            {
+                value: cognitoResourcesNestedStack.userPoolId,
+            }
+        );
+        const authCognitoIdentityPoolIdParamsOutput = new cdk.CfnOutput(
+            this,
+            "AuthCognito_IdentityPoolId",
+            {
+                value: cognitoResourcesNestedStack.identityPoolId,
+            }
+        );
+        const authCognitoUserWebClientIdParamsOutput = new cdk.CfnOutput(
+            this,
+            "AuthCognito_WebClientId",
+            {
+                value: cognitoResourcesNestedStack.webClientId,
+            }
+        );
 
         const webAppS3BucketNameParamsOutput = new cdk.CfnOutput(this, "WebAppS3BucketNameOutput", {
             value: staticWebBuilderNestedStack.webAppS3BucketName,
@@ -219,7 +258,8 @@ export class CoreVAMSStack extends cdk.Stack {
             this,
             "AssetVisualizerS3BucketNameOutput",
             {
-                value: storageResourcesNestedStack.storageResources.s3.assetVisualizerBucket.bucketName,
+                value: storageResourcesNestedStack.storageResources.s3.assetVisualizerBucket
+                    .bucketName,
                 description: "S3 bucket for visualization asset storage",
             }
         );
@@ -234,7 +274,7 @@ export class CoreVAMSStack extends cdk.Stack {
         //Add for Systems Manager->Application Manager Cost Tracking for main VAMS Stack
         //TODO: Figure out why tag is not getting added to stack
         cdk.Tags.of(this).add("AppManagerCFNStackKey", this.stackId, {
-            includeResourceTypes: ['AWS::CloudFormation::Stack'],
+            includeResourceTypes: ["AWS::CloudFormation::Stack"],
         });
 
         //Global Nag Supressions
@@ -244,7 +284,11 @@ export class CoreVAMSStack extends cdk.Stack {
                 // python3.9 suppressed for CDK Bucket Deployment
                 // python3.10 suppressed for all lambdas due to restriction on file size when going over 3.10 currently (implement layer code reduction size functionality)
                 // nodejs18.x suppressed for use of custom resource to deploy saml in CustomCognitoConfigConstruct
-                if (fn.runtime.name === "python3.9" || fn.runtime.name === "python3.10" || fn.runtime.name === "nodejs18.x") {
+                if (
+                    fn.runtime.name === "python3.9" ||
+                    fn.runtime.name === "python3.10" ||
+                    fn.runtime.name === "nodejs18.x"
+                ) {
                     //console.log(item.node.path,fn.runtime.name)
                     NagSuppressions.addResourceSuppressions(fn, [
                         {

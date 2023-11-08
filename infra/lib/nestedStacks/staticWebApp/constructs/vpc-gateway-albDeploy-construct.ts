@@ -12,9 +12,9 @@ import { NagSuppressions } from "cdk-nag";
 
 /* eslint-disable @typescript-eslint/no-empty-interface */
 export interface VpcGatewayAlbDeployConstructProps extends cdk.StackProps {
-    optionalExistingVPCId: string
-    vpcCidrRange: string
-    setupPublicAccess:boolean
+    optionalExistingVPCId: string;
+    vpcCidrRange: string;
+    setupPublicAccess: boolean;
 }
 
 const defaultProps: Partial<VpcGatewayAlbDeployConstructProps> = {
@@ -26,45 +26,43 @@ const defaultProps: Partial<VpcGatewayAlbDeployConstructProps> = {
  * Custom configuration to Cognito.
  */
 export class VpcGatewayAlbDeployConstruct extends Construct {
-    readonly vpc: ec2.IVpc
+    readonly vpc: ec2.IVpc;
     readonly subnets: {
         webApp: ec2.ISubnet[];
     };
 
-    constructor(
-        parent: Construct,
-        name: string,
-        props: VpcGatewayAlbDeployConstructProps
-    ) {
+    constructor(parent: Construct, name: string, props: VpcGatewayAlbDeployConstructProps) {
         super(parent, name);
 
         props = { ...defaultProps, ...props };
 
-
-        if(props.optionalExistingVPCId != null && props.optionalExistingVPCId != "undefined")
-        {
+        if (props.optionalExistingVPCId != null && props.optionalExistingVPCId != "undefined") {
             //Use Existing VPC
             const getExistingVpc = ec2.Vpc.fromLookup(this, "ImportedVPC", {
                 isDefault: false,
-                vpcId: props.optionalExistingVPCId
+                vpcId: props.optionalExistingVPCId,
             });
 
-            if((!props.setupPublicAccess && getExistingVpc.isolatedSubnets.length == 0) || (props.setupPublicAccess && getExistingVpc.publicSubnets.length == 0))
-            {
-                throw new Error("Provided ALB Optional Existing VPC must have at least 1 private or public subnet already setup, depending on if ALB public access is enabled!");
+            if (
+                (!props.setupPublicAccess && getExistingVpc.isolatedSubnets.length == 0) ||
+                (props.setupPublicAccess && getExistingVpc.publicSubnets.length == 0)
+            ) {
+                throw new Error(
+                    "Provided ALB Optional Existing VPC must have at least 1 private or public subnet already setup, depending on if ALB public access is enabled!"
+                );
             }
 
             this.vpc = getExistingVpc;
-        }
-        else
-        {
+        } else {
             //Create new VPC + Log group
 
             /**
              * VPC + Logs
              */
             const vpcLogsGroups = new LogGroup(this, "CloudWatchVPCWebDistroLogs", {
-                logGroupName: "/aws/vendedlogs/VAMSCloudWatchVPCWebDistroLogs"+Math.floor(Math.random() * 100000000),
+                logGroupName:
+                    "/aws/vendedlogs/VAMSCloudWatchVPCWebDistroLogs" +
+                    Math.floor(Math.random() * 100000000),
                 retention: RetentionDays.ONE_WEEK,
                 removalPolicy: cdk.RemovalPolicy.DESTROY,
             });
@@ -84,11 +82,10 @@ export class VpcGatewayAlbDeployConstruct extends Construct {
                     },
                 },
             });
-
         }
 
         this.subnets = {
-            webApp: props.setupPublicAccess? this.vpc.publicSubnets : this.vpc.isolatedSubnets,
+            webApp: props.setupPublicAccess ? this.vpc.publicSubnets : this.vpc.isolatedSubnets,
         };
 
         /**

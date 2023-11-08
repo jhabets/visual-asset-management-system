@@ -13,8 +13,8 @@ import { Duration } from "aws-cdk-lib";
 import { suppressCdkNagErrorsByGrantReadWrite } from "../helper/security";
 import { storageResources } from "../nestedStacks/storage/storageBuilder-nestedStack";
 import { IAMArn, Service } from "../helper/service-helper";
-import { LayerVersion } from 'aws-cdk-lib/aws-lambda';
-import { LAMBDA_PYTHON_RUNTIME } from '../../config/config';
+import { LayerVersion } from "aws-cdk-lib/aws-lambda";
+import { LAMBDA_PYTHON_RUNTIME } from "../../config/config";
 
 export function buildCreatePipelineFunction(
     scope: Construct,
@@ -82,10 +82,7 @@ export function buildCreatePipelineFunction(
                 "iam:AttachRolePolicy",
                 "iam:DetachRolePolicy",
             ],
-            resources: [
-                IAMArn("*NotebookIAMRole*").role,
-                IAMArn("*NotebookIAMRolePolicy*").policy,
-            ],
+            resources: [IAMArn("*NotebookIAMRole*").role, IAMArn("*NotebookIAMRolePolicy*").policy],
         })
     );
     createPipelineFunction.addToRolePolicy(
@@ -203,10 +200,7 @@ export function buildPipelineService(
                 "iam:DeletePolicyVersion",
                 "iam:DetachRolePolicy",
             ],
-            resources: [
-                IAMArn("*NotebookIAMRole*").role,
-                IAMArn("*NotebookIAMRolePolicy*").policy,
-            ],
+            resources: [IAMArn("*NotebookIAMRole*").role, IAMArn("*NotebookIAMRolePolicy*").policy],
         })
     );
     pipelineService.addToRolePolicy(

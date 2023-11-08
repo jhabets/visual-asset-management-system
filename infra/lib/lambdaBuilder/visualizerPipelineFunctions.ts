@@ -11,8 +11,8 @@ import * as sfn from "aws-cdk-lib/aws-stepfunctions";
 import * as sns from "aws-cdk-lib/aws-sns";
 import { Construct } from "constructs";
 import { Duration } from "aws-cdk-lib";
-import { LayerVersion } from 'aws-cdk-lib/aws-lambda';
-import { LAMBDA_PYTHON_RUNTIME } from '../../config/config';
+import { LayerVersion } from "aws-cdk-lib/aws-lambda";
+import { LAMBDA_PYTHON_RUNTIME } from "../../config/config";
 
 export function buildExecuteVisualizerPCPipelineFunction(
     scope: Construct,

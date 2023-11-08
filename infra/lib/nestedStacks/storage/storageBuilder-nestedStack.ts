@@ -46,24 +46,17 @@ export interface storageResources {
     };
 }
 
-
 export class StorageResourcesBuilderNestedStack extends NestedStack {
-
     public storageResources: storageResources;
 
-    constructor(
-    parent: Construct, 
-    name: string,
-    staging_bucket?: string
-    ) {
-        
+    constructor(parent: Construct, name: string, staging_bucket?: string) {
         super(parent, name);
 
-        this.storageResources = storageResourcesBuilder(this,staging_bucket);
+        this.storageResources = storageResourcesBuilder(this, staging_bucket);
 
         //Nag supressions
         const reason =
-        "The custom resource CDK bucket deployment needs full access to the bucket to deploy files";
+            "The custom resource CDK bucket deployment needs full access to the bucket to deploy files";
         NagSuppressions.addResourceSuppressions(
             this,
             [
@@ -109,9 +102,7 @@ export class StorageResourcesBuilderNestedStack extends NestedStack {
             value: this.storageResources.s3.artefactsBucket.bucketName,
             description: "S3 bucket for template notebooks",
         });
-
     }
-
 }
 
 export function storageResourcesBuilder(
@@ -273,13 +264,17 @@ export function storageResourcesBuilder(
         },
     });
 
-    const appFeatureEnabledStorageTable = new dynamodb.Table(scope, "AppFeatureEnabledStorageTable", {
-        ...dynamodbDefaultProps,
-        partitionKey: {
-            name: "featureName",
-            type: dynamodb.AttributeType.STRING,
-        },
-    });
+    const appFeatureEnabledStorageTable = new dynamodb.Table(
+        scope,
+        "AppFeatureEnabledStorageTable",
+        {
+            ...dynamodbDefaultProps,
+            partitionKey: {
+                name: "featureName",
+                type: dynamodb.AttributeType.STRING,
+            },
+        }
+    );
 
     const assetStorageTable = new dynamodb.Table(scope, "AssetStorageTable", {
         ...dynamodbDefaultProps,

@@ -7,9 +7,9 @@
 import { Construct } from "constructs";
 import { Names } from "aws-cdk-lib";
 import { storageResources } from "../storage/storageBuilder-nestedStack";
-import { LayerVersion} from 'aws-cdk-lib/aws-lambda';
+import { LayerVersion } from "aws-cdk-lib/aws-lambda";
 import * as cdk from "aws-cdk-lib";
-import { NestedStack } from 'aws-cdk-lib';
+import { NestedStack } from "aws-cdk-lib";
 import { VpcSecurityGroupGatewayVisualizerPipelineConstruct } from "./constructs/vpc-securitygroup-gateway-visualizerPipeline-construct";
 import { VisualizationPipelineConstruct } from "./constructs/visualizerPipeline-construct";
 
@@ -24,8 +24,8 @@ export interface VisualizerPipelineBuilderNestedStackProps extends cdk.StackProp
  * Default input properties
  */
 const defaultProps: Partial<VisualizerPipelineBuilderNestedStackProps> = {
-    stackName: "",
-    env: {},
+    //stackName: "",
+    //env: {},
 };
 
 export class VisualizerPipelineBuilderNestedStack extends NestedStack {
@@ -34,30 +34,23 @@ export class VisualizerPipelineBuilderNestedStack extends NestedStack {
 
         props = { ...defaultProps, ...props };
 
-        const visualizerPipelineNetwork =
-            new VpcSecurityGroupGatewayVisualizerPipelineConstruct(
-                this,
-                "VisualizerPipelineNetwork",
-                {
-                    ...props,
-                    optionalExistingVPCId: props.optionalVPCID,
-                    vpcCidrRange: props.vpcCidrRange,
-                }
-            );
-
-        const visualizerPipeline = new VisualizationPipelineConstruct(
+        const visualizerPipelineNetwork = new VpcSecurityGroupGatewayVisualizerPipelineConstruct(
             this,
-            "VisualizerPipeline",
+            "VisualizerPipelineNetwork",
             {
                 ...props,
-                storage: props.storageResources,
-                vpc: visualizerPipelineNetwork.vpc,
-                visualizerPipelineSubnets: visualizerPipelineNetwork.subnets.pipeline,
-                visualizerPipelineSecurityGroups: [
-                    visualizerPipelineNetwork.securityGroups.pipeline,
-                ],
-                lambdaCommonBaseLayer: props.lambdaCommonBaseLayer
+                optionalExistingVPCId: props.optionalVPCID,
+                vpcCidrRange: props.vpcCidrRange,
             }
         );
+
+        const visualizerPipeline = new VisualizationPipelineConstruct(this, "VisualizerPipeline", {
+            ...props,
+            storage: props.storageResources,
+            vpc: visualizerPipelineNetwork.vpc,
+            visualizerPipelineSubnets: visualizerPipelineNetwork.subnets.pipeline,
+            visualizerPipelineSecurityGroups: [visualizerPipelineNetwork.securityGroups.pipeline],
+            lambdaCommonBaseLayer: props.lambdaCommonBaseLayer,
+        });
     }
-  }
+}

@@ -4,7 +4,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 export enum VAMS_APP_FEATURES {
-
     GOVCLOUD = "GOVCLOUD",
     LOCATIONSERVICES = "LOCATIONSERVICES",
     ALBDEPLOY = "ALBDEPLOY",

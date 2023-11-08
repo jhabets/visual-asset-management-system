@@ -9,7 +9,7 @@ import AppLayout from "@cloudscape-design/components/app-layout";
 import { Navigation } from "./layout/Navigation";
 import LandingPage from "./pages/LandingPage";
 import Spinner from "@cloudscape-design/components/spinner";
-import { useNavigate } from 'react-router';
+import { useNavigate } from "react-router";
 
 const Databases = React.lazy(() => import("./pages/Databases"));
 const SearchPage = React.lazy(() => import("./pages/search/SearchPage"));
@@ -163,27 +163,29 @@ export const AppRoutes = ({ navigationOpen, setNavigationOpen, user }: AppRoutes
     const navigate = useNavigate();
 
     useEffect(() => {
-        console.log('Location changed: ', window.location.href);
+        console.log("Location changed: ", window.location.href);
 
         const hashes = window.location.href.match(/#/g) || [];
-        console.log('Hash Count in URL: ', hashes.length );
+        console.log("Hash Count in URL: ", hashes.length);
 
         if (hashes.length > 1) {
-
-            const {state} = location
+            const { state } = location;
             console.log("Previous State Recorded: ", state);
 
-            const segments = window.location.href.split('#/');
+            const segments = window.location.href.split("#/");
 
             //console.log('Total URL Segments Found: ', segments);
 
             const fragmentWeWant = segments.pop();
-            console.log('HashRoute Duplicate Detected, Re-routing to Last Hash:', `#/${fragmentWeWant}`);
+            console.log(
+                "HashRoute Duplicate Detected, Re-routing to Last Hash:",
+                `#/${fragmentWeWant}`
+            );
 
             const url = new URL(window.location.href);
             url.hash = `#/${fragmentWeWant}`;
 
-            console.log('Full URL Redirect:', url.href);
+            console.log("Full URL Redirect:", url.href);
 
             window.location.href = url.toString();
 

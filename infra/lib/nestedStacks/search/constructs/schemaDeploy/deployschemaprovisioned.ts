@@ -61,11 +61,7 @@ export const handler: Handler = async function (event: any) {
     const aosName = event?.ResourceProperties?.aosName;
     const domainEndpoint = event?.ResourceProperties?.domainEndpoint;
 
-    setDomainEndpointSSM(
-        event?.ResourceProperties?.stackName,
-        aosName,
-        domainEndpoint
-    );
+    setDomainEndpointSSM(event?.ResourceProperties?.stackName, aosName, domainEndpoint);
 
     setIndexNameSSM(event?.ResourceProperties?.stackName, event?.ResourceProperties?.indexName);
 
@@ -81,7 +77,7 @@ export const handler: Handler = async function (event: any) {
         node: domainEndpoint,
     });
 
-    console.log("established opensearch client connection")
+    console.log("established opensearch client connection");
 
     const exists_resp = await client.indices.exists({
         index: event?.ResourceProperties?.indexName,

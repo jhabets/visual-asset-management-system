@@ -10,7 +10,10 @@ import * as Infra from "../lib/core-stack";
 test("Empty Stack", () => {
     const app = new cdk.App();
     // WHEN
-    const stack = new Infra.CoreVAMSStack(app, "MyTestStack", { prod: false, stackName: `vams--test` });
+    const stack = new Infra.CoreVAMSStack(app, "MyTestStack", {
+        prod: false,
+        stackName: `vams--test`,
+    });
     // THEN
     expectCDK(stack).to(
         matchTemplate(

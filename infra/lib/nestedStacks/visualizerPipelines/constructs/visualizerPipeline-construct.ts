@@ -22,8 +22,8 @@ import {
 import { BatchFargatePipelineConstruct } from "./batch-fargate-pipeline";
 import { NagSuppressions } from "cdk-nag";
 import { CfnOutput } from "aws-cdk-lib";
-import { LayerVersion} from 'aws-cdk-lib/aws-lambda';
-import * as Service from '../../../../lib/helper/service-helper';
+import { LayerVersion } from "aws-cdk-lib/aws-lambda";
+import * as Service from "../../../../lib/helper/service-helper";
 
 export interface VisualizationPipelineConstructProps extends cdk.StackProps {
     storage: storageResources;
@@ -37,8 +37,8 @@ export interface VisualizationPipelineConstructProps extends cdk.StackProps {
  * Default input properties
  */
 const defaultProps: Partial<VisualizationPipelineConstructProps> = {
-    stackName: "",
-    env: {},
+    //stackName: "",
+    //env: {},
 };
 
 /**
@@ -313,7 +313,9 @@ export class VisualizationPipelineConstruct extends NestedStack {
             this,
             "PointCloudVisualizerPipelineProcessing-StateMachineLogGroup",
             {
-                logGroupName: "/aws/vendedlogs/VAMSstateMachine-VizPipeline"+Math.floor(Math.random() * 100000000),
+                logGroupName:
+                    "/aws/vendedlogs/VAMSstateMachine-VizPipeline" +
+                    Math.floor(Math.random() * 100000000),
                 retention: logs.RetentionDays.TWO_YEARS,
                 removalPolicy: cdk.RemovalPolicy.DESTROY,
             }
@@ -394,7 +396,7 @@ export class VisualizationPipelineConstruct extends NestedStack {
 
         //Nag Supressions
         const reason =
-        "Intended Solution. The pipeline lambda functions need appropriate access to S3.";
+            "Intended Solution. The pipeline lambda functions need appropriate access to S3.";
         NagSuppressions.addResourceSuppressions(
             this,
             [
@@ -430,7 +432,7 @@ export class VisualizationPipelineConstruct extends NestedStack {
                     appliesTo: [
                         {
                             // https://github.com/cdklabs/cdk-nag#suppressing-a-rule
-                            regex: "^Resource::.*openPipeline\/ServiceRole\/.*/g",
+                            regex: "^Resource::.*openPipeline/ServiceRole/.*/g",
                         },
                     ],
                 },
@@ -447,7 +449,7 @@ export class VisualizationPipelineConstruct extends NestedStack {
                     appliesTo: [
                         {
                             // https://github.com/cdklabs/cdk-nag#suppressing-a-rule
-                            regex: "^Resource::.*PointCloudVisualizerPipelineProcessing-StateMachine\/Role\/.*/g",
+                            regex: "^Resource::.*PointCloudVisualizerPipelineProcessing-StateMachine/Role/.*/g",
                         },
                     ],
                 },
@@ -464,7 +466,7 @@ export class VisualizationPipelineConstruct extends NestedStack {
                     appliesTo: [
                         {
                             // https://github.com/cdklabs/cdk-nag#suppressing-a-rule
-                            regex: "^Resource::.*pipelineEnd\/ServiceRole\/.*/g",
+                            regex: "^Resource::.*pipelineEnd/ServiceRole/.*/g",
                         },
                     ],
                 },
@@ -481,7 +483,7 @@ export class VisualizationPipelineConstruct extends NestedStack {
                     appliesTo: [
                         {
                             // https://github.com/cdklabs/cdk-nag#suppressing-a-rule
-                            regex: "^Resource::.*executeVisualizerPCPipeline\/ServiceRole\/.*/g",
+                            regex: "^Resource::.*executeVisualizerPCPipeline/ServiceRole/.*/g",
                         },
                     ],
                 },

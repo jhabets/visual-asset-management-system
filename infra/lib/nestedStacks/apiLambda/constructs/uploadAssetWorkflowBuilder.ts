@@ -87,7 +87,8 @@ export function buildUploadAssetWorkflow(
     }
 
     const logGroup = new logs.LogGroup(scope, "UploadAssetWorkflowLogs", {
-        logGroupName: "/aws/vendedlogs/VAMSUploadAssetWorkflowLogs"+Math.floor(Math.random() * 100000000),
+        logGroupName:
+            "/aws/vendedlogs/VAMSUploadAssetWorkflowLogs" + Math.floor(Math.random() * 100000000),
         retention: logs.RetentionDays.TWO_YEARS,
         removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
@@ -96,7 +97,7 @@ export function buildUploadAssetWorkflow(
         timeout: Duration.minutes(10),
         logs: {
             level: sfn.LogLevel.ALL,
-            destination: logGroup
+            destination: logGroup,
         },
         tracingEnabled: true, //This was pointed out by CDK-Nag
     });

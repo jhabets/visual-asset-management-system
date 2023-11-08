@@ -4,11 +4,15 @@
  */
 
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
-import {AwsCustomResource, AwsCustomResourcePolicy, AwsSdkCall, PhysicalResourceId} from "aws-cdk-lib/custom-resources";
-import {Effect, PolicyStatement} from "aws-cdk-lib/aws-iam";
+import {
+    AwsCustomResource,
+    AwsCustomResourcePolicy,
+    AwsSdkCall,
+    PhysicalResourceId,
+} from "aws-cdk-lib/custom-resources";
+import { Effect, PolicyStatement } from "aws-cdk-lib/aws-iam";
 import { Duration, NestedStack } from "aws-cdk-lib";
 import { Construct } from "constructs";
-
 
 /* eslint-disable @typescript-eslint/no-empty-interface */
 export interface CustomFeatureEnabledConfigNestedStackProps {
@@ -17,17 +21,17 @@ export interface CustomFeatureEnabledConfigNestedStackProps {
 }
 
 interface RequestItem {
-    [key: string]: any[]
-  }
+    [key: string]: any[];
+}
 
-  interface DynamoInsert {
-    RequestItems: RequestItem
-  }
+interface DynamoInsert {
+    RequestItems: RequestItem;
+}
 
-  interface IAppFeatureEnabled {
+interface IAppFeatureEnabled {
     enabled: { S: string };
     featureName: { S: string };
-  }
+}
 
 const defaultProps: Partial<CustomFeatureEnabledConfigNestedStackProps> = {};
 
@@ -35,8 +39,11 @@ const defaultProps: Partial<CustomFeatureEnabledConfigNestedStackProps> = {};
  * Custom configuration for VAMS App Features Enabled.
  */
 export class CustomFeatureEnabledConfigNestedStack extends NestedStack {
-
-    constructor(parent: Construct, name: string, props: CustomFeatureEnabledConfigNestedStackProps) {
+    constructor(
+        parent: Construct,
+        name: string,
+        props: CustomFeatureEnabledConfigNestedStackProps
+    ) {
         super(parent, name);
 
         props = { ...defaultProps, ...props };
@@ -48,48 +55,52 @@ export class CustomFeatureEnabledConfigNestedStack extends NestedStack {
          *
          * @see https://docs.aws.amazon.com/cdk/api/latest/docs/@aws-cdk_custom-resources.AwsCustomResource.html
          */
-        
-        const appFeatureItems: any[] = []
-        props.featuresEnabled.forEach(feature => appFeatureItems.push({
-            //enabled: {S:"true"},
-            featureName: {S:feature},
-        }));
 
-        this.insertMultipleRecord(props.appFeatureEnabledTable,
-            appFeatureItems)
+        const appFeatureItems: any[] = [];
+        props.featuresEnabled.forEach((feature) =>
+            appFeatureItems.push({
+                //enabled: {S:"true"},
+                featureName: { S: feature },
+            })
+        );
+
+        this.insertMultipleRecord(props.appFeatureEnabledTable, appFeatureItems);
     }
 
     //Note: Allows for 25 items to be written as part of BatchWriteItem. If more needed, batch over many different AwsCustomResource
-    //Third Party Blog: https://dev.to/elthrasher/exploring-aws-cdk-loading-dynamodb-with-custom-resources-jlf, 
+    //Third Party Blog: https://dev.to/elthrasher/exploring-aws-cdk-loading-dynamodb-with-custom-resources-jlf,
     // https://kevin-van-ingen.medium.com/aws-cdk-custom-resources-for-dynamodb-inserts-2d79cb1ae395
     private insertMultipleRecord(appFeatureEnabledTable: dynamodb.Table, items: any[]) {
         //const records = this.constructBatchInsertObject(items, tableName);
 
         const awsSdkCall: AwsSdkCall = {
-            service: 'DynamoDB',
-            action: 'batchWriteItem',
+            service: "DynamoDB",
+            action: "batchWriteItem",
             physicalResourceId: PhysicalResourceId.of(Date.now().toString()),
             //parameters: records
             parameters: {
                 RequestItems: {
-                  [appFeatureEnabledTable.tableName]: this.constructBatchInsertObject(items),
+                    [appFeatureEnabledTable.tableName]: this.constructBatchInsertObject(items),
                 },
             },
-        }
+        };
 
-        const customResource: AwsCustomResource = new AwsCustomResource(this, "appFeatureEnabled_tablePopulate_custom_resource", {
+        const customResource: AwsCustomResource = new AwsCustomResource(
+            this,
+            "appFeatureEnabled_tablePopulate_custom_resource",
+            {
                 onCreate: awsSdkCall,
                 onUpdate: awsSdkCall,
                 installLatestAwsSdk: false,
                 policy: AwsCustomResourcePolicy.fromStatements([
                     new PolicyStatement({
-                    sid: 'DynamoWriteAccess',
-                    effect: Effect.ALLOW,
-                    actions: ['dynamodb:BatchWriteItem'],
-                    resources: [appFeatureEnabledTable.tableArn],
-                    })
+                        sid: "DynamoWriteAccess",
+                        effect: Effect.ALLOW,
+                        actions: ["dynamodb:BatchWriteItem"],
+                        resources: [appFeatureEnabledTable.tableArn],
+                    }),
                 ]),
-                timeout: Duration.minutes(5)
+                timeout: Duration.minutes(5),
             }
         );
 
@@ -113,12 +124,13 @@ export class CustomFeatureEnabledConfigNestedStack extends NestedStack {
 
     private constructBatchInsertObject(items: any[]) {
         const itemsAsDynamoPutRequest: any[] = [];
-        items.forEach(item => itemsAsDynamoPutRequest.push({
-        PutRequest: {
-            Item: item
-        }
-        }));
+        items.forEach((item) =>
+            itemsAsDynamoPutRequest.push({
+                PutRequest: {
+                    Item: item,
+                },
+            })
+        );
         return itemsAsDynamoPutRequest;
     }
-
 }

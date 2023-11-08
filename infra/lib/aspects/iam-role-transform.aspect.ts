@@ -15,22 +15,23 @@
 
 import * as cdk from "aws-cdk-lib";
 import { IConstruct } from "constructs";
-import * as iam from "aws-cdk-lib/aws-iam"
+import * as iam from "aws-cdk-lib/aws-iam";
 import { Aspects, Aws } from "aws-cdk-lib";
 
-
-export function RoleRename(stack:IConstruct){
+export function RoleRename(stack: IConstruct) {
     const rolePrefix = new cdk.CfnParameter(stack, "rolePrefix", {
         type: "String",
         description: "Role Prefix for stack IAM Roles",
-        default: ""
+        default: "",
     });
-    const permissionBoundaryArn = new cdk.CfnParameter(stack,"permissionBoundaryArn",{
+    const permissionBoundaryArn = new cdk.CfnParameter(stack, "permissionBoundaryArn", {
         type: "String",
         description: "Boundary Arn for stack IAM Roles",
-        default:""
-    })
-    Aspects.of(stack).add(new IamRoleTransform(stack,rolePrefix.valueAsString,permissionBoundaryArn.valueAsString))
+        default: "",
+    });
+    Aspects.of(stack).add(
+        new IamRoleTransform(stack, rolePrefix.valueAsString, permissionBoundaryArn.valueAsString)
+    );
 }
 
 export class IamRoleTransform implements cdk.IAspect {
@@ -44,11 +45,11 @@ export class IamRoleTransform implements cdk.IAspect {
         this.resource_types = ["AWS::IAM::Role"];
         this.prefix = prefixParam;
         this.conditionPrefix = new cdk.CfnCondition(stack, "conditionPrefix", {
-            expression: cdk.Fn.conditionEquals(prefixParam,"")
-        })
+            expression: cdk.Fn.conditionEquals(prefixParam, ""),
+        });
         this.conditionBoundary = new cdk.CfnCondition(stack, "conditionBoundary", {
-            expression: cdk.Fn.conditionEquals(permissionBoundaryArn,"")
-        })
+            expression: cdk.Fn.conditionEquals(permissionBoundaryArn, ""),
+        });
     }
 
     public visit(node: IConstruct): void {
@@ -59,23 +60,35 @@ export class IamRoleTransform implements cdk.IAspect {
             const resource_type = node.cfnResourceType;
             if (resource_type.includes("IAM::Role")) {
                 // node.addPropertyOverride("RoleName",roleName);
-                cdk.Fn.conditionIf(this.conditionPrefix.logicalId,()=>{},this.ApplyOverride(node, "RoleName", this.getRoleName(node)));
-                cdk.Fn.conditionIf(this.conditionBoundary.logicalId,this.ApplyOverride(node,"PermissionsBoundary",Aws.NO_VALUE), this.ApplyOverride(node, "PermissionsBoundary", Aws.NO_VALUE));
+                cdk.Fn.conditionIf(
+                    this.conditionPrefix.logicalId,
+                    () => {},
+                    this.ApplyOverride(node, "RoleName", this.getRoleName(node))
+                );
+                cdk.Fn.conditionIf(
+                    this.conditionBoundary.logicalId,
+                    this.ApplyOverride(node, "PermissionsBoundary", Aws.NO_VALUE),
+                    this.ApplyOverride(node, "PermissionsBoundary", Aws.NO_VALUE)
+                );
             }
         }
     }
     public ApplyOverride(node: cdk.CfnResource, key: string, value: string) {
         node.addPropertyOverride(key, value);
     }
-    public DeleteProperty(node:cdk.CfnResource,property:string){
-        node.addDeletionOverride(property)
+    public DeleteProperty(node: cdk.CfnResource, property: string) {
+        node.addDeletionOverride(property);
     }
     public getRoleName(resource: IConstruct): string {
         const roleRef = resource as iam.Role;
         const originalName = roleRef.roleName;
-        const accountId = "-" + cdk.Stack.of(resource).account.toString() + "-" + cdk.Stack.of(resource).region.toString();
+        const accountId =
+            "-" +
+            cdk.Stack.of(resource).account.toString() +
+            "-" +
+            cdk.Stack.of(resource).region.toString();
         const uniqueResourceName = cdk.Names.uniqueResourceName(resource, {
-            maxLength: 40-this.prefix.length,
+            maxLength: 40 - this.prefix.length,
         });
 
         return this.prefix + uniqueResourceName + accountId;

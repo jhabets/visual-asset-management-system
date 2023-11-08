@@ -35,8 +35,8 @@ export interface ApiGatewayV2LambdaConstructProps extends cdk.StackProps {
  * Default input properties
  */
 const defaultProps: Partial<ApiGatewayV2LambdaConstructProps> = {
-    stackName: "",
-    env: {},
+    //stackName: "",
+    //env: {},
 };
 
 /**

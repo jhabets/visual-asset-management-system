@@ -1,50 +1,50 @@
 {
-	"name": "vams",
-	"env": {
-		"account": null,
-		"region": null
-	},
-	"app": {
-		"baseStackName": "prod",
-		"stagingBucketName": null,
-		"adminEmailAddress": "adminEmail@example.com",
-		"useFips": true,
-		"govCloud": {
-			"enabled": true
-		},
-		"openSearch": {
-			"useProvisioned": {
-				"enabled": true
-			}
-		},
-		"useLocationService": {
-			"enabled": false
-		},
-		"useAlb": {
-			"enabled": true,
-			"publicSubnet": false,
-			"vpcCidrRange": "10.1.0.0/16",
-			"optionalVPCID": null,
-			"domainHost": "vams1.example.com",
-			"certificateARN": "arn:aws-us-gov:acm:<REGION>:<ACCOUNTID>:certificate/<CERTIFICATEID>",
-			"optionalHostedZoneID": null
-		},
-		"pipelines": {
-			"usePointCloudVisualization": {
-				"enabled": false,
-				"vpcCidrRange": "10.2.0.0/16",
-				"optionalVPCID": null
-			}
-		},
-		"authProvider": {
-			"useCognito": {
-				"enabled": true,
-				"useSaml": false
-			},
-			"useExternalOATHIdp": {
-				"enabled": false,
-				"idpAuthProviderUrl": null
-			}
-		}
-	}
+    "name": "vams",
+    "env": {
+        "account": null,
+        "region": null
+    },
+    "app": {
+        "baseStackName": "prod",
+        "stagingBucketName": null,
+        "adminEmailAddress": "adminEmail@example.com",
+        "useFips": true,
+        "govCloud": {
+            "enabled": true
+        },
+        "openSearch": {
+            "useProvisioned": {
+                "enabled": true
+            }
+        },
+        "useLocationService": {
+            "enabled": false
+        },
+        "useAlb": {
+            "enabled": true,
+            "publicSubnet": false,
+            "vpcCidrRange": "10.1.0.0/16",
+            "optionalVPCID": null,
+            "domainHost": "vams1.example.com",
+            "certificateARN": "arn:aws-us-gov:acm:<REGION>:<ACCOUNTID>:certificate/<CERTIFICATEID>",
+            "optionalHostedZoneID": null
+        },
+        "pipelines": {
+            "usePointCloudVisualization": {
+                "enabled": false,
+                "vpcCidrRange": "10.2.0.0/16",
+                "optionalVPCID": null
+            }
+        },
+        "authProvider": {
+            "useCognito": {
+                "enabled": true,
+                "useSaml": false
+            },
+            "useExternalOATHIdp": {
+                "enabled": false,
+                "idpAuthProviderUrl": null
+            }
+        }
+    }
 }

@@ -11,18 +11,10 @@ import { CfnOutput, CustomResource, Names, Stack, NestedStack } from "aws-cdk-li
 import * as cr from "aws-cdk-lib/custom-resources";
 import * as njslambda from "aws-cdk-lib/aws-lambda-nodejs";
 import * as path from "path";
-import { LAMBDA_NODE_RUNTIME } from '../../../../config/config';
-import {
-    Port,
-    SecurityGroup,
-    Vpc,
-  } from "aws-cdk-lib/aws-ec2";
-  import {
-    AnyPrincipal,
-    CfnServiceLinkedRole,
-    PolicyStatement,
-  } from "aws-cdk-lib/aws-iam";
-  import { IAMClient, ListRolesCommand } from "@aws-sdk/client-iam";
+import { LAMBDA_NODE_RUNTIME } from "../../../../config/config";
+import { Port, SecurityGroup, Vpc } from "aws-cdk-lib/aws-ec2";
+import { AnyPrincipal, CfnServiceLinkedRole, PolicyStatement } from "aws-cdk-lib/aws-iam";
+import { IAMClient, ListRolesCommand } from "@aws-sdk/client-iam";
 
 /* eslint-disable @typescript-eslint/no-empty-interface */
 export interface OpensearchProvisionedConstructProps {
@@ -36,7 +28,7 @@ export interface OpensearchProvisionedConstructProps {
     zoneAwareness?: cdk.aws_opensearchservice.ZoneAwarenessConfig;
 }
 
-const defaultProps: Partial<OpensearchProvisionedConstructProps > = {
+const defaultProps: Partial<OpensearchProvisionedConstructProps> = {
     //  masterNodeInstanceType: 'r6g.2xlarge.search',
     //  dataNodeInstanceType: 'r6g.2xlarge.search',
     // masterNodeInstanceType: 'r6g.large.search',
@@ -47,10 +39,10 @@ const defaultProps: Partial<OpensearchProvisionedConstructProps > = {
     // dataNodeInstanceType: 'i3.2xlarge.search',
     dataNodeInstanceType: "r6gd.large.search",
     masterNodesCount: 3, //Minimum of 3
-    dataNodesCount: 2, //Minimum of 2, must be even number. 
+    dataNodesCount: 2, //Minimum of 2, must be even number.
     // ebsVolumeSize: 256,
     // ebsVolumeType: cdk.aws_ec2.EbsDeviceVolumeType.GENERAL_PURPOSE_SSD_GP3,
-    zoneAwareness: { enabled: true }
+    zoneAwareness: { enabled: true },
 };
 
 const iam = new IAMClient({});
@@ -59,12 +51,11 @@ const iam = new IAMClient({});
 Deploys an Amazon Opensearch Domain
 */
 export class OpensearchProvisionedConstruct extends Construct {
-
     aosName: string;
     domain: cdk.aws_opensearchservice.Domain;
     domainEndpoint: string;
 
-    constructor(scope: Construct, name: string, props: OpensearchProvisionedConstructProps ) {
+    constructor(scope: Construct, name: string, props: OpensearchProvisionedConstructProps) {
         super(scope, name);
         props = { ...defaultProps, ...props };
 
@@ -82,16 +73,16 @@ export class OpensearchProvisionedConstruct extends Construct {
         // Service-linked role that Amazon OpenSearch Service will use
         (async () => {
             const response = await iam.send(
-            new ListRolesCommand({
-                PathPrefix: "/aws-service-role/opensearchservice.amazonaws.com/",
-            })
+                new ListRolesCommand({
+                    PathPrefix: "/aws-service-role/opensearchservice.amazonaws.com/",
+                })
             );
-    
+
             // Only if the role for OpenSearch Service doesn't exist, it will be created.
             if (response.Roles && response.Roles?.length == 0) {
-            new CfnServiceLinkedRole(this, "OpensearchServiceLinkedRole", {
-                awsServiceName: "es.amazonaws.com",
-            });
+                new CfnServiceLinkedRole(this, "OpensearchServiceLinkedRole", {
+                    awsServiceName: "es.amazonaws.com",
+                });
             }
         })();
 
@@ -134,7 +125,7 @@ export class OpensearchProvisionedConstruct extends Construct {
         });
 
         this.domain = osDomain;
-        this.domainEndpoint = "https://"+osDomain.domainEndpoint;
+        this.domainEndpoint = "https://" + osDomain.domainEndpoint;
 
         const schemaDeploy = new njslambda.NodejsFunction(
             this,
@@ -152,7 +143,7 @@ export class OpensearchProvisionedConstruct extends Construct {
         schemaDeploy.addToRolePolicy(
             new cdk.aws_iam.PolicyStatement({
                 actions: ["es:*"],
-                resources: [this.domain.domainArn, this.domain.domainArn+"/*"],
+                resources: [this.domain.domainArn, this.domain.domainArn + "/*"],
                 effect: cdk.aws_iam.Effect.ALLOW,
             })
         );
@@ -166,7 +157,6 @@ export class OpensearchProvisionedConstruct extends Construct {
         );
 
         this.grantDomainAccess(schemaDeploy);
-
 
         const schemaDeployProvider = new cr.Provider(
             this,
@@ -183,7 +173,7 @@ export class OpensearchProvisionedConstruct extends Construct {
             serviceToken: schemaDeployProvider.serviceToken,
             properties: {
                 aosName: this.aosName,
-                domainEndpoint: "https://"+osDomain.domainEndpoint,
+                domainEndpoint: "https://" + osDomain.domainEndpoint,
                 indexName: props.indexName,
                 stackName: cdk.Stack.of(this).stackName,
                 version: "1",
@@ -198,30 +188,23 @@ export class OpensearchProvisionedConstruct extends Construct {
         });
 
         //NAG Surpressions
-        NagSuppressions.addResourceSuppressions(
-            schemaDeployProvider,
-            [
-                {
-                    id: "AwsSolutions-L1",
-                    reason: "Configured as intended.",
-                },
-            ]
-        );
+        NagSuppressions.addResourceSuppressions(schemaDeployProvider, [
+            {
+                id: "AwsSolutions-L1",
+                reason: "Configured as intended.",
+            },
+        ]);
 
-        NagSuppressions.addResourceSuppressions(
-            osDomain,
-            [
-                {
-                    id: "AwsSolutions-OS1",
-                    reason: "Configured as intended. Provisioned configuration meant primarily for GovCloud deployment that won't be public and restricted to individual lambda roles for access to the domain.",
-                },
-                {
-                    id: "AwsSolutions-OS3",
-                    reason: "Configured as intended. Provisioned configuration meant primarily for GovCloud deployment that won't be public and restricted to individual lambda roles for access to the domain.",
-                },
-            ]
-        );
-
+        NagSuppressions.addResourceSuppressions(osDomain, [
+            {
+                id: "AwsSolutions-OS1",
+                reason: "Configured as intended. Provisioned configuration meant primarily for GovCloud deployment that won't be public and restricted to individual lambda roles for access to the domain.",
+            },
+            {
+                id: "AwsSolutions-OS3",
+                reason: "Configured as intended. Provisioned configuration meant primarily for GovCloud deployment that won't be public and restricted to individual lambda roles for access to the domain.",
+            },
+        ]);
     }
 
     public endpointSSMParameterName(): string {
@@ -229,12 +212,11 @@ export class OpensearchProvisionedConstruct extends Construct {
     }
 
     public grantDomainAccess(construct: Construct & { role?: cdk.aws_iam.IRole }) {
-
         //Restrict to role ARNS of the lambda functions accessing opensearch (main access policy for opensearch provisionned with no VPC)
         const opensearchDomainPolicy = new cdk.aws_iam.PolicyStatement({
             effect: cdk.aws_iam.Effect.ALLOW,
-            principals: [construct.role!], 
-            resources: [this.domain.domainArn+"/*"], 
+            principals: [construct.role!],
+            resources: [this.domain.domainArn + "/*"],
             actions: ["es:ESHttp*"],
         });
 
@@ -242,7 +224,4 @@ export class OpensearchProvisionedConstruct extends Construct {
 
         return opensearchDomainPolicy;
     }
-
 }
-
-

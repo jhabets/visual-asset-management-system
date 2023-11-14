@@ -18,10 +18,12 @@ import * as ec2 from "aws-cdk-lib/aws-ec2";
 export function buildMetadataFunctions(
     scope: Construct,
     lambdaCommonBaseLayer: LayerVersion,
-    storageResources: storageResources
+    storageResources: storageResources,
+    config: Config.Config,
+    vpc: ec2.IVpc
 ): lambda.Function[] {
     return ["create", "read", "update", "delete"].map((f) =>
-        buildMetadataFunction(scope, lambdaCommonBaseLayer, storageResources, f)
+        buildMetadataFunction(scope, lambdaCommonBaseLayer, storageResources, config, vpc, f)
     );
 }
 
@@ -29,7 +31,9 @@ export function buildMetadataFunction(
     scope: Construct,
     lambdaCommonBaseLayer: LayerVersion,
     storageResources: storageResources,
-    name: string,
+    config: Config.Config,
+    vpc: ec2.IVpc,
+    name: string
 ): lambda.Function {
     const fun = new lambda.Function(scope, name + "-metadata", {
         code: lambda.Code.fromAsset(path.join(__dirname, `../../../backend/backend`)),
@@ -38,6 +42,7 @@ export function buildMetadataFunction(
         layers: [lambdaCommonBaseLayer],
         timeout: Duration.minutes(15),
         memorySize: 3008,
+        vpc: (config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas)? vpc : undefined, //Use VPC when flagged to use for all lambdas
         environment: {
             METADATA_STORAGE_TABLE_NAME: storageResources.dynamo.metadataStorageTable.tableName,
             ASSET_STORAGE_TABLE_NAME: storageResources.dynamo.assetStorageTable.tableName,

@@ -1,4 +1,4 @@
-#  Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#  Copyright 2023 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #  SPDX-License-Identifier: Apache-2.0
 
 import os
@@ -9,6 +9,10 @@ import datetime
 from decimal import Decimal
 from boto3.dynamodb.types import TypeDeserializer
 from common.validators import validate
+
+#Set boto environment variable to use regional STS endpoint (https://stackoverflow.com/questions/71255594/request-times-out-when-try-to-assume-a-role-with-aws-sts-from-a-private-subnet-u)
+#AWS_STS_REGIONAL_ENDPOINTS='regional'
+os.environ["AWS_STS_REGIONAL_ENDPOINTS"] = 'regional'
 
 dynamodb = boto3.resource('dynamodb')
 s3c = boto3.client('s3')
@@ -103,7 +107,7 @@ def _deserialize(raw_data):
 
 
 def get_account_id():
-    client = boto3.client("sts")
+    client = boto3.client('sts')
     return client.get_caller_identity()["Account"]
 
 # Note

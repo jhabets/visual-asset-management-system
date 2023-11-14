@@ -59,7 +59,6 @@ export class OpensearchProvisionedConstruct extends Construct {
     aosName: string;
     domain: cdk.aws_opensearchservice.Domain;
     domainEndpoint: string;
-    vpcInterfaceEndpointSSM: ec2.IInterfaceVpcEndpoint
     config: Config.Config
 
     constructor(scope: Construct, name: string, props: OpensearchProvisionedConstructProps) {
@@ -105,18 +104,6 @@ export class OpensearchProvisionedConstruct extends Construct {
                 subnets.push(element)
             }
         });
-
-        //Create an endpoint for SSM Manager Service to be able to store/retrieve SSM Param Store Values
-        if(props.config.app.useGlobalVpc.addVpcEndpoints)
-        {
-            // Create VPC endpoint for SNS
-            this.vpcInterfaceEndpointSSM = new ec2.InterfaceVpcEndpoint(this, "SSMEndpoint", {
-                vpc: props.vpc,
-                privateDnsEnabled: true,
-                service: ec2.InterfaceVpcEndpointAwsService.SSM,
-                subnets: { subnets: subnets},
-            });
-        }
 
         const osDomain = new cdk.aws_opensearchservice.Domain(this, "OpenSearchDomain", {
             version: Config.OPENSEARCH_VERSION,
@@ -202,8 +189,6 @@ export class OpensearchProvisionedConstruct extends Construct {
 
         schemaDeployProvider.node.addDependency(schemaDeploy);
         schemaDeployProvider.node.addDependency(osDomain);
-        if(this.config.app.useGlobalVpc.addVpcEndpoints)
-            schemaDeployProvider.node.addDependency(this.vpcInterfaceEndpointSSM);
 
         new CustomResource(this, "DeploySSMIndexSchema", {
             serviceToken: schemaDeployProvider.serviceToken,
@@ -259,13 +244,6 @@ export class OpensearchProvisionedConstruct extends Construct {
 
         this.domain.addAccessPolicies(opensearchDomainPolicy);
         this.domain.connections.allowFrom(lambdaFunction, Port.tcp(443));
-
-        //Add rules to VPC endpoint if we created it
-        if(this.config.app.useGlobalVpc.addVpcEndpoints)
-        {
-            this.vpcInterfaceEndpointSSM.connections.allowFrom(lambdaFunction, Port.tcp(443));
-        }
-
 
         return opensearchDomainPolicy;
     }

@@ -27,6 +27,10 @@ from sagemaker.processing import Processor
 # when importing VAMS common files that use other libaries.
 ############################################################################################
 
+#Set boto environment variable to use regional STS endpoint (https://stackoverflow.com/questions/71255594/request-times-out-when-try-to-assume-a-role-with-aws-sts-from-a-private-subnet-u)
+#AWS_STS_REGIONAL_ENDPOINTS='regional'
+os.environ["AWS_STS_REGIONAL_ENDPOINTS"] = 'regional'
+
 dynamodb = boto3.resource('dynamodb')
 
 response = {
@@ -151,7 +155,7 @@ def lambda_handler(event, context):
 
 
 def create_step_function(pipelines, databaseId, workflowId):
-    print("Creating state machine")
+    print("Creating state machine flow")
     region = os.environ['AWS_REGION']
 
     # SageMaker Execution Role
@@ -230,6 +234,8 @@ def create_step_function(pipelines, databaseId, workflowId):
     if len(workFlowName) > 80:
         workFlowName = workFlowName[-79:] #use 79 characters for buffer
 
+    print("Submitting state machine flow 1")
+
     workflow_graph = Chain(steps)
     branching_workflow = Workflow(
         name=workFlowName,
@@ -269,6 +275,8 @@ def create_step_function(pipelines, databaseId, workflowId):
             continue
 
     new_workflow = json.dumps(original_workflow, indent=2)
+
+    print("Submitting state machine flow 2")
 
     sf_client.update_state_machine(
         stateMachineArn=workflow_arn,

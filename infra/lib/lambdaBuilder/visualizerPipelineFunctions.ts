@@ -13,13 +13,16 @@ import { Construct } from "constructs";
 import { Duration } from "aws-cdk-lib";
 import { LayerVersion } from "aws-cdk-lib/aws-lambda";
 import { LAMBDA_PYTHON_RUNTIME } from "../../config/config";
+import * as Config from "../../config/config";
 
 export function buildExecuteVisualizerPCPipelineFunction(
     scope: Construct,
     lambdaCommonBaseLayer: LayerVersion,
     assetBucket: s3.Bucket,
     assetVisualizerBucket: s3.Bucket,
-    pipelineSNSTopic: sns.Topic
+    pipelineSNSTopic: sns.Topic,
+    config: Config.Config,
+    vpc: ec2.IVpc
 ): lambda.Function {
     const name = "executeVisualizerPCPipeline";
     const fun = new lambda.Function(scope, name, {
@@ -29,6 +32,7 @@ export function buildExecuteVisualizerPCPipelineFunction(
         layers: [lambdaCommonBaseLayer],
         timeout: Duration.minutes(5),
         memorySize: 256,
+        vpc: (config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas)? vpc : undefined, //Use VPC when flagged to use for all lambdas
         environment: {
             DEST_BUCKET_NAME: assetVisualizerBucket.bucketName,
             SNS_VISUALIZER_PIPELINE_PC_TOPICARN: pipelineSNSTopic.topicArn,
@@ -64,7 +68,7 @@ export function buildOpenPipelineFunction(
         layers: [lambdaCommonBaseLayer],
         timeout: Duration.minutes(5),
         memorySize: 256,
-        vpc: vpc,
+        vpc: vpc, //open pipeline always in VPC
         vpcSubnets: vpcSubnets,
         environment: {
             SOURCE_BUCKET_NAME: assetBucket.bucketName,
@@ -86,7 +90,7 @@ export function buildConstructPipelineFunction(
     lambdaCommonBaseLayer: LayerVersion,
     vpc: ec2.IVpc,
     pipelineSubnets: ec2.ISubnet[],
-    pipelineSecurityGroups: ec2.SecurityGroup[]
+    pipelineSecurityGroups: ec2.ISecurityGroup[]
 ): lambda.Function {
     const name = "constructPipeline";
     const vpcSubnets = vpc.selectSubnets({
@@ -100,7 +104,7 @@ export function buildConstructPipelineFunction(
         layers: [lambdaCommonBaseLayer],
         timeout: Duration.minutes(5),
         memorySize: 128,
-        vpc: vpc,
+        vpc: vpc, //construct pipeline always in VPC
         securityGroups: pipelineSecurityGroups,
         vpcSubnets: vpcSubnets,
     });
@@ -115,7 +119,7 @@ export function buildPipelineEndFunction(
     assetVisualizerBucket: s3.Bucket,
     vpc: ec2.IVpc,
     pipelineSubnets: ec2.ISubnet[],
-    pipelineSecurityGroups: ec2.SecurityGroup[]
+    pipelineSecurityGroups: ec2.ISecurityGroup[]
 ): lambda.Function {
     const name = "pipelineEnd";
     const vpcSubnets = vpc.selectSubnets({
@@ -129,7 +133,7 @@ export function buildPipelineEndFunction(
         layers: [lambdaCommonBaseLayer],
         timeout: Duration.minutes(5),
         memorySize: 256,
-        vpc: vpc,
+        vpc: vpc, //Pipeline end always in VPC
         vpcSubnets: vpcSubnets,
         securityGroups: pipelineSecurityGroups,
         environment: {

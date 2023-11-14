@@ -14,6 +14,8 @@ import * as sfn from "aws-cdk-lib/aws-stepfunctions";
 import { LayerVersion } from "aws-cdk-lib/aws-lambda";
 import { LAMBDA_PYTHON_RUNTIME } from "../../config/config";
 import { Service } from "../helper/service-helper";
+import * as Config from "../../config/config";
+import * as ec2 from "aws-cdk-lib/aws-ec2";
 
 export function buildAssetService(
     scope: Construct,
@@ -21,7 +23,9 @@ export function buildAssetService(
     assetStorageTable: dynamodb.Table,
     databaseStorageTable: dynamodb.Table,
     assetStorageBucket: s3.Bucket,
-    assetVisualizerStorageBucket: s3.Bucket
+    assetVisualizerStorageBucket: s3.Bucket,
+    config: Config.Config,
+    vpc: ec2.IVpc
 ): lambda.Function {
     const name = "assetService";
     const assetService = new lambda.Function(scope, name, {
@@ -31,6 +35,7 @@ export function buildAssetService(
         layers: [lambdaCommonBaseLayer],
         timeout: Duration.minutes(15),
         memorySize: 3008,
+        vpc: (config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas)? vpc : undefined, //Use VPC when flagged to use for all lambdas
         environment: {
             DATABASE_STORAGE_TABLE_NAME: databaseStorageTable.tableName,
             ASSET_STORAGE_TABLE_NAME: assetStorageTable.tableName,
@@ -52,7 +57,9 @@ export function buildAssetFiles(
     lambdaCommonBaseLayer: LayerVersion,
     assetStorageTable: dynamodb.Table,
     databaseStorageTable: dynamodb.Table,
-    assetStorageBucket: s3.Bucket
+    assetStorageBucket: s3.Bucket,
+    config: Config.Config,
+    vpc: ec2.IVpc
 ): lambda.Function {
     const name = "assetFiles";
     const assetService = new lambda.Function(scope, name, {
@@ -62,6 +69,7 @@ export function buildAssetFiles(
         layers: [lambdaCommonBaseLayer],
         timeout: Duration.minutes(15),
         memorySize: 3008,
+        vpc: (config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas)? vpc : undefined, //Use VPC when flagged to use for all lambdas
         environment: {
             ASSET_STORAGE_TABLE_NAME: assetStorageTable.tableName,
         },
@@ -80,7 +88,9 @@ export function buildUploadAssetFunction(
     lambdaCommonBaseLayer: LayerVersion,
     assetStorageBucket: s3.Bucket,
     databaseStorageTable: dynamodb.Table,
-    assetStorageTable: dynamodb.Table
+    assetStorageTable: dynamodb.Table,
+    config: Config.Config,
+    vpc: ec2.IVpc
 ): lambda.Function {
     const name = "uploadAsset";
     const uploadAssetFunction = new lambda.Function(scope, name, {
@@ -90,6 +100,7 @@ export function buildUploadAssetFunction(
         layers: [lambdaCommonBaseLayer],
         timeout: Duration.minutes(15),
         memorySize: 3008,
+        vpc: (config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas)? vpc : undefined, //Use VPC when flagged to use for all lambdas
         environment: {
             DATABASE_STORAGE_TABLE_NAME: databaseStorageTable.tableName,
             ASSET_STORAGE_TABLE_NAME: assetStorageTable.tableName,
@@ -109,7 +120,9 @@ export function buildUploadAllAssetsFunction(
     databaseStorageTable: dynamodb.Table,
     assetStorageTable: dynamodb.Table,
     workflowExecutionTable: dynamodb.Table,
-    uploadAssetLambdaFunction: lambda.Function
+    uploadAssetLambdaFunction: lambda.Function,
+    config: Config.Config,
+    vpc: ec2.IVpc
 ): lambda.Function {
     const name = "uploadAllAssets";
     const uploadAllAssetFunction = new lambda.Function(scope, name, {
@@ -119,6 +132,7 @@ export function buildUploadAllAssetsFunction(
         layers: [lambdaCommonBaseLayer],
         timeout: Duration.minutes(15),
         memorySize: 3008,
+        vpc: (config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas)? vpc : undefined, //Use VPC when flagged to use for all lambdas
         environment: {
             DATABASE_STORAGE_TABLE_NAME: databaseStorageTable.tableName,
             ASSET_STORAGE_TABLE_NAME: assetStorageTable.tableName,
@@ -139,7 +153,9 @@ export function buildAssetMetadataFunction(
     scope: Construct,
     lambdaCommonBaseLayer: LayerVersion,
     assetStorageBucket: s3.Bucket,
-    assetStorageTable: dynamodb.Table
+    assetStorageTable: dynamodb.Table,
+    config: Config.Config,
+    vpc: ec2.IVpc
 ) {
     const name = "metadata";
     const assetMetadataFunction = new lambda.Function(scope, name, {
@@ -149,6 +165,7 @@ export function buildAssetMetadataFunction(
         layers: [lambdaCommonBaseLayer],
         timeout: Duration.minutes(15),
         memorySize: 3008,
+        vpc: (config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas)? vpc : undefined, //Use VPC when flagged to use for all lambdas
         environment: {
             ASSET_STORAGE_TABLE_NAME: assetStorageTable.tableName,
         },
@@ -164,7 +181,9 @@ export function buildAssetColumnsFunction(
     scope: Construct,
     lambdaCommonBaseLayer: LayerVersion,
     assetStorageBucket: s3.Bucket,
-    assetStorageTable: dynamodb.Table
+    assetStorageTable: dynamodb.Table,
+    config: Config.Config,
+    vpc: ec2.IVpc
 ) {
     const name = "assetColumns";
     const assetColumnsFunction = new lambda.Function(scope, name, {
@@ -174,6 +193,7 @@ export function buildAssetColumnsFunction(
         layers: [lambdaCommonBaseLayer],
         timeout: Duration.minutes(15),
         memorySize: 3008,
+        vpc: (config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas)? vpc : undefined, //Use VPC when flagged to use for all lambdas
         environment: {
             ASSET_STORAGE_TABLE_NAME: assetStorageTable.tableName,
         },
@@ -188,7 +208,9 @@ export function buildAssetColumnsFunction(
 export function buildFetchVisualizerAssetFunction(
     scope: Construct,
     lambdaCommonBaseLayer: LayerVersion,
-    assetVisualizerStorageBucket: s3.Bucket
+    assetVisualizerStorageBucket: s3.Bucket,
+    config: Config.Config,
+    vpc: ec2.IVpc
 ): lambda.Function {
     const name = "fetchVisualizerAsset";
     const fetchVisualizerAssetFunction = new lambda.Function(scope, name, {
@@ -198,6 +220,7 @@ export function buildFetchVisualizerAssetFunction(
         layers: [lambdaCommonBaseLayer],
         timeout: Duration.minutes(15),
         memorySize: 3008,
+        vpc: (config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas)? vpc : undefined, //Use VPC when flagged to use for all lambdas
         environment: {
             ASSET_VISUALIZER_BUCKET_NAME: assetVisualizerStorageBucket.bucketName,
         },
@@ -211,7 +234,9 @@ export function buildDownloadAssetFunction(
     scope: Construct,
     lambdaCommonBaseLayer: LayerVersion,
     assetStorageBucket: s3.Bucket,
-    assetStorageTable: dynamodb.Table
+    assetStorageTable: dynamodb.Table,
+    config: Config.Config,
+    vpc: ec2.IVpc
 ) {
     const name = "downloadAsset";
     const downloadAssetFunction = new lambda.Function(scope, name, {
@@ -221,6 +246,7 @@ export function buildDownloadAssetFunction(
         layers: [lambdaCommonBaseLayer],
         timeout: Duration.minutes(15),
         memorySize: 3008,
+        vpc: (config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas)? vpc : undefined, //Use VPC when flagged to use for all lambdas
         environment: {
             ASSET_STORAGE_TABLE_NAME: assetStorageTable.tableName,
             S3_ENDPOINT: Service("S3").Endpoint
@@ -238,7 +264,9 @@ export function buildRevertAssetFunction(
     lambdaCommonBaseLayer: LayerVersion,
     assetStorageBucket: s3.Bucket,
     databaseStorageTable: dynamodb.Table,
-    assetStorageTable: dynamodb.Table
+    assetStorageTable: dynamodb.Table,
+    config: Config.Config,
+    vpc: ec2.IVpc
 ): lambda.Function {
     const name = "revertAsset";
     const revertAssetFunction = new lambda.Function(scope, name, {
@@ -248,6 +276,7 @@ export function buildRevertAssetFunction(
         layers: [lambdaCommonBaseLayer],
         timeout: Duration.minutes(15),
         memorySize: 3008,
+        vpc: (config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas)? vpc : undefined, //Use VPC when flagged to use for all lambdas
         environment: {
             DATABASE_STORAGE_TABLE_NAME: databaseStorageTable.tableName,
             ASSET_STORAGE_TABLE_NAME: assetStorageTable.tableName,
@@ -263,7 +292,9 @@ export function buildRevertAssetFunction(
 export function buildUploadAssetWorkflowFunction(
     scope: Construct,
     lambdaCommonBaseLayer: LayerVersion,
-    uploadAssetWorkflowStateMachine: sfn.StateMachine
+    uploadAssetWorkflowStateMachine: sfn.StateMachine,
+    config: Config.Config,
+    vpc: ec2.IVpc
 ): lambda.Function {
     const name = "upload_asset_workflow";
 
@@ -276,6 +307,7 @@ export function buildUploadAssetWorkflowFunction(
         layers: [lambdaCommonBaseLayer],
         timeout: Duration.minutes(15),
         memorySize: 3008,
+        vpc: (config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas)? vpc : undefined, //Use VPC when flagged to use for all lambdas
         environment: {
             UPLOAD_WORKFLOW_ARN: uploadAssetWorkflowStateMachine.stateMachineArn,
         },

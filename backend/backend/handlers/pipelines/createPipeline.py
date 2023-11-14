@@ -28,6 +28,24 @@ class CreatePipeline():
         self.lambda_pipeline_sample_function_key = env['LAMBDA_PIPELINE_SAMPLE_FUNCTION_KEY']
         self.sagemaker_principal = env['SAGEMAKER_PRINCIPAL']
         self.ecr_dkr_endpoint = env['ECR_DKR_ENDPOINT']
+        self.subNetIdsString = env['SUBNET_IDS']
+        self.securityGroupIdsString = env['SECURITYGROUP_IDS']
+        self.lambdaPythonVersion = env['LAMBDA_PYTHON_VERSION']
+
+        #Create SubnetIds & SecurityGroupIds lists from string
+        #Set to empty array if string is empty 
+        if self.subNetIdsString == '':
+            self.subNetIds = []
+        else:
+            self.subNetIds = self.subNetIdsString.split(',')
+
+        if self.securityGroupIdsString == '':
+            self.securityGroupIds = []
+        else:
+            self.securityGroupIds = self.securityGroupIdsString.split(',')
+
+        print("SubnetIDs: ", self.subNetIds)
+        print("SecurityGroupIDs: ", self.securityGroupIds)
 
         self.table = dynamodb.Table(self.db_table_name)
 
@@ -99,16 +117,35 @@ class CreatePipeline():
 
     def createLambdaPipeline(self, body):
         print('Creating a lambda function')
-        self.lambda_client.create_function(
-            FunctionName=body['pipelineId'],
-            Role=self.lambda_role_to_attach,
-            PackageType='Zip',
-            Code={
-                'S3Bucket': self.lambda_pipeline_sample_function_bucket,
-                'S3Key': self.lambda_pipeline_sample_function_key
-            },
-            Handler='lambda_function.lambda_handler',
-            Runtime='python3.8'
+
+        #if we have subnetIds and security Group IDs and they are not a empty array, include them in creating the lambda
+        if(self.subNetIds and self.securityGroupIds and self.subNetIds != [] and self.securityGroupIds != []):
+            self.lambda_client.create_function(
+                FunctionName=body['pipelineId'],
+                Role=self.lambda_role_to_attach,
+                PackageType='Zip',
+                Code={
+                    'S3Bucket': self.lambda_pipeline_sample_function_bucket,
+                    'S3Key': self.lambda_pipeline_sample_function_key
+                },
+                Handler='lambda_function.lambda_handler',
+                Runtime=self.lambdaPythonVersion, #'pythonX.X'
+                VpcConfig={
+                    'SubnetIds': self.subNetIds,
+                    'SecurityGroupIds': self.securityGroupIds
+                }
+            )
+        else:
+            self.lambda_client.create_function(
+                FunctionName=body['pipelineId'],
+                Role=self.lambda_role_to_attach,
+                PackageType='Zip',
+                Code={
+                    'S3Bucket': self.lambda_pipeline_sample_function_bucket,
+                    'S3Key': self.lambda_pipeline_sample_function_key
+                },
+                Handler='lambda_function.lambda_handler',
+                Runtime=self.lambdaPythonVersion #'pythonX.X'
         )
 
     def readSagemakerTemplate(self):

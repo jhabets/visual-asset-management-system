@@ -30,6 +30,9 @@ export function getConfig(app: cdk.App): Config {
     config.dockerDefaultPlatform = <string>process.env.DOCKER_DEFAULT_PLATFORM;
     config.enableCdkNag = true;
 
+    console.log("Python Version: ",LAMBDA_PYTHON_RUNTIME.name);
+    console.log("Node Version: ",LAMBDA_NODE_RUNTIME.name);
+
     //Main Variables (Parameter fall-back chain: context -> config file -> environment variables -> other fallback)
     config.env.account = <string>(config.env.account || process.env.CDK_DEFAULT_ACCOUNT);
     config.env.region = <string>(

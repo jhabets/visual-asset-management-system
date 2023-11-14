@@ -78,7 +78,7 @@ export class ApiBuilderNestedStack extends NestedStack {
     ) {
         super(parent, name);
 
-        apiBuilder(this, config, api, storageResources, lambdaCommonBaseLayer, lambdaCommonServiceSDKLayer);
+        apiBuilder(this, config, api, storageResources, lambdaCommonBaseLayer, lambdaCommonServiceSDKLayer, vpc);
     }
 }
 
@@ -106,15 +106,17 @@ export function apiBuilder(
     api: apigwv2.HttpApi,
     storageResources: storageResources,
     lambdaCommonBaseLayer: LayerVersion,
-    lambdaCommonServiceSDKLayer: LayerVersion
-    //props: EnvProps
+    lambdaCommonServiceSDKLayer: LayerVersion,
+    vpc: ec2.IVpc
 ) {
     //config resources
     const createConfigFunction = buildConfigService(
         scope,
         lambdaCommonBaseLayer,
         storageResources.s3.assetBucket,
-        storageResources.dynamo.appFeatureEnabledStorageTable
+        storageResources.dynamo.appFeatureEnabledStorageTable,
+        config,
+        vpc
     );
 
     attachFunctionToApi(scope, createConfigFunction, {
@@ -127,7 +129,9 @@ export function apiBuilder(
     const createDatabaseFunction = buildCreateDatabaseLambdaFunction(
         scope,
         lambdaCommonBaseLayer,
-        storageResources.dynamo.databaseStorageTable
+        storageResources.dynamo.databaseStorageTable,
+        config,
+        vpc
     );
     attachFunctionToApi(scope, createDatabaseFunction, {
         routePath: "/databases",
@@ -141,7 +145,9 @@ export function apiBuilder(
         storageResources.dynamo.databaseStorageTable,
         storageResources.dynamo.workflowStorageTable,
         storageResources.dynamo.pipelineStorageTable,
-        storageResources.dynamo.assetStorageTable
+        storageResources.dynamo.assetStorageTable,
+        config,
+        vpc
     );
     attachFunctionToApi(scope, databaseService, {
         routePath: "/databases",
@@ -164,7 +170,9 @@ export function apiBuilder(
         scope,
         lambdaCommonBaseLayer,
         storageResources.dynamo.commentStorageTable,
-        storageResources.dynamo.assetStorageTable
+        storageResources.dynamo.assetStorageTable,
+        config,
+        vpc
     );
 
     const commentServiceRoutes = [
@@ -189,7 +197,9 @@ export function apiBuilder(
     const addCommentFunction = buildAddCommentLambdaFunction(
         scope,
         lambdaCommonBaseLayer,
-        storageResources.dynamo.commentStorageTable
+        storageResources.dynamo.commentStorageTable,
+        config,
+        vpc
     );
     attachFunctionToApi(scope, addCommentFunction, {
         routePath: "/comments/assets/{assetId}/assetVersionId:commentId/{assetVersionId:commentId}",
@@ -200,7 +210,9 @@ export function apiBuilder(
     const editCommentFunction = buildEditCommentLambdaFunction(
         scope,
         lambdaCommonBaseLayer,
-        storageResources.dynamo.commentStorageTable
+        storageResources.dynamo.commentStorageTable,
+        config,
+        vpc
     );
     attachFunctionToApi(scope, editCommentFunction, {
         routePath: "/comments/assets/{assetId}/assetVersionId:commentId/{assetVersionId:commentId}",
@@ -215,7 +227,9 @@ export function apiBuilder(
         storageResources.dynamo.assetStorageTable,
         storageResources.dynamo.databaseStorageTable,
         storageResources.s3.assetBucket,
-        storageResources.s3.assetVisualizerBucket
+        storageResources.s3.assetVisualizerBucket,
+        config,
+        vpc
     );
     attachFunctionToApi(scope, assetService, {
         routePath: "/database/{databaseId}/assets",
@@ -243,7 +257,9 @@ export function apiBuilder(
         lambdaCommonBaseLayer,
         storageResources.dynamo.assetStorageTable,
         storageResources.dynamo.databaseStorageTable,
-        storageResources.s3.assetBucket
+        storageResources.s3.assetBucket,
+        config,
+        vpc
     );
     attachFunctionToApi(scope, listAssetFiles, {
         routePath: "/database/{databaseId}/assets/{assetId}/listFiles",
@@ -255,7 +271,9 @@ export function apiBuilder(
         scope,
         lambdaCommonBaseLayer,
         storageResources.s3.assetBucket,
-        storageResources.dynamo.assetStorageTable
+        storageResources.dynamo.assetStorageTable,
+        config,
+        vpc
     );
     attachFunctionToApi(scope, assetMetadataFunction, {
         routePath: "/database/{databaseId}/assets/{assetId}/metadata",
@@ -267,7 +285,9 @@ export function apiBuilder(
         scope,
         lambdaCommonBaseLayer,
         storageResources.s3.assetBucket,
-        storageResources.dynamo.assetStorageTable
+        storageResources.dynamo.assetStorageTable,
+        config,
+        vpc
     );
     attachFunctionToApi(scope, assetColumnsFunction, {
         routePath: "/database/{databaseId}/assets/{assetId}/columns",
@@ -280,7 +300,9 @@ export function apiBuilder(
         lambdaCommonBaseLayer,
         storageResources.s3.assetBucket,
         storageResources.dynamo.databaseStorageTable,
-        storageResources.dynamo.assetStorageTable
+        storageResources.dynamo.assetStorageTable,
+        config,
+        vpc
     );
     attachFunctionToApi(scope, uploadAssetFunction, {
         routePath: "/assets",
@@ -295,7 +317,9 @@ export function apiBuilder(
         storageResources.dynamo.databaseStorageTable,
         storageResources.dynamo.assetStorageTable,
         storageResources.dynamo.workflowExecutionStorageTable,
-        uploadAssetFunction
+        uploadAssetFunction,
+        config,
+        vpc
     );
     attachFunctionToApi(scope, uploadAllAssetFunction, {
         routePath: "/assets/all",
@@ -306,7 +330,9 @@ export function apiBuilder(
     const fetchVisualizerAssetFunction = buildFetchVisualizerAssetFunction(
         scope,
         lambdaCommonBaseLayer,
-        storageResources.s3.assetVisualizerBucket
+        storageResources.s3.assetVisualizerBucket,
+        config,
+        vpc
     );
     attachFunctionToApi(scope, fetchVisualizerAssetFunction, {
         routePath: "/visualizerAssets/{proxy+}",
@@ -318,7 +344,9 @@ export function apiBuilder(
         scope,
         lambdaCommonBaseLayer,
         storageResources.s3.assetBucket,
-        storageResources.dynamo.assetStorageTable
+        storageResources.dynamo.assetStorageTable,
+        config,
+        vpc
     );
     attachFunctionToApi(scope, assetDownloadFunction, {
         routePath: "/database/{databaseId}/assets/{assetId}/download",
@@ -331,7 +359,9 @@ export function apiBuilder(
         lambdaCommonBaseLayer,
         storageResources.s3.assetBucket,
         storageResources.dynamo.databaseStorageTable,
-        storageResources.dynamo.assetStorageTable
+        storageResources.dynamo.assetStorageTable,
+        config,
+        vpc
     );
     attachFunctionToApi(scope, assetRevertFunction, {
         routePath: "/database/{databaseId}/assets/{assetId}/revert",
@@ -343,7 +373,9 @@ export function apiBuilder(
     const enablePipelineFunction = buildEnablePipelineFunction(
         scope,
         lambdaCommonBaseLayer,
-        storageResources.dynamo.pipelineStorageTable
+        storageResources.dynamo.pipelineStorageTable,
+        config,
+        vpc
     );
 
     const createPipelineFunction = buildCreatePipelineFunction(
@@ -353,7 +385,9 @@ export function apiBuilder(
         storageResources.s3.artefactsBucket,
         storageResources.s3.sagemakerBucket,
         storageResources.s3.assetBucket,
-        enablePipelineFunction
+        enablePipelineFunction,
+        config,
+        vpc
     );
     attachFunctionToApi(scope, createPipelineFunction, {
         routePath: "/pipelines",
@@ -361,7 +395,7 @@ export function apiBuilder(
         api: api,
     });
 
-    const pipelineService = buildPipelineService(scope, lambdaCommonBaseLayer, storageResources);
+    const pipelineService = buildPipelineService(scope, lambdaCommonBaseLayer, storageResources, config, vpc);
     attachFunctionToApi(scope, pipelineService, {
         routePath: "/database/{databaseId}/pipelines",
         method: apigwv2.HttpMethod.GET,
@@ -384,7 +418,7 @@ export function apiBuilder(
     });
 
     //Workflows
-    const workflowService = buildWorkflowService(scope, lambdaCommonBaseLayer, storageResources);
+    const workflowService = buildWorkflowService(scope, lambdaCommonBaseLayer, storageResources, config, vpc);
     attachFunctionToApi(scope, workflowService, {
         routePath: "/database/{databaseId}/workflows",
         method: apigwv2.HttpMethod.GET,
@@ -409,7 +443,9 @@ export function apiBuilder(
     const listWorkflowExecutionsFunction = buildListlWorkflowExecutionsFunction(
         scope,
         lambdaCommonBaseLayer,
-        storageResources.dynamo.workflowExecutionStorageTable
+        storageResources.dynamo.workflowExecutionStorageTable,
+        config,
+        vpc
     );
     attachFunctionToApi(scope, listWorkflowExecutionsFunction, {
         routePath: "/database/{databaseId}/assets/{assetId}/workflows/{workflowId}/executions",
@@ -423,7 +459,9 @@ export function apiBuilder(
         storageResources.dynamo.workflowStorageTable,
         storageResources.s3.assetBucket,
         uploadAllAssetFunction,
-        config.env.coreStackName
+        config.env.coreStackName,
+        config,
+        vpc
     );
     attachFunctionToApi(scope, createWorkflowFunction, {
         routePath: "/workflows",
@@ -438,7 +476,9 @@ export function apiBuilder(
         storageResources.dynamo.pipelineStorageTable,
         storageResources.dynamo.assetStorageTable,
         storageResources.dynamo.workflowExecutionStorageTable,
-        storageResources.s3.assetBucket
+        storageResources.s3.assetBucket,
+        config,
+        vpc
     );
     attachFunctionToApi(scope, runWorkflowFunction, {
         routePath: "/database/{databaseId}/assets/{assetId}/workflows/{workflowId}",
@@ -452,7 +492,9 @@ export function apiBuilder(
     const metadataCrudFunctions = buildMetadataFunctions(
         scope,
         lambdaCommonBaseLayer,
-        storageResources
+        storageResources,
+        config,
+        vpc
     );
     const methods = [
         apigwv2.HttpMethod.PUT,
@@ -471,7 +513,9 @@ export function apiBuilder(
     const metadataSchemaFunctions = buildMetadataSchemaService(
         scope,
         lambdaCommonBaseLayer,
-        storageResources
+        storageResources,
+        config,
+        vpc
     );
 
     const metadataSchemaMethods = [
@@ -510,7 +554,9 @@ export function apiBuilder(
     const uploadAssetWorkflowFunction = buildUploadAssetWorkflowFunction(
         scope,
         lambdaCommonBaseLayer,
-        uploadAssetWorkflowStateMachine
+        uploadAssetWorkflowStateMachine,
+        config,
+        vpc
     );
     attachFunctionToApi(scope, uploadAssetWorkflowFunction, {
         routePath: "/assets/uploadAssetWorkflow",
@@ -518,7 +564,7 @@ export function apiBuilder(
         api: api,
     });
 
-    const authFunctions = buildAuthFunctions(scope, lambdaCommonBaseLayer, storageResources);
+    const authFunctions = buildAuthFunctions(scope, lambdaCommonBaseLayer, storageResources, config, vpc);
 
     attachFunctionToApi(scope, authFunctions.scopeds3access, {
         routePath: "/auth/scopeds3access",

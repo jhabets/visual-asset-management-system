@@ -10,11 +10,15 @@ import { Construct } from "constructs";
 import { Duration } from "aws-cdk-lib";
 import { LayerVersion } from "aws-cdk-lib/aws-lambda";
 import { LAMBDA_PYTHON_RUNTIME } from "../../config/config";
+import * as Config from "../../config/config";
+import * as ec2 from "aws-cdk-lib/aws-ec2";
 
 export function buildCreateDatabaseLambdaFunction(
     scope: Construct,
     lambdaCommonBaseLayer: LayerVersion,
-    databaseStorageTable: dynamodb.Table
+    databaseStorageTable: dynamodb.Table,
+    config: Config.Config,
+    vpc: ec2.IVpc
 ): lambda.Function {
     const name = "createDatabase";
     const createDatabaseFunction = new lambda.Function(scope, name, {
@@ -24,6 +28,7 @@ export function buildCreateDatabaseLambdaFunction(
         layers: [lambdaCommonBaseLayer],
         timeout: Duration.minutes(15),
         memorySize: 3008,
+        vpc: (config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas)? vpc : undefined, //Use VPC when flagged to use for all lambdas
         environment: {
             DATABASE_STORAGE_TABLE_NAME: databaseStorageTable.tableName,
         },
@@ -38,7 +43,9 @@ export function buildDatabaseService(
     databaseStorageTable: dynamodb.Table,
     workflowStorageTable: dynamodb.Table,
     pipelineStorageTable: dynamodb.Table,
-    assetStorageTable: dynamodb.Table
+    assetStorageTable: dynamodb.Table,
+    config: Config.Config,
+    vpc: ec2.IVpc
 ): lambda.Function {
     const name = "databaseService";
     const databaseService = new lambda.Function(scope, name, {
@@ -48,6 +55,7 @@ export function buildDatabaseService(
         layers: [lambdaCommonBaseLayer],
         timeout: Duration.minutes(15),
         memorySize: 3008,
+        vpc: (config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas)? vpc : undefined, //Use VPC when flagged to use for all lambdas
         environment: {
             DATABASE_STORAGE_TABLE_NAME: databaseStorageTable.tableName,
             ASSET_STORAGE_TABLE_NAME: assetStorageTable.tableName,

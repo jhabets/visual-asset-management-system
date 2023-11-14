@@ -29,6 +29,8 @@ const defaultProps: Partial<VPCBuilderNestedStackProps> = {
 export class VPCBuilderNestedStack extends NestedStack {
 
     public vpc:ec2.IVpc
+    public vpceSecurityGroup: ec2.ISecurityGroup
+
     private azCount:number
 
     constructor(parent: Construct, name: string, props: VPCBuilderNestedStackProps) {
@@ -124,18 +126,175 @@ export class VPCBuilderNestedStack extends NestedStack {
                 },
             });
 
-            //Add Global Gateway Endpoints
+            /**
+                 * Security Groups
+                 */
+            const vpceSecurityGroup = new ec2.SecurityGroup(
+                this,
+                "VPCeSecurityGroup",
+                {
+                    vpc: this.vpc,
+                    allowAllOutbound: true,
+                    description: "VPC Endpoints Security Group",
+                }
+            );
+
+            this.vpceSecurityGroup = vpceSecurityGroup;
+
+            // add ingress rules for most service to service oriented communications
+            vpceSecurityGroup.addIngressRule(
+                ec2.Peer.ipv4(this.vpc.vpcCidrBlock),
+                ec2.Port.tcp(443),
+                "Allow HTTPS Access"
+            );
+            vpceSecurityGroup.addIngressRule(
+                ec2.Peer.ipv4(this.vpc.vpcCidrBlock),
+                ec2.Port.tcp(53),
+                "Allow TCP for ECR Access"
+            );
+            vpceSecurityGroup.addIngressRule(
+                ec2.Peer.ipv4(this.vpc.vpcCidrBlock),
+                ec2.Port.udp(53),
+                "Allow UDP for ECR Access"
+            );
+
+                 /**
+                 * VPC Endpoints
+                 */
+            //Add VPC endpoints based on configuration options
+            //Note: This is mostly to not duplicate endpoints if bringing in an external VPC that already has the needed endpoints for the services
+            //Note: More switching is done to avoid creating endpoints when not needed (mostly for cost)
+            if(props.config.app.useGlobalVpc.addVpcEndpoints)
+            {
+                //Visualizer Pipeline-Only Required Endpoints
+                if(props.config.app.pipelines.usePointCloudVisualization.enabled)
+                {
+                    // Create VPC endpoint for Batch
+                    new ec2.InterfaceVpcEndpoint(this, "BatchEndpoint", {
+                        vpc: this.vpc,
+                        privateDnsEnabled: true,
+                        service: ec2.InterfaceVpcEndpointAwsService.BATCH,
+                        subnets: { subnets: (props.config.app.useAlb.enabled && props.config.app.useAlb.usePublicSubnet)? this.vpc.isolatedSubnets.concat(this.vpc.publicSubnets) : this.vpc.isolatedSubnets},
+                        securityGroups: [vpceSecurityGroup],
+                    });
+                }
+
+                //All Lambda and Visualizer Pipeline Required Endpoints
+                if(props.config.app.useGlobalVpc.useForAllLambdas || props.config.app.pipelines.usePointCloudVisualization.enabled)
+                {
+                    // Create VPC endpoint for ECR API
+                    new ec2.InterfaceVpcEndpoint(this, "ECRAPIEndpoint", {
+                        vpc: this.vpc,
+                        privateDnsEnabled: true, // Needed for Fargate<->ECR
+                        service: ec2.InterfaceVpcEndpointAwsService.ECR,
+                        subnets: { subnets: (props.config.app.useAlb.enabled && props.config.app.useAlb.usePublicSubnet)? this.vpc.isolatedSubnets.concat(this.vpc.publicSubnets) : this.vpc.isolatedSubnets},
+                        securityGroups: [vpceSecurityGroup],
+                    });
+
+                    // Create VPC endpoint for ECR Docker API
+                    new ec2.InterfaceVpcEndpoint(this, "ECRDockerEndpoint", {
+                        vpc: this.vpc,
+                        privateDnsEnabled: true, // Needed for Fargate<->ECR
+                        service: ec2.InterfaceVpcEndpointAwsService.ECR_DOCKER,
+                        subnets: { subnets: (props.config.app.useAlb.enabled && props.config.app.useAlb.usePublicSubnet)? this.vpc.isolatedSubnets.concat(this.vpc.publicSubnets) : this.vpc.isolatedSubnets},
+                        securityGroups: [vpceSecurityGroup],
+                    });
+
+                    // Create VPC endpoint for CloudWatch Logs
+                    new ec2.InterfaceVpcEndpoint(this, "CloudWatchEndpoint", {
+                        vpc: this.vpc,
+                        privateDnsEnabled: true,
+                        service: ec2.InterfaceVpcEndpointAwsService.CLOUDWATCH_LOGS,
+                        subnets: { subnets: (props.config.app.useAlb.enabled && props.config.app.useAlb.usePublicSubnet)? this.vpc.isolatedSubnets.concat(this.vpc.publicSubnets) : this.vpc.isolatedSubnets},
+                        securityGroups: [vpceSecurityGroup],
+                    });
+
+                    // Create VPC endpoint for SNS
+                    new ec2.InterfaceVpcEndpoint(this, "SNSEndpoint", {
+                        vpc: this.vpc,
+                        privateDnsEnabled: true,
+                        service: ec2.InterfaceVpcEndpointAwsService.SNS,
+                        subnets: { subnets: (props.config.app.useAlb.enabled && props.config.app.useAlb.usePublicSubnet)? this.vpc.isolatedSubnets.concat(this.vpc.publicSubnets) : this.vpc.isolatedSubnets},
+                        securityGroups: [vpceSecurityGroup],
+                    });
+
+                    // Create VPC endpoint for SFN
+                    new ec2.InterfaceVpcEndpoint(this, "SFNEndpoint", {
+                        vpc: this.vpc,
+                        privateDnsEnabled: true,
+                        service: ec2.InterfaceVpcEndpointAwsService.STEP_FUNCTIONS,
+                        subnets: { subnets: (props.config.app.useAlb.enabled && props.config.app.useAlb.usePublicSubnet)? this.vpc.isolatedSubnets.concat(this.vpc.publicSubnets) : this.vpc.isolatedSubnets},
+                        securityGroups: [vpceSecurityGroup],
+                    });
+
+                }
+
+                //All Lambda and OpenSearch Provisioned Required Endpoints
+                if(props.config.app.useGlobalVpc.useForAllLambdas || props.config.app.openSearch.useProvisioned.enabled)
+                {
+                    // Create VPC endpoint for SSM
+                    new ec2.InterfaceVpcEndpoint(this, "SSMEndpoint", {
+                        vpc: this.vpc,
+                        privateDnsEnabled: true,
+                        service: ec2.InterfaceVpcEndpointAwsService.SSM,
+                        subnets: { subnets: (props.config.app.useAlb.enabled && props.config.app.useAlb.usePublicSubnet)? this.vpc.isolatedSubnets.concat(this.vpc.publicSubnets) : this.vpc.isolatedSubnets},
+                        securityGroups: [vpceSecurityGroup]
+                    });
+                }
+
+                //All Lambda Required Endpoints
+                if(props.config.app.useGlobalVpc.useForAllLambdas)
+                {
+                    // Create VPC endpoint for Lambda
+                    new ec2.InterfaceVpcEndpoint(this, "LambdaEndpoint", {
+                        vpc: this.vpc,
+                        privateDnsEnabled: true,
+                        service: ec2.InterfaceVpcEndpointAwsService.LAMBDA,
+                        subnets: { subnets: (props.config.app.useAlb.enabled && props.config.app.useAlb.usePublicSubnet)? this.vpc.isolatedSubnets.concat(this.vpc.publicSubnets) : this.vpc.isolatedSubnets},
+                        securityGroups: [vpceSecurityGroup],
+                    });
+
+                    // Create VPC endpoint for STS
+                    new ec2.InterfaceVpcEndpoint(this, "STSEndpoint", {
+                        vpc: this.vpc,
+                        privateDnsEnabled: true,
+                        service: ec2.InterfaceVpcEndpointAwsService.STS,
+                        subnets: { subnets: (props.config.app.useAlb.enabled && props.config.app.useAlb.usePublicSubnet)? this.vpc.isolatedSubnets.concat(this.vpc.publicSubnets) : this.vpc.isolatedSubnets},
+                        securityGroups: [vpceSecurityGroup],
+                    });
+                }
+            }
+
+            //Add Global Gateway Endpoints (no cost so we add for everything)
             if(props.config.app.useGlobalVpc.addVpcEndpoints) {
                 this.vpc.addGatewayEndpoint("S3Endpoint", {
                     service: ec2.GatewayVpcEndpointAwsService.S3,
-                    subnets: [{ subnets: this.vpc.isolatedSubnets.concat(this.vpc.privateSubnets)}],
+                    subnets: [{ subnets: (props.config.app.useAlb.enabled && props.config.app.useAlb.usePublicSubnet)? this.vpc.isolatedSubnets.concat(this.vpc.publicSubnets) : this.vpc.isolatedSubnets}],
                 });
 
                 this.vpc.addGatewayEndpoint("DynamoEndpoint", {
                     service: ec2.GatewayVpcEndpointAwsService.DYNAMODB,
-                    subnets: [{ subnets: this.vpc.isolatedSubnets.concat(this.vpc.privateSubnets)}],
+                    subnets: [{ subnets: (props.config.app.useAlb.enabled && props.config.app.useAlb.usePublicSubnet)? this.vpc.isolatedSubnets.concat(this.vpc.publicSubnets) : this.vpc.isolatedSubnets}],
                 });
             }
+
+
+        //Nag Supressions
+        NagSuppressions.addResourceSuppressions(
+            vpceSecurityGroup,
+            [
+                {
+                    id: "AwsSolutions-EC23",
+                    reason: "VPCe Security Group is restricted to VPC cidr range on ports 443 and 53",
+                },
+                {
+                    id: "CdkNagValidationFailure",
+                    reason: "Validation failure due to inherent nature of CDK Nag Validations of CIDR ranges", //https://github.com/cdklabs/cdk-nag/issues/817
+                },
+            ]
+        );
+            
+
         }
 
 

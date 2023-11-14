@@ -5,7 +5,6 @@
  */
 
 import { Construct } from "constructs";
-import { Names } from "aws-cdk-lib";
 import { storageResources } from "../storage/storageBuilder-nestedStack";
 import { LayerVersion } from "aws-cdk-lib/aws-lambda";
 import * as cdk from "aws-cdk-lib";
@@ -18,6 +17,7 @@ import * as Config from "../../../config/config";
 export interface VisualizerPipelineBuilderNestedStackProps extends cdk.StackProps {
     config: Config.Config;
     vpc: ec2.IVpc;
+    vpceSecurityGroup: ec2.ISecurityGroup;
     storageResources: storageResources;
     lambdaCommonBaseLayer: LayerVersion;
 }
@@ -26,8 +26,7 @@ export interface VisualizerPipelineBuilderNestedStackProps extends cdk.StackProp
  * Default input properties
  */
 const defaultProps: Partial<VisualizerPipelineBuilderNestedStackProps> = {
-    //stackName: "",
-    //env: {},
+
 };
 
 export class VisualizerPipelineBuilderNestedStack extends NestedStack {
@@ -42,7 +41,8 @@ export class VisualizerPipelineBuilderNestedStack extends NestedStack {
             {
                 ...props,
                 config: props.config,
-                vpc: props.vpc
+                vpc: props.vpc,
+                vpceSecurityGroup: props.vpceSecurityGroup,
             }
         );
 

@@ -33,7 +33,7 @@ export interface VisualizationPipelineConstructProps extends cdk.StackProps {
     storage: storageResources;
     vpc: ec2.IVpc;
     visualizerPipelineSubnets: ec2.ISubnet[];
-    visualizerPipelineSecurityGroups: ec2.SecurityGroup[];
+    visualizerPipelineSecurityGroups: ec2.ISecurityGroup[];
     lambdaCommonBaseLayer: LayerVersion;
 }
 
@@ -352,7 +352,9 @@ export class VisualizationPipelineConstruct extends NestedStack {
             props.lambdaCommonBaseLayer,
             props.storage.s3.assetBucket,
             props.storage.s3.assetVisualizerBucket,
-            props.storage.sns.assetBucketObjectCreatedTopic
+            props.storage.sns.assetBucketObjectCreatedTopic,
+            props.config,
+            props.vpc
         );
 
         visualizerPCPipelineExecuteFunction.addToRolePolicy(

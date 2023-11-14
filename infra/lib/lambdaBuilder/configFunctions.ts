@@ -11,12 +11,16 @@ import { Construct } from "constructs";
 import { Duration } from "aws-cdk-lib";
 import { LayerVersion } from "aws-cdk-lib/aws-lambda";
 import { LAMBDA_PYTHON_RUNTIME } from "../../config/config";
+import * as Config from "../../config/config";
+import * as ec2 from "aws-cdk-lib/aws-ec2";
 
 export function buildConfigService(
     scope: Construct,
     lambdaCommonBaseLayer: LayerVersion,
     assetStorageBucket: s3.Bucket,
-    appFeatureEnabledStorageTable: dynamodb.Table
+    appFeatureEnabledStorageTable: dynamodb.Table,
+    config: Config.Config,
+    vpc: ec2.IVpc
 ): lambda.Function {
     const name = "configService";
     const configService = new lambda.Function(scope, name, {
@@ -26,6 +30,7 @@ export function buildConfigService(
         layers: [lambdaCommonBaseLayer],
         timeout: Duration.minutes(15),
         memorySize: 3008,
+        vpc: (config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas)? vpc : undefined, //Use VPC when flagged to use for all lambdas
         environment: {
             ASSET_STORAGE_BUCKET: assetStorageBucket.bucketName,
             APPFEATUREENABLED_STORAGE_TABLE_NAME: appFeatureEnabledStorageTable.tableName,

@@ -13,6 +13,8 @@ import { LayerVersion } from "aws-cdk-lib/aws-lambda";
 import { LAMBDA_PYTHON_RUNTIME } from "../../config/config";
 import * as ServiceHelper from "../../lib/helper/service-helper";
 import { Service } from "../helper/service-helper";
+import * as Config from "../../config/config";
+import * as ec2 from "aws-cdk-lib/aws-ec2";
 
 interface AuthFunctions {
     groups: lambda.Function;
@@ -23,7 +25,9 @@ interface AuthFunctions {
 export function buildAuthFunctions(
     scope: Construct,
     lambdaCommonBaseLayer: LayerVersion,
-    storageResources: storageResources
+    storageResources: storageResources,
+    config: Config.Config,
+    vpc: ec2.IVpc
 ): AuthFunctions {
     const storageBucketRole = new iam.Role(scope, "storageBucketRole", {
         assumedBy: Service("LAMBDA").Principal, 
@@ -35,6 +39,8 @@ export function buildAuthFunctions(
         scope,
         lambdaCommonBaseLayer,
         storageResources,
+        config,
+        vpc,
         "scopeds3access",
         {
             AWS_PARTITION: ServiceHelper.Partition(),
@@ -52,12 +58,14 @@ export function buildAuthFunctions(
     );
 
     return {
-        groups: buildAuthFunction(scope, lambdaCommonBaseLayer, storageResources, "groups"),
+        groups: buildAuthFunction(scope, lambdaCommonBaseLayer, storageResources, config, vpc, "groups"),
         constraints: buildAuthFunction(
             scope,
             lambdaCommonBaseLayer,
             storageResources,
-            "finegrainedaccessconstraints"
+            config,
+            vpc,
+            "finegrainedaccessconstraints",
         ),
         scopeds3access,
     };
@@ -67,6 +75,8 @@ export function buildAuthFunction(
     scope: Construct,
     lambdaCommonBaseLayer: LayerVersion,
     storageResources: storageResources,
+    config: Config.Config,
+    vpc: ec2.IVpc,
     name: string,
     environment?: { [key: string]: string }
 ): lambda.Function {
@@ -77,6 +87,7 @@ export function buildAuthFunction(
         layers: [lambdaCommonBaseLayer],
         timeout: Duration.minutes(1),
         memorySize: 512,
+        vpc: (config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas)? vpc : undefined, //Use VPC when flagged to use for all lambdas
         environment: {
             TABLE_NAME: storageResources.dynamo.authEntitiesStorageTable.tableName,
             ASSET_STORAGE_TABLE_NAME: storageResources.dynamo.assetStorageTable.tableName,

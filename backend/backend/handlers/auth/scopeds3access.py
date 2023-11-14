@@ -1,7 +1,6 @@
 #  Copyright 2023 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #  SPDX-License-Identifier: Apache-2.0
 
-
 from handlers.auth import get_database_set, request_to_claims
 import json
 import boto3
@@ -18,6 +17,10 @@ POST /auth/scopeds3access
     "databaseId": "...",
 }
 """
+
+#Set boto environment variable to use regional STS endpoint (https://stackoverflow.com/questions/71255594/request-times-out-when-try-to-assume-a-role-with-aws-sts-from-a-private-subnet-u)
+#AWS_STS_REGIONAL_ENDPOINTS='regional'
+os.environ["AWS_STS_REGIONAL_ENDPOINTS"] = 'regional'
 
 ROLE_ARN = os.environ['ROLE_ARN']
 AWS_PARTITION = os.environ['AWS_PARTITION']

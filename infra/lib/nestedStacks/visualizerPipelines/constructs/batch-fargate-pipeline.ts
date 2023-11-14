@@ -14,7 +14,7 @@ import path = require("path");
 export interface BatchFargatePipelineConstructProps extends cdk.StackProps {
     vpc: ec2.IVpc;
     subnets: ec2.ISubnet[];
-    securityGroups: ec2.SecurityGroup[];
+    securityGroups: ec2.ISecurityGroup[];
     jobRole: iam.Role;
     executionRole: iam.Role;
     imageAssetPath: string;

@@ -6,11 +6,15 @@ import { Duration } from "aws-cdk-lib";
 import { suppressCdkNagErrorsByGrantReadWrite } from "../helper/security";
 import { LayerVersion } from "aws-cdk-lib/aws-lambda";
 import { LAMBDA_PYTHON_RUNTIME } from "../../config/config";
+import * as Config from "../../config/config";
+import * as ec2 from "aws-cdk-lib/aws-ec2";
 
 export function buildAddCommentLambdaFunction(
     scope: Construct,
     lambdaCommonBaseLayer: LayerVersion,
-    commentStorageTable: dynamodb.Table
+    commentStorageTable: dynamodb.Table,
+    config: Config.Config,
+    vpc: ec2.IVpc
 ): lambda.Function {
     const name = "addComment";
     const addCommentFunction = new lambda.Function(scope, name, {
@@ -20,6 +24,7 @@ export function buildAddCommentLambdaFunction(
         layers: [lambdaCommonBaseLayer],
         timeout: Duration.minutes(15),
         memorySize: 3008,
+        vpc: (config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas)? vpc : undefined, //Use VPC when flagged to use for all lambdas
         environment: {
             COMMENT_STORAGE_TABLE_NAME: commentStorageTable.tableName,
         },
@@ -31,7 +36,9 @@ export function buildAddCommentLambdaFunction(
 export function buildEditCommentLambdaFunction(
     scope: Construct,
     lambdaCommonBaseLayer: LayerVersion,
-    commentStorageTable: dynamodb.Table
+    commentStorageTable: dynamodb.Table,
+    config: Config.Config,
+    vpc: ec2.IVpc
 ): lambda.Function {
     const name = "editComment";
     const editCommentFunction = new lambda.Function(scope, name, {
@@ -41,6 +48,7 @@ export function buildEditCommentLambdaFunction(
         layers: [lambdaCommonBaseLayer],
         timeout: Duration.minutes(15),
         memorySize: 3008,
+        vpc: (config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas)? vpc : undefined, //Use VPC when flagged to use for all lambdas
         environment: {
             COMMENT_STORAGE_TABLE_NAME: commentStorageTable.tableName,
         },
@@ -53,7 +61,9 @@ export function buildCommentService(
     scope: Construct,
     lambdaCommonBaseLayer: LayerVersion,
     commentStorageTable: dynamodb.Table,
-    assetStorageTable: dynamodb.Table
+    assetStorageTable: dynamodb.Table,
+    config: Config.Config,
+    vpc: ec2.IVpc
 ): lambda.Function {
     const name = "commentService";
     const commentService = new lambda.Function(scope, name, {
@@ -63,6 +73,7 @@ export function buildCommentService(
         layers: [lambdaCommonBaseLayer],
         timeout: Duration.minutes(15),
         memorySize: 3008,
+        vpc: (config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas)? vpc : undefined, //Use VPC when flagged to use for all lambdas
         environment: {
             COMMENT_STORAGE_TABLE_NAME: commentStorageTable.tableName,
             ASSET_STORAGE_TABLE_NAME: assetStorageTable.tableName,

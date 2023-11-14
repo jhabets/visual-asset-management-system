@@ -44,6 +44,7 @@ export class CoreVAMSStack extends cdk.Stack {
     private webAppBuildPath:string = "../web/build"
 
     private vpc:ec2.IVpc
+    private vpceSecurityGroup:ec2.ISecurityGroup
 
     constructor(scope: Construct, id: string, props: EnvProps) {
         super(scope, id, { ...props, crossRegionReferences: true });
@@ -95,12 +96,13 @@ export class CoreVAMSStack extends cdk.Stack {
         }
 
         //Deploy VPC (nested stack)
-        if(props.config.app.useGlobalVpc) {
+        if(props.config.app.useGlobalVpc.enabled) {
             const vpcBuilderNestedStack = new VPCBuilderNestedStack(this, "VPCBuilder", {
                 config: props.config,
             });
 
             this.vpc = vpcBuilderNestedStack.vpc
+            this.vpceSecurityGroup = vpcBuilderNestedStack.vpceSecurityGroup
         }
 
         //Deploy Storage Resources (nested stack)
@@ -185,7 +187,7 @@ export class CoreVAMSStack extends cdk.Stack {
             apiNestedStack.apiGatewayV2,
             storageResourcesNestedStack.storageResources,
             lambdaLayers.lambdaCommonBaseLayer,
-            this.vpc,
+            this.vpc
         );
 
         //Deploy Location Services (Nested Stack) and setup feature enabled
@@ -210,7 +212,8 @@ export class CoreVAMSStack extends cdk.Stack {
                     config: props.config,
                     storageResources: storageResourcesNestedStack.storageResources,
                     lambdaCommonBaseLayer: lambdaLayers.lambdaCommonBaseLayer,
-                    vpc: this.vpc
+                    vpc: this.vpc,
+                    vpceSecurityGroup: this.vpceSecurityGroup,
                 }
             );
         }

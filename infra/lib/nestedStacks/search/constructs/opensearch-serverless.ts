@@ -23,7 +23,7 @@ interface OpensearchServerlessConstructProps extends cdk.StackProps {
     config: Config.Config;
     principalArn: string[];
     indexName: string;
-    vpc: ec2.IVpc
+    vpc: ec2.IVpc;
 }
 
 export class OpensearchServerlessConstruct extends Construct {
@@ -33,7 +33,6 @@ export class OpensearchServerlessConstruct extends Construct {
     useVPCEndpoint: boolean
     vpcEndpointAOSS: cdk.aws_opensearchserverless.CfnVpcEndpoint
     vpcEndpointAOSSSecurityGroup: ec2.SecurityGroup
-    vpcInterfaceEndpointSSM: ec2.IInterfaceVpcEndpoint
 
     constructor(parent: Construct, name: string, props: OpensearchServerlessConstructProps) {
         super(parent, name);
@@ -62,7 +61,6 @@ export class OpensearchServerlessConstruct extends Construct {
 
             //Allow connections from any VPC IP
             aossVPCESecurityGroup.addIngressRule(ec2.Peer.ipv4(props.vpc.vpcCidrBlock), ec2.Port.tcp(443))
-
             this.vpcEndpointAOSSSecurityGroup = aossVPCESecurityGroup
 
             // let subNetIDsVPCe: string[] = []
@@ -81,6 +79,7 @@ export class OpensearchServerlessConstruct extends Construct {
 
             // console.log(subNetIDsVPCe)
 
+            //Add VPC Endpoint here instead of global VPC as it's directly needed to configure AOSS
             //(https://docs.aws.amazon.com/opensearch-service/latest/developerguide/serverless-network.html, https://docs.aws.amazon.com/opensearch-service/latest/developerguide/serverless-vpc.html, https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_opensearchserverless.CfnVpcEndpoint.html)
             const cfnVpcEndpoint = new opensearchserverless.CfnVpcEndpoint(this, 'AOSSCfnVpcEndpoint', {
                 name: 'aossendpoint'+generateUniqueNameHash(props.config.env.coreStackName, props.config.env.account, "AOSSCfnVpcEndpoint", 10).toLowerCase(),
@@ -90,22 +89,10 @@ export class OpensearchServerlessConstruct extends Construct {
             });
 
             cfnVpcEndpoint.applyRemovalPolicy(cdk.RemovalPolicy.DESTROY)
-
             this.vpcEndpointAOSS = cfnVpcEndpoint
 
         }
 
-        //Create an endpoint for SSM Manager Service to be able to store/retrieve SSM Param Store Values
-        if(this.useVPCEndpoint && props.config.app.useGlobalVpc.addVpcEndpoints)
-        {
-            // Create VPC endpoint for SNS
-            this.vpcInterfaceEndpointSSM = new ec2.InterfaceVpcEndpoint(this, "SSMEndpoint", {
-                vpc: props.vpc,
-                privateDnsEnabled: true,
-                service: ec2.InterfaceVpcEndpointAwsService.SSM,
-                subnets: { subnets: subNetsVPCe},
-            });
-        }
 
         const schemaDeploy = new njslambda.NodejsFunction(
             this,
@@ -194,9 +181,6 @@ export class OpensearchServerlessConstruct extends Construct {
             schemaDeployProvider.node.addDependency(this.vpcEndpointAOSS);
         }
 
-        if(this.useVPCEndpoint && this.config.app.useGlobalVpc.addVpcEndpoints)
-            schemaDeployProvider.node.addDependency(this.vpcInterfaceEndpointSSM);
-
         new CustomResource(this, "DeploySSMIndexSchema", {
             serviceToken: schemaDeployProvider.serviceToken,
             properties: {
@@ -234,22 +218,6 @@ export class OpensearchServerlessConstruct extends Construct {
                 ]
             );
 
-            if(this.config.app.useGlobalVpc.addVpcEndpoints) {
-                NagSuppressions.addResourceSuppressionsByPath(
-                    cdk.Stack.of(this),
-                    "/"+this.config.env.coreStackName+"/SearchBuilder/AOSS/SSMEndpoint/SecurityGroup/Resource",
-                    [
-                        {
-                            id: "AwsSolutions-EC23",
-                            reason: "VPC Endpoint Security Group is restricted to VPC cidr range on ports 443",
-                        },
-                        {
-                            id: "CdkNagValidationFailure",
-                            reason: "Validation failure due to inherent nature of CDK Nag Validations of CIDR ranges", //https://github.com/cdklabs/cdk-nag/issues/817
-                        },
-                    ]
-                );
-            }
         }
     }
 
@@ -314,11 +282,6 @@ export class OpensearchServerlessConstruct extends Construct {
         if(this.useVPCEndpoint)
         {
             this.vpcEndpointAOSSSecurityGroup.connections.allowFrom(lambdaFunction, ec2.Port.tcp(443));
-        }
-
-        if(this.useVPCEndpoint && this.config.app.useGlobalVpc.addVpcEndpoints)
-        {
-            this.vpcInterfaceEndpointSSM.connections.allowFrom(lambdaFunction, ec2.Port.tcp(443));
         }
 
     }

@@ -15,6 +15,8 @@ import { storageResources } from "../nestedStacks/storage/storageBuilder-nestedS
 import { IAMArn, Service } from "../helper/service-helper";
 import { LayerVersion } from "aws-cdk-lib/aws-lambda";
 import { LAMBDA_PYTHON_RUNTIME } from "../../config/config";
+import * as Config from "../../config/config";
+import * as ec2 from "aws-cdk-lib/aws-ec2";
 
 export function buildCreatePipelineFunction(
     scope: Construct,
@@ -23,10 +25,14 @@ export function buildCreatePipelineFunction(
     artefactsBucket: s3.Bucket,
     sagemakerBucket: s3.Bucket,
     assetBucket: s3.Bucket,
-    enablePipelineFunction: lambda.Function
+    enablePipelineFunction: lambda.Function,
+    config: Config.Config,
+    vpc: ec2.IVpc
 ): lambda.Function {
     const name = "createPipeline";
     const newPipelineLambdaRole = createRoleToAttachToLambdaPipelines(scope, assetBucket);
+    const newPipelineSubnetIds = buildPipelineLambdaSubnetIds(scope, vpc, config);
+    const newPipelineLambdaSecurityGroup = buildPipelineLambdaSecurityGroup(scope, vpc);
     const createPipelineFunction = new lambda.Function(scope, name, {
         code: lambda.Code.fromAsset(path.join(__dirname, `../../../backend/backend`)),
         handler: `handlers.pipelines.${name}.lambda_handler`,
@@ -34,6 +40,7 @@ export function buildCreatePipelineFunction(
         layers: [lambdaCommonBaseLayer],
         timeout: Duration.minutes(15),
         memorySize: 3008,
+        vpc: (config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas)? vpc : undefined, //Use VPC when flagged to use for all lambdas
         environment: {
             PIPELINE_STORAGE_TABLE_NAME: pipelineStorageTable.tableName,
             S3_BUCKET: artefactsBucket.bucketName,
@@ -47,7 +54,10 @@ export function buildCreatePipelineFunction(
                 "sample_lambda_pipeline/lambda_pipeline_deployment_package.zip",
             ROLE_TO_ATTACH_TO_LAMBDA_PIPELINE: newPipelineLambdaRole.roleArn,
             SAGEMAKER_PRINCIPAL: Service("SAGEMAKER").PrincipalString,
-            ECR_DKR_ENDPOINT: Service("ECR_DKR").Endpoint
+            ECR_DKR_ENDPOINT: Service("ECR_DKR").Endpoint,
+            LAMBDA_PYTHON_VERSION: LAMBDA_PYTHON_RUNTIME.name,
+            SUBNET_IDS: newPipelineSubnetIds, //Determines if we put the pipeline lambdas in a VPC or not
+            SECURITYGROUP_IDS: newPipelineLambdaSecurityGroup.securityGroupId //used if subnet IDs are passed in
         },
     });
     enablePipelineFunction.grantInvoke(createPipelineFunction);
@@ -125,10 +135,18 @@ export function buildCreatePipelineFunction(
     createPipelineFunction.addToRolePolicy(
         new iam.PolicyStatement({
             effect: iam.Effect.ALLOW,
-            actions: ["lambda:CreateFunction"],
+            actions: [
+                "lambda:CreateFunction",
+                "lambda:UpdateFunctionConfiguration", 
+                "ec2:DescribeSecurityGroups", 
+                "ec2:DescribeSubnets", 
+                "ec2:DescribeVpcs" 
+            ],
             resources: ["*"],
         })
     );
+
+
     suppressCdkNagErrorsByGrantReadWrite(createPipelineFunction);
     return createPipelineFunction;
 }
@@ -148,13 +166,13 @@ function createRoleToAttachToLambdaPipelines(scope: Construct, assetBucket: s3.B
                             "s3:GetObjectVersion",
                         ],
                         resources: [`${assetBucket.bucketArn}`, `${assetBucket.bucketArn}/*`],
-                    }),
+                    })
                 ],
             }),
         },
     });
     newPipelineLambdaRole.addManagedPolicy(
-        iam.ManagedPolicy.fromAwsManagedPolicyName("service-role/AWSLambdaBasicExecutionRole")
+        iam.ManagedPolicy.fromAwsManagedPolicyName("service-role/AWSLambdaVPCAccessExecutionRole")
     );
     return newPipelineLambdaRole;
 }
@@ -162,7 +180,9 @@ function createRoleToAttachToLambdaPipelines(scope: Construct, assetBucket: s3.B
 export function buildPipelineService(
     scope: Construct,
     lambdaCommonBaseLayer: LayerVersion,
-    storageResources: storageResources
+    storageResources: storageResources,
+    config: Config.Config,
+    vpc: ec2.IVpc
 ): lambda.Function {
     const name = "pipelineService";
     const pipelineService = new lambda.Function(scope, name, {
@@ -172,6 +192,7 @@ export function buildPipelineService(
         layers: [lambdaCommonBaseLayer],
         timeout: Duration.minutes(15),
         memorySize: 3008,
+        vpc: (config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas)? vpc : undefined, //Use VPC when flagged to use for all lambdas
         environment: {
             PIPELINE_STORAGE_TABLE_NAME: storageResources.dynamo.pipelineStorageTable.tableName,
             ASSET_STORAGE_TABLE_NAME: storageResources.dynamo.assetStorageTable.tableName,
@@ -238,7 +259,9 @@ export function buildPipelineService(
 export function buildEnablePipelineFunction(
     scope: Construct,
     lambdaCommonBaseLayer: LayerVersion,
-    pipelineStorageTable: dynamodb.Table
+    pipelineStorageTable: dynamodb.Table,
+    config: Config.Config,
+    vpc: ec2.IVpc
 ) {
     const name = "enablePipeline";
     const enablePipelineFunction = new lambda.Function(scope, name, {
@@ -248,10 +271,60 @@ export function buildEnablePipelineFunction(
         layers: [lambdaCommonBaseLayer],
         timeout: Duration.minutes(15),
         memorySize: 3008,
+        vpc: (config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas)? vpc : undefined, //Use VPC when flagged to use for all lambdas
         environment: {
             PIPELINE_STORAGE_TABLE_NAME: pipelineStorageTable.tableName,
         },
     });
     pipelineStorageTable.grantReadWriteData(enablePipelineFunction);
     return enablePipelineFunction;
+}
+
+export function buildPipelineLambdaSecurityGroup(
+    scope: Construct,
+    vpc: ec2.IVpc,
+): ec2.ISecurityGroup {
+    
+    const pipelineLambdaSecurityGroup = new ec2.SecurityGroup(
+        scope,
+        "VPCeSecurityGroup",
+        {
+            vpc: vpc,
+            allowAllOutbound: true,
+            description: "VPC Endpoints Security Group",
+        }
+    );
+
+    return pipelineLambdaSecurityGroup;
+}
+
+export function buildPipelineLambdaSubnetIds(
+    scope: Construct,
+    vpc: ec2.IVpc,
+    config: Config.Config
+): string {
+    
+    
+
+    if(config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas) {
+        let subnetsArray:String[] = []
+
+        vpc.privateSubnets.forEach( (element) => {
+            subnetsArray.push(element.subnetId)
+        }); 
+
+        vpc.isolatedSubnets.forEach( (element) => {
+                subnetsArray.push(element.subnetId)
+
+        });
+
+        vpc.publicSubnets.forEach( (element) => {
+                subnetsArray.push(element.subnetId)
+        });
+
+        return subnetsArray.join(',');
+    }
+    else {
+        return "";
+    }
 }

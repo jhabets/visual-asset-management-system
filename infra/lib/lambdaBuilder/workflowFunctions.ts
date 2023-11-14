@@ -15,11 +15,15 @@ import { storageResources } from "../nestedStacks/storage/storageBuilder-nestedS
 import { Service, IAMArn } from "../helper/service-helper";
 import { LayerVersion } from "aws-cdk-lib/aws-lambda";
 import { LAMBDA_PYTHON_RUNTIME } from "../../config/config";
+import * as Config from "../../config/config";
+import * as ec2 from "aws-cdk-lib/aws-ec2";
 
 export function buildWorkflowService(
     scope: Construct,
     lambdaCommonBaseLayer: LayerVersion,
-    storageResources: storageResources
+    storageResources: storageResources,
+    config: Config.Config,
+    vpc: ec2.IVpc
 ): lambda.Function {
     const name = "workflowService";
     const workflowService = new lambda.Function(scope, name, {
@@ -29,6 +33,7 @@ export function buildWorkflowService(
         layers: [lambdaCommonBaseLayer],
         timeout: Duration.minutes(15),
         memorySize: 3008,
+        vpc: (config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas)? vpc : undefined, //Use VPC when flagged to use for all lambdas
         environment: {
             WORKFLOW_STORAGE_TABLE_NAME: storageResources.dynamo.workflowStorageTable.tableName,
             ASSET_STORAGE_TABLE_NAME: storageResources.dynamo.assetStorageTable.tableName,
@@ -53,7 +58,9 @@ export function buildWorkflowService(
 
 export function buildRunProcessingJobFunction(
     scope: Construct,
-    lambdaCommonBaseLayer: LayerVersion
+    lambdaCommonBaseLayer: LayerVersion,
+    config: Config.Config,
+    vpc: ec2.IVpc
 ): lambda.Function {
     const name = "runProcessingJob";
     const runProcessingJobFunction = new lambda.Function(scope, name, {
@@ -63,6 +70,7 @@ export function buildRunProcessingJobFunction(
         layers: [lambdaCommonBaseLayer],
         timeout: Duration.minutes(15),
         memorySize: 3008,
+        vpc: (config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas)? vpc : undefined, //Use VPC when flagged to use for all lambdas
         environment: {},
     });
     return runProcessingJobFunction;
@@ -71,7 +79,9 @@ export function buildRunProcessingJobFunction(
 export function buildListlWorkflowExecutionsFunction(
     scope: Construct,
     lambdaCommonBaseLayer: LayerVersion,
-    workflowExecutionStorageTable: dynamodb.Table
+    workflowExecutionStorageTable: dynamodb.Table,
+    config: Config.Config,
+    vpc: ec2.IVpc
 ): lambda.Function {
     const name = "listExecutions";
     const listAllWorkflowsFunction = new lambda.Function(scope, name, {
@@ -81,6 +91,7 @@ export function buildListlWorkflowExecutionsFunction(
         layers: [lambdaCommonBaseLayer],
         timeout: Duration.minutes(15),
         memorySize: 3008,
+        vpc: (config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas)? vpc : undefined, //Use VPC when flagged to use for all lambdas
         environment: {
             WORKFLOW_EXECUTION_STORAGE_TABLE_NAME: workflowExecutionStorageTable.tableName,
         },
@@ -102,7 +113,9 @@ export function buildCreateWorkflowFunction(
     workflowStorageTable: dynamodb.Table,
     assetStorageBucket: s3.Bucket,
     uploadAllAssetFunction: lambda.Function,
-    stackName: string
+    stackName: string,
+    config: Config.Config,
+    vpc: ec2.IVpc
 ): lambda.Function {
     const role = buildWorkflowRole(scope, assetStorageBucket, uploadAllAssetFunction);
     const name = "createWorkflow";
@@ -113,6 +126,7 @@ export function buildCreateWorkflowFunction(
         layers: [lambdaCommonServiceSDKLayer],
         timeout: Duration.minutes(15),
         memorySize: 3008,
+        vpc: (config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas)? vpc : undefined, //Use VPC when flagged to use for all lambdas
         environment: {
             WORKFLOW_STORAGE_TABLE_NAME: workflowStorageTable.tableName,
             UPLOAD_ALL_LAMBDA_FUNCTION_NAME: uploadAllAssetFunction.functionName,
@@ -158,7 +172,9 @@ export function buildRunWorkflowFunction(
     pipelineStorageTable: dynamodb.Table,
     assetStorageTable: dynamodb.Table,
     workflowExecutionStorageTable: dynamodb.Table,
-    assetStorageBucket: s3.Bucket
+    assetStorageBucket: s3.Bucket,
+    config: Config.Config,
+    vpc: ec2.IVpc
 ): lambda.Function {
     const name = "executeWorkflow";
     const runWorkflowFunction = new lambda.Function(scope, name, {
@@ -168,6 +184,7 @@ export function buildRunWorkflowFunction(
         layers: [lambdaCommonBaseLayer],
         timeout: Duration.minutes(15),
         memorySize: 3008,
+        vpc: (config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas)? vpc : undefined, //Use VPC when flagged to use for all lambdas
         environment: {
             WORKFLOW_STORAGE_TABLE_NAME: workflowStorageTable.tableName,
             PIPELINE_STORAGE_TABLE_NAME: pipelineStorageTable.tableName,

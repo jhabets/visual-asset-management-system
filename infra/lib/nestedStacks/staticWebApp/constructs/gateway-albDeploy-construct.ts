@@ -92,7 +92,7 @@ export class GatewayAlbDeployConstruct extends Construct {
 
 
         // Create VPC interface endpoint for S3 (Needed for ALB<->S3)
-        //Note: This endpoint should be created despite the GlobalVPC flag od create endpoint or not in order to setup ALB listeners properly
+        //Note: This endpoint should be created despite the GlobalVPC flag of create endpoint or not in order to setup ALB listeners properly
         const s3VPCEndpoint = new ec2.InterfaceVpcEndpoint(this, "S3InterfaceVPCEndpoint", {
             vpc: props.vpc,
             privateDnsEnabled: false,

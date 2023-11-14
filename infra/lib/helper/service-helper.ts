@@ -41,6 +41,10 @@ class ServiceFormatter {
     public get Principal() {
         return new aws_iam.ServicePrincipal(this.replaceValues(this.service.principal));
     }
+
+    public get PrincipalString() {
+        return this.replaceValues(this.service.principal);
+    }
 }
 
 export function Service(name: SERVICE): ServiceFormatter {

@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /*
- * Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2023 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -17,6 +17,7 @@ import { Config } from "../../../config/config";
 import { LayerVersion } from "aws-cdk-lib/aws-lambda";
 import { LAMBDA_PYTHON_RUNTIME } from "../../../config/config";
 import { NagSuppressions } from "cdk-nag";
+import { Service } from "../../helper/service-helper";
 
 export interface SamlSettings {
     metadata: cognito.UserPoolIdentityProviderSamlMetadata;
@@ -152,9 +153,10 @@ export class CognitoWebNativeNestedStack extends NestedStack {
             ],
         });
 
+        let cognitoIdentityPrincipal:string = Service("COGNITO_IDENTITY").PrincipalString
         const unauthenticatedRole = new iam.Role(this, "DefaultUnauthenticatedRole", {
             assumedBy: new iam.FederatedPrincipal(
-                "cognito-identity.amazonaws.com",
+                cognitoIdentityPrincipal,
                 {
                     StringEquals: {
                         "cognito-identity.amazonaws.com:aud": identityPool.ref,
@@ -216,7 +218,7 @@ export class CognitoWebNativeNestedStack extends NestedStack {
                     default: {
                         type: "Token",
                         ambiguousRoleResolution: "AuthenticatedRole",
-                        identityProvider: `cognito-idp.${cdk.Stack.of(this).region}.amazonaws.com/${
+                        identityProvider: `${Service("COGNITO_IDP").Endpoint}/${
                             userPool.userPoolId
                         }:${userPoolWebClient.userPoolClientId}`,
                     },
@@ -316,9 +318,10 @@ export class CognitoWebNativeNestedStack extends NestedStack {
         identityPool: cognito.CfnIdentityPool,
         props: CognitoWebNativeNestedStackProps
     ) {
+        let cognitoIdentityPrincipal:string = Service("COGNITO_IDENTITY").PrincipalString
         const authenticatedRole = new iam.Role(this, id, {
             assumedBy: new iam.FederatedPrincipal(
-                "cognito-identity.amazonaws.com",
+                cognitoIdentityPrincipal, 
                 {
                     StringEquals: {
                         "cognito-identity.amazonaws.com:aud": identityPool.ref,

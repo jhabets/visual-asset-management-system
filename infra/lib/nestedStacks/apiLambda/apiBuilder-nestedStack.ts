@@ -55,6 +55,9 @@ import { buildMetadataFunctions } from "../../lambdaBuilder/metadataFunctions";
 import { buildUploadAssetWorkflow } from "./constructs/uploadAssetWorkflowBuilder";
 import { buildAuthFunctions } from "../../lambdaBuilder/authFunctions";
 import { NagSuppressions } from "cdk-nag";
+import * as Config from "../../../config/config";
+import { generateUniqueNameHash } from "../../helper/security";
+import * as ec2 from "aws-cdk-lib/aws-ec2";
 
 interface apiGatewayLambdaConfiguration {
     routePath: string;
@@ -66,14 +69,16 @@ export class ApiBuilderNestedStack extends NestedStack {
     constructor(
         parent: Construct,
         name: string,
+        config: Config.Config,
         api: apigwv2.HttpApi,
         storageResources: storageResources,
         lambdaCommonBaseLayer: LayerVersion,
-        lambdaCommonServiceSDKLayer: LayerVersion
+        lambdaCommonServiceSDKLayer: LayerVersion,
+        vpc: ec2.IVpc
     ) {
         super(parent, name);
 
-        apiBuilder(this, api, storageResources, lambdaCommonBaseLayer, lambdaCommonServiceSDKLayer);
+        apiBuilder(this, config, api, storageResources, lambdaCommonBaseLayer, lambdaCommonServiceSDKLayer);
     }
 }
 
@@ -97,6 +102,7 @@ export function attachFunctionToApi(
 
 export function apiBuilder(
     scope: Construct,
+    config: Config.Config,
     api: apigwv2.HttpApi,
     storageResources: storageResources,
     lambdaCommonBaseLayer: LayerVersion,
@@ -417,7 +423,7 @@ export function apiBuilder(
         storageResources.dynamo.workflowStorageTable,
         storageResources.s3.assetBucket,
         uploadAllAssetFunction,
-        cdk.Stack.of(scope).stackName
+        config.env.coreStackName
     );
     attachFunctionToApi(scope, createWorkflowFunction, {
         routePath: "/workflows",
@@ -488,6 +494,7 @@ export function apiBuilder(
 
     const uploadAssetWorkflowStateMachine = buildUploadAssetWorkflow(
         scope,
+        config,
         uploadAssetFunction,
         metadataCrudFunctions[2],
         runWorkflowFunction,
@@ -542,7 +549,7 @@ export function apiBuilder(
     //https://github.com/aws/aws-cdk/issues/11100#issuecomment-904627081
 
     const accessLogs = new logs.LogGroup(scope, "VAMS-API-AccessLogs", {
-        logGroupName: "/aws/vendedlogs/VAMS-API-AccessLogs" + Math.floor(Math.random() * 100000000),
+        logGroupName: "/aws/vendedlogs/VAMS-API-AccessLogs" + generateUniqueNameHash(config.env.coreStackName, config.env.account, "VAMS-API-AccessLogs", 10),
         retention: logs.RetentionDays.TWO_YEARS,
         removalPolicy: cdk.RemovalPolicy.DESTROY,
     });

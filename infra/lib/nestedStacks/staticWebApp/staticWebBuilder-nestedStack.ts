@@ -11,11 +11,12 @@ import * as Config from "../../../config/config";
 import { samlSettings } from "../../../config/saml-config";
 import { storageResources } from "../storage/storageBuilder-nestedStack";
 import { CloudFrontS3WebSiteConstruct } from "./constructs/cloudfront-s3-website-construct";
-import { VpcGatewayAlbDeployConstruct } from "./constructs/vpc-gateway-albDeploy-construct";
+import { GatewayAlbDeployConstruct } from "./constructs/gateway-albDeploy-construct";
 import { AlbS3WebsiteAlbDeployConstruct } from "./constructs/alb-s3-website-albDeploy-construct";
 import { CustomCognitoConfigConstruct } from "./constructs/custom-cognito-config-construct";
 import { addBehaviorToCloudFrontDistribution } from "./constructs/cloudfront-s3-website-construct";
 import { NagSuppressions } from "cdk-nag";
+import * as ec2 from "aws-cdk-lib/aws-ec2";
 
 export interface StaticWebBuilderNestedStackProps extends cdk.StackProps {
     config: Config.Config;
@@ -25,6 +26,7 @@ export interface StaticWebBuilderNestedStackProps extends cdk.StackProps {
     ssmWafArn: string;
     cognitoWebClientId: string;
     cognitoUserPoolId: string;
+    vpc: ec2.IVpc;
 }
 
 /**
@@ -38,6 +40,7 @@ const defaultProps: Partial<StaticWebBuilderNestedStackProps> = {
 export class StaticWebBuilderNestedStack extends NestedStack {
     public endpointURL: string;
     public webAppS3BucketName: string;
+    public albEndpoint: string;
 
     constructor(parent: Construct, name: string, props: StaticWebBuilderNestedStackProps) {
         super(parent, name);
@@ -99,14 +102,12 @@ export class StaticWebBuilderNestedStack extends NestedStack {
             this.endpointURL = website.endPointURL;
         } else {
             //Deploy with ALB (aka, use ALB->VPCEndpoint->S3 as path for web deployment)
-            const webAppDistroNetwork = new VpcGatewayAlbDeployConstruct(
+            const webAppDistroNetwork = new GatewayAlbDeployConstruct(
                 this,
                 "WebAppDistroNetwork",
                 {
                     ...props,
-                    optionalExistingVPCId: props.config.app.useAlb.optionalVPCID,
-                    vpcCidrRange: props.config.app.useAlb.vpcCidrRange,
-                    setupPublicAccess: props.config.app.useAlb.publicSubnet,
+                    vpc: props.vpc
                 }
             );
 
@@ -118,7 +119,10 @@ export class StaticWebBuilderNestedStack extends NestedStack {
                 webAcl: props.ssmWafArn,
                 apiUrl: props.apiUrl,
                 vpc: webAppDistroNetwork.vpc,
-                subnets: webAppDistroNetwork.subnets.webApp,
+                albSubnets: webAppDistroNetwork.subnets.webApp,
+                s3VPCEndpoint: webAppDistroNetwork.s3VpcEndpoint,
+                albSecurityGroup: webAppDistroNetwork.securityGroups.webAppALB,
+                vpceSecurityGroup: webAppDistroNetwork.securityGroups.webAppVPCE
             });
 
             /**
@@ -155,6 +159,7 @@ export class StaticWebBuilderNestedStack extends NestedStack {
 
             this.webAppS3BucketName = website.webAppBucketName;
             this.endpointURL = website.endPointURL;
+            this.albEndpoint = website.albEndpoint;
         }
 
         //Nag supressions

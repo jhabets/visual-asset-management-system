@@ -1,50 +1,53 @@
 {
-	"name": "vams",
-	"env": {
-		"account": null,
-		"region": "us-east-1"
-	},
-	"app": {
-		"baseStackName": "prod",
-		"stagingBucketName": null,
-		"adminEmailAddress": "scheurik@amazon.com",
-		"useFips": false,
-		"govCloud": {
-			"enabled": false
-		},
-		"openSearch": {
-			"useProvisioned": {
-				"enabled": true
-			}
-		},
-		"useLocationService": {
-			"enabled": false
-		},
-		"useAlb": {
-			"enabled": true,
-			"publicSubnet": true,
-			"vpcCidrRange": "10.1.0.0/16",
-			"optionalVPCID": null,
-			"domainHost": "vams2.scheurik.people.aws.dev",
-			"certificateARN": "arn:aws:acm:us-east-1:519113086097:certificate/89b0b144-eef4-4370-b25b-20195c4f8f24",
-			"optionalHostedZoneID": ""
-		},
-		"pipelines": {
-			"usePointCloudVisualization": {
-				"enabled": false,
-				"vpcCidrRange": "10.2.0.0/16",
-				"optionalVPCID": null
-			}
-		},
-		"authProvider": {
-			"useCognito": {
-				"enabled": true,
-				"useSaml": false
-			},
-			"useExternalOATHIdp": {
-				"enabled": false,
-				"idpAuthProviderUrl": null
-			}
-		}
-	}
+    "name": "vams",
+    "env": {
+        "account": null,
+        "region": "us-east-1"
+    },
+    "app": {
+        "baseStackName": "prod",
+        "stagingBucketName": null,
+        "adminEmailAddress": "scheurik@amazon.com",
+        "useFips": false,
+        "govCloud": {
+            "enabled": false
+        },
+        "useGlobalVpc": {
+            "enabled": true,
+            "useForAllLambdas": true,
+            "addVpcEndpoints": true,
+            "optionalExternalVpcId": null,
+            "vpcCidrRange": "10.1.0.0/16"
+        },
+        "openSearch": {
+            "useProvisioned": {
+                "enabled": false
+            }
+        },
+        "useLocationService": {
+            "enabled": true
+        },
+        "useAlb": {
+            "enabled": false,
+            "usePublicSubnet": true,
+            "domainHost": "vams1.scheurik.people.aws.dev",
+            "certificateArn": "arn:aws:acm:us-east-1:465557923944:certificate/85391730-2e85-42c9-ada8-333e26a72f95",
+            "optionalHostedZoneId": "Z0886931FQXQZD8RU4ZM"
+        },
+        "pipelines": {
+            "usePointCloudVisualization": {
+                "enabled": true
+            }
+        },
+        "authProvider": {
+            "useCognito": {
+                "enabled": true,
+                "useSaml": false
+            },
+            "useExternalOathIdp": {
+                "enabled": false,
+                "idpAuthProviderUrl": null
+            }
+        }
+    }
 }

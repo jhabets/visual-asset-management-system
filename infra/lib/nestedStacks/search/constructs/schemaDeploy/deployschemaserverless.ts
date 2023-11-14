@@ -1,12 +1,12 @@
 /*
- * Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2023 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 import { Handler } from "aws-lambda";
-import {
-    BatchGetCollectionCommand,
-    OpenSearchServerlessClient,
-} from "@aws-sdk/client-opensearchserverless";
+// import {
+//     BatchGetCollectionCommand,
+//     OpenSearchServerlessClient,
+// } from "@aws-sdk/client-opensearchserverless";
 import { Client } from "@opensearch-project/opensearch";
 import { AwsSigv4Signer } from "@opensearch-project/opensearch/aws";
 import { defaultProvider } from "@aws-sdk/credential-provider-node";
@@ -63,28 +63,37 @@ export const handler: Handler = async function (event: any) {
     }
 
     const collectionName = event?.ResourceProperties?.collectionName;
+    const collectionEndpoint = event?.ResourceProperties?.collectionEndpoint;
     console.log("Collection Name", collectionName);
+    console.log("Collection Endpoint", collectionEndpoint);
 
-    const cmd = new BatchGetCollectionCommand({
-        names: [collectionName],
-    });
+    // const cmd = new BatchGetCollectionCommand({
+    //     names: [collectionName],
+    // });
 
-    const aossClient = new OpenSearchServerlessClient({});
-    const response = await aossClient.send(cmd);
+    // const aossClient = new OpenSearchServerlessClient({});
+    // const response = await aossClient.send(cmd);
 
-    console.log("the response", response);
+    // console.log("the response", response);
 
-    if (response.collectionDetails?.length !== 1) {
-        console.log("Collection not found or more than one collection with this name", response);
-        return {
-            StackId: event.StackId,
-            RequestId: event.RequestId,
-            LogicalResourceId: event.LogicalResourceId,
-            PhysicalResourceId: event.PhysicalResourceId,
-            Status: "FAILED",
-            Reason: "Expected 1 but found multiple collections with the name " + collectionName,
-        };
-    }
+    // if (response.collectionDetails?.length !== 1) {
+    //     console.log("Collection not found or more than one collection with this name", response);
+    //     return {
+    //         StackId: event.StackId,
+    //         RequestId: event.RequestId,
+    //         LogicalResourceId: event.LogicalResourceId,
+    //         PhysicalResourceId: event.PhysicalResourceId,
+    //         Status: "FAILED",
+    //         Reason: "Expected 1 but found multiple collections with the name " + collectionName,
+    //     };
+    // }
+
+    setCollectionEndpointSSM(
+        event?.ResourceProperties?.stackName,
+        collectionName,
+        collectionEndpoint
+    );
+    setIndexNameSSM(event?.ResourceProperties?.stackName, event?.ResourceProperties?.indexName);
 
     const client = new Client({
         ...AwsSigv4Signer({
@@ -95,15 +104,11 @@ export const handler: Handler = async function (event: any) {
                 return credentialsProvider();
             },
         }),
-        node: response.collectionDetails![0].collectionEndpoint,
+        node: collectionEndpoint,
     });
 
-    setCollectionEndpointSSM(
-        event?.ResourceProperties?.stackName,
-        collectionName,
-        response.collectionDetails![0].collectionEndpoint
-    );
-    setIndexNameSSM(event?.ResourceProperties?.stackName, event?.ResourceProperties?.indexName);
+    console.log("established opensearch client connection");
+
 
     const exists_resp = await client.indices.exists({
         index: event?.ResourceProperties?.indexName,

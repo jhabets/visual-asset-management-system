@@ -39,6 +39,8 @@ function processJson(json: any): IServices[] {
         // Append sagemaker and execute-api as it's missing from endpoints
         v["services"]["sagemaker"] = {};
         v["services"]["execute-api"] = {};
+        v["services"]["ecs-tasks"] = {};
+        v["services"]["ecr-dkr"] = {};
 
         for (let s in v["services"]) {
             const element = v["services"][s];

@@ -7,18 +7,23 @@ import * as cdk from "aws-cdk-lib";
 import { Construct } from "constructs";
 import { Service } from "../../../helper/service-helper";
 import { NagSuppressions } from "cdk-nag";
-import { CfnOutput, CustomResource, Names, Stack, NestedStack } from "aws-cdk-lib";
+import { CfnOutput, CustomResource } from "aws-cdk-lib";
 import * as cr from "aws-cdk-lib/custom-resources";
 import * as njslambda from "aws-cdk-lib/aws-lambda-nodejs";
 import * as path from "path";
 import { LAMBDA_NODE_RUNTIME } from "../../../../config/config";
 import { Port, SecurityGroup, Vpc } from "aws-cdk-lib/aws-ec2";
-import { AnyPrincipal, CfnServiceLinkedRole, PolicyStatement } from "aws-cdk-lib/aws-iam";
+import { CfnServiceLinkedRole } from "aws-cdk-lib/aws-iam";
 import { IAMClient, ListRolesCommand } from "@aws-sdk/client-iam";
+import * as Config from "../../../../config/config";
+import * as ec2 from "aws-cdk-lib/aws-ec2";
+import * as lambda from "aws-cdk-lib/aws-lambda";
 
 /* eslint-disable @typescript-eslint/no-empty-interface */
 export interface OpensearchProvisionedConstructProps {
     indexName: string;
+    config: Config.Config;
+    vpc: ec2.IVpc;
     dataNodeInstanceType?: string;
     dataNodesCount?: number;
     masterNodeInstanceType?: string;
@@ -54,6 +59,8 @@ export class OpensearchProvisionedConstruct extends Construct {
     aosName: string;
     domain: cdk.aws_opensearchservice.Domain;
     domainEndpoint: string;
+    vpcInterfaceEndpointSSM: ec2.IInterfaceVpcEndpoint
+    config: Config.Config
 
     constructor(scope: Construct, name: string, props: OpensearchProvisionedConstructProps) {
         super(scope, name);
@@ -61,46 +68,71 @@ export class OpensearchProvisionedConstruct extends Construct {
 
         this.aosName = name;
 
-        const region = cdk.Stack.of(this).region;
-        const account = cdk.Stack.of(this).account;
-        const stackName = cdk.Stack.of(this).stackName;
+        this.config = props.config;
 
         //https://github.com/aws-samples/opensearch-vpc-cdk/blob/main/lib/opensearch-vpc-cdk-stack.ts
-
-        // VPC
-        //const vpc = new Vpc(this, "openSearchVpc", {});
 
         // Service-linked role that Amazon OpenSearch Service will use
         (async () => {
             const response = await iam.send(
                 new ListRolesCommand({
-                    PathPrefix: "/aws-service-role/opensearchservice.amazonaws.com/",
+                    PathPrefix: `/aws-service-role/${Service("ES").PrincipalString}/`,
                 })
             );
 
             // Only if the role for OpenSearch Service doesn't exist, it will be created.
             if (response.Roles && response.Roles?.length == 0) {
                 new CfnServiceLinkedRole(this, "OpensearchServiceLinkedRole", {
-                    awsServiceName: "es.amazonaws.com",
+                    awsServiceName: "es.amazonaws.com", //Currently fixed name and not related to principal name
                 });
             }
         })();
 
+        //Loop through all private + isolated subnets and store subnets in an array up to the total number of data nodes specified
+        //Note: Make sure each subnet chosen is in a different availability zone. OS Domains are very sensitive about choosing the right subnets. 
+        let subnets:ec2.ISubnet[] = []
+        let azUsed:string[] = []
+
+        props.vpc.isolatedSubnets.forEach( (element) => {
+            if (azUsed.indexOf(element.availabilityZone) == -1 && subnets.length < props.dataNodesCount!) {
+                azUsed.push(element.availabilityZone)
+                subnets.push(element)
+            }
+        });
+        props.vpc.privateSubnets.forEach( (element) => {
+            if (azUsed.indexOf(element.availabilityZone) == -1 && subnets.length < props.dataNodesCount!) {
+                azUsed.push(element.availabilityZone)
+                subnets.push(element)
+            }
+        });
+
+        //Create an endpoint for SSM Manager Service to be able to store/retrieve SSM Param Store Values
+        if(props.config.app.useGlobalVpc.addVpcEndpoints)
+        {
+            // Create VPC endpoint for SNS
+            this.vpcInterfaceEndpointSSM = new ec2.InterfaceVpcEndpoint(this, "SSMEndpoint", {
+                vpc: props.vpc,
+                privateDnsEnabled: true,
+                service: ec2.InterfaceVpcEndpointAwsService.SSM,
+                subnets: { subnets: subnets},
+            });
+        }
+
         const osDomain = new cdk.aws_opensearchservice.Domain(this, "OpenSearchDomain", {
-            version: cdk.aws_opensearchservice.EngineVersion.OPENSEARCH_2_7,
+            version: Config.OPENSEARCH_VERSION,
 
             ebs: {
                 enabled: false,
+                // volumeSize: props.ebsVolumeSize,
+                // volumeType: props.ebsVolumeType,
             },
-            // ebs: {
-            //    volumeSize: props.ebsVolumeSize,
-            //    volumeType: props.ebsVolumeType,
-            // },
             nodeToNodeEncryption: true,
             encryptionAtRest: {
                 enabled: true,
             },
-            //vpc: vpc,
+            vpc: props.vpc,
+            vpcSubnets: [{subnets: subnets,
+                        onePerAz: true }],
             capacity: {
                 dataNodeInstanceType: props.dataNodeInstanceType,
                 dataNodes: props.dataNodesCount,
@@ -109,7 +141,7 @@ export class OpensearchProvisionedConstruct extends Construct {
             },
             enforceHttps: true,
             zoneAwareness: props.zoneAwareness,
-            //Disabled fine grained access control to allow the domain access policy to restrict to IAM roles
+            //Disabled fine grained access control to allow the VPC and domain access policy to restrict to IAM roles
             //fineGrainedAccessControl: {
             //    masterUserArn: props.cognitoAuthenticatedRole,
             //},
@@ -137,6 +169,8 @@ export class OpensearchProvisionedConstruct extends Construct {
                     externalModules: ["aws-sdk"],
                 },
                 runtime: LAMBDA_NODE_RUNTIME,
+                vpc: props.vpc
+                //Note: This schema deploy resource must run in the VPC in order to communicate with the AOS provisioned running in the VPC. 
             }
         );
 
@@ -151,13 +185,13 @@ export class OpensearchProvisionedConstruct extends Construct {
             new cdk.aws_iam.PolicyStatement({
                 actions: ["ssm:*"],
                 resources: ["*"],
-                // resources: [`arn:<AWS::Partition>:ssm:::parameter/${cdk.Stack.of(this).stackName}/*`],
+                // resources: [`arn:<AWS::Partition>:ssm:::parameter/${this.config.env.coreStackName}/*`],
                 effect: cdk.aws_iam.Effect.ALLOW,
             })
         );
 
-        this.grantDomainAccess(schemaDeploy);
-
+        this.grantOSDomainAccess(schemaDeploy);
+        
         const schemaDeployProvider = new cr.Provider(
             this,
             "OpensearchProvisionedDeploySchemaProvider",
@@ -168,6 +202,8 @@ export class OpensearchProvisionedConstruct extends Construct {
 
         schemaDeployProvider.node.addDependency(schemaDeploy);
         schemaDeployProvider.node.addDependency(osDomain);
+        if(this.config.app.useGlobalVpc.addVpcEndpoints)
+            schemaDeployProvider.node.addDependency(this.vpcInterfaceEndpointSSM);
 
         new CustomResource(this, "DeploySSMIndexSchema", {
             serviceToken: schemaDeployProvider.serviceToken,
@@ -175,7 +211,7 @@ export class OpensearchProvisionedConstruct extends Construct {
                 aosName: this.aosName,
                 domainEndpoint: "https://" + osDomain.domainEndpoint,
                 indexName: props.indexName,
-                stackName: cdk.Stack.of(this).stackName,
+                stackName: this.config.env.coreStackName,
                 version: "1",
             },
         });
@@ -208,19 +244,28 @@ export class OpensearchProvisionedConstruct extends Construct {
     }
 
     public endpointSSMParameterName(): string {
-        return "/" + [cdk.Stack.of(this).stackName, this.aosName, "endpoint"].join("/");
+        return "/" + [this.config.env.coreStackName, this.aosName, "endpoint"].join("/");
     }
 
-    public grantDomainAccess(construct: Construct & { role?: cdk.aws_iam.IRole }) {
-        //Restrict to role ARNS of the lambda functions accessing opensearch (main access policy for opensearch provisionned with no VPC)
+    public grantOSDomainAccess(lambdaFunction: lambda.Function & { role?: cdk.aws_iam.IRole }) {
+
+        //Restrict to role ARNS of the lambda functions accessing opensearch (main access policy for opensearch provisioned + VPC security group)
         const opensearchDomainPolicy = new cdk.aws_iam.PolicyStatement({
             effect: cdk.aws_iam.Effect.ALLOW,
-            principals: [construct.role!],
+            principals: [lambdaFunction.role!],
             resources: [this.domain.domainArn + "/*"],
             actions: ["es:ESHttp*"],
         });
 
         this.domain.addAccessPolicies(opensearchDomainPolicy);
+        this.domain.connections.allowFrom(lambdaFunction, Port.tcp(443));
+
+        //Add rules to VPC endpoint if we created it
+        if(this.config.app.useGlobalVpc.addVpcEndpoints)
+        {
+            this.vpcInterfaceEndpointSSM.connections.allowFrom(lambdaFunction, Port.tcp(443));
+        }
+
 
         return opensearchDomainPolicy;
     }

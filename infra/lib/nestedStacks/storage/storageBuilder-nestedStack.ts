@@ -16,6 +16,7 @@ import { BlockPublicAccess } from "aws-cdk-lib/aws-s3";
 import { Construct } from "constructs";
 import { requireTLSAddToResourcePolicy } from "../../helper/security";
 import { NagSuppressions } from "cdk-nag";
+import { Service } from "../../helper/service-helper";
 
 export interface storageResources {
     s3: {
@@ -184,7 +185,7 @@ export function storageResourcesBuilder(
         new iam.PolicyStatement({
             actions: ["kms:GenerateDataKey*", "kms:Decrypt"],
             resources: ["*"],
-            principals: [new iam.ServicePrincipal("s3.amazonaws.com")],
+            principals: [Service("S3").Principal],
         })
     );
 

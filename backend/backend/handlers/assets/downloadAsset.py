@@ -32,12 +32,13 @@ unitTest['body'] = json.dumps(unitTest['body'])
 try:
     asset_Database = os.environ["ASSET_STORAGE_TABLE_NAME"]
     region = os.environ['AWS_REGION']
+    s3Endpoint = os.environ['S3_ENDPOINT']
 except:
     print("Failed Loading Environment Variables")
     response['body']['message'] = "Failed Loading Environment Variables"
 
 s3_config = Config(signature_version='s3v4')
-s3_client = boto3.client('s3', region_name=region, endpoint_url=f'https://s3.{region}.amazonaws.com', config=s3_config)
+s3_client = boto3.client('s3', region_name=region, endpoint_url=s3Endpoint, config=s3_config)
 
 
 def get_Assets(databaseId, assetId):

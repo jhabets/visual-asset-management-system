@@ -5,6 +5,7 @@
 
 import * as iam from "aws-cdk-lib/aws-iam";
 import * as s3 from "aws-cdk-lib/aws-s3";
+import * as crypto from 'crypto';
 import { Construct } from "constructs";
 import { NagSuppressions } from "cdk-nag";
 
@@ -47,6 +48,13 @@ export function requireTLSAddToResourcePolicy(bucket: s3.Bucket) {
             },
         })
     );
+}
+
+export function generateUniqueNameHash(stackName:string, accountId:string, resourceIdentifier:string, maxLength:number=32) {
+    const hash = crypto.getHashes();
+    const hashPwd = crypto.createHash('sha1')
+            .update(stackName+accountId+resourceIdentifier).digest('hex').toString().toLowerCase();
+    return hashPwd.substring(0, maxLength)
 }
 
 export function suppressCdkNagErrorsByGrantReadWrite(scope: Construct) {

@@ -48,6 +48,7 @@ const cfWafStack = new CfWafStack(app, wafStackName, {
 const vamsCoreStackName = `${config.name}-core-${
     config.app.baseStackName || process.env.DEMO_LABEL || "dev"
 }`;
+config.env.coreStackName = vamsCoreStackName;
 const coreVamsStack = new CoreVAMSStack(app, vamsCoreStackName, {
     stackName: vamsCoreStackName,
     env: {

@@ -12,6 +12,13 @@
         "govCloud": {
             "enabled": false
         },
+        "useGlobalVpc": {
+            "enabled": false,
+            "useForAllLambdas": false,
+            "addVpcEndpoints": true,
+            "optionalExternalVpcId": null,
+            "vpcCidrRange": "10.1.0.0/16"
+        },
         "openSearch": {
             "useProvisioned": {
                 "enabled": false
@@ -22,18 +29,14 @@
         },
         "useAlb": {
             "enabled": false,
-            "publicSubnet": false,
-            "vpcCidrRange": "10.1.0.0/16",
-            "optionalVPCID": null,
+            "usePublicSubnet": false,
             "domainHost": "vams1.example.com",
-            "certificateARN": "arn:aws-us-gov:acm:<REGION>:<ACCOUNTID>:certificate/<CERTIFICATEID>",
-            "optionalHostedZoneID": null
+            "certificateArn": "arn:aws-us-gov:acm:<REGION>:<ACCOUNTID>:certificate/<CERTIFICATEID>",
+            "optionalHostedZoneId": null
         },
         "pipelines": {
             "usePointCloudVisualization": {
-                "enabled": false,
-                "vpcCidrRange": "10.2.0.0/16",
-                "optionalVPCID": null
+                "enabled": false
             }
         },
         "authProvider": {
@@ -41,7 +44,7 @@
                 "enabled": true,
                 "useSaml": false
             },
-            "useExternalOATHIdp": {
+            "useExternalOathIdp": {
                 "enabled": false,
                 "idpAuthProviderUrl": null
             }

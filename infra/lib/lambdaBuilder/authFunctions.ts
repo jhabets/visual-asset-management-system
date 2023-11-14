@@ -11,7 +11,8 @@ import { Duration } from "aws-cdk-lib";
 import { storageResources } from "../nestedStacks/storage/storageBuilder-nestedStack";
 import { LayerVersion } from "aws-cdk-lib/aws-lambda";
 import { LAMBDA_PYTHON_RUNTIME } from "../../config/config";
-import * as Service from "../../lib/helper/service-helper";
+import * as ServiceHelper from "../../lib/helper/service-helper";
+import { Service } from "../helper/service-helper";
 
 interface AuthFunctions {
     groups: lambda.Function;
@@ -25,7 +26,7 @@ export function buildAuthFunctions(
     storageResources: storageResources
 ): AuthFunctions {
     const storageBucketRole = new iam.Role(scope, "storageBucketRole", {
-        assumedBy: new iam.ServicePrincipal("lambda.amazonaws.com"),
+        assumedBy: Service("LAMBDA").Principal, 
     });
 
     storageResources.s3.assetBucket.grantReadWrite(storageBucketRole);
@@ -36,7 +37,7 @@ export function buildAuthFunctions(
         storageResources,
         "scopeds3access",
         {
-            AWS_PARTITION: Service.Partition(),
+            AWS_PARTITION: ServiceHelper.Partition(),
             ROLE_ARN: storageBucketRole.roleArn,
             S3_BUCKET: storageResources.s3.assetBucket.bucketName,
         }

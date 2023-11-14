@@ -18,36 +18,44 @@ import { attachFunctionToApi } from "../apiLambda/apiBuilder-nestedStack";
 import * as apigwv2 from "@aws-cdk/aws-apigatewayv2-alpha";
 import * as cdk from "aws-cdk-lib";
 import { LayerVersion } from "aws-cdk-lib/aws-lambda";
+import * as Config from "../../../config/config";
+import * as ec2 from "aws-cdk-lib/aws-ec2";
+import { PropagatedTagSource } from "aws-cdk-lib/aws-ecs";
 
 export class SearchBuilderNestedStack extends NestedStack {
     constructor(
         parent: Construct,
         name: string,
+        config: Config.Config,
         api: apigwv2.HttpApi,
         storageResources: storageResources,
         lambdaCommonBaseLayer: LayerVersion,
-        useProvisioned: boolean
+        vpc: ec2.IVpc
     ) {
         super(parent, name);
-        searchBuilder(this, api, storageResources, lambdaCommonBaseLayer, useProvisioned);
+
+        searchBuilder(this, config, api, storageResources, lambdaCommonBaseLayer, vpc);
     }
 }
 
 export function searchBuilder(
     scope: Construct,
+    config: Config.Config,
     api: apigwv2.HttpApi,
     storage: storageResources,
     lambdaCommonBaseLayer: LayerVersion,
-    useProvisioned: boolean
+    vpc: ec2.IVpc
 ) {
     const indexName = "assets1236";
-    const indexNameParam = "/" + [cdk.Stack.of(scope).stackName, "indexName"].join("/");
+    const indexNameParam = "/" + [config.env.coreStackName, "indexName"].join("/");
 
-    if (!useProvisioned) {
+    if (!config.app.openSearch.useProvisioned.enabled) {
         //Serverless Deployment
         const aoss = new OpensearchServerlessConstruct(scope, "AOSS", {
+            config: config,
             principalArn: [],
             indexName: indexName,
+            vpc: vpc
         });
 
         const indexingFunction = buildMetadataIndexingFunction(
@@ -57,7 +65,8 @@ export function searchBuilder(
             aoss.endpointSSMParameterName(),
             indexNameParam,
             "m",
-            useProvisioned
+            config,
+            vpc
         );
 
         const assetIndexingFunction = buildMetadataIndexingFunction(
@@ -67,7 +76,8 @@ export function searchBuilder(
             aoss.endpointSSMParameterName(),
             indexNameParam,
             "a",
-            useProvisioned
+            config,
+            vpc
         );
 
         //Add subscriptions to kick-off lambda function for indexing
@@ -92,6 +102,8 @@ export function searchBuilder(
 
         aoss.grantCollectionAccess(indexingFunction);
         aoss.grantCollectionAccess(assetIndexingFunction);
+        aoss.grantVPCeAccess(indexingFunction);
+        aoss.grantVPCeAccess(assetIndexingFunction);
 
         const searchFun = buildSearchFunction(
             scope,
@@ -99,9 +111,11 @@ export function searchBuilder(
             aoss.endpointSSMParameterName(),
             indexNameParam,
             storage,
-            useProvisioned
+            config,
+            vpc
         );
         aoss.grantCollectionAccess(searchFun);
+        aoss.grantVPCeAccess(searchFun);
 
         attachFunctionToApi(scope, searchFun, {
             routePath: "/search",
@@ -117,6 +131,8 @@ export function searchBuilder(
         //Provisioned Deployment
         const aos = new OpensearchProvisionedConstruct(scope, "AOS", {
             indexName: indexName,
+            config: config,
+            vpc: vpc
         });
 
         const indexingFunction = buildMetadataIndexingFunction(
@@ -126,7 +142,8 @@ export function searchBuilder(
             aos.endpointSSMParameterName(),
             indexNameParam,
             "m",
-            useProvisioned
+            config,
+            vpc
         );
 
         const assetIndexingFunction = buildMetadataIndexingFunction(
@@ -136,11 +153,12 @@ export function searchBuilder(
             aos.endpointSSMParameterName(),
             indexNameParam,
             "a",
-            useProvisioned
+            config,
+            vpc
         );
 
-        aos.grantDomainAccess(assetIndexingFunction);
-        aos.grantDomainAccess(indexingFunction);
+        aos.grantOSDomainAccess(assetIndexingFunction);
+        aos.grantOSDomainAccess(indexingFunction);
 
         //Add subscriptions to kick-off lambda function for indexing
         storage.sns.assetBucketObjectCreatedTopic.addSubscription(
@@ -168,10 +186,11 @@ export function searchBuilder(
             aos.endpointSSMParameterName(),
             indexNameParam,
             storage,
-            useProvisioned
+            config,
+            vpc
         );
 
-        aos.grantDomainAccess(searchFun);
+        aos.grantOSDomainAccess(searchFun);
 
         attachFunctionToApi(scope, searchFun, {
             routePath: "/search",

@@ -115,7 +115,7 @@ export class ApiGatewayV2AmplifyNestedStack extends NestedStack {
             identityPoolId: props.cognitoIdentityPoolId,
             userPoolId: props.userPool.userPoolId,
             region: props.config.env.region,
-            externalOathIdpURL: props.config.app.authProvider.useExternalOATHIdp.idpAuthProviderUrl,
+            externalOathIdpURL: props.config.app.authProvider.useExternalOathIdp.idpAuthProviderUrl,
         };
 
         if (props.config.app.authProvider.useCognito.useSaml) {

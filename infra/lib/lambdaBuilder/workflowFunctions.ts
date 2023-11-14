@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2023 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -118,6 +118,7 @@ export function buildCreateWorkflowFunction(
             UPLOAD_ALL_LAMBDA_FUNCTION_NAME: uploadAllAssetFunction.functionName,
             VAMS_STACK_NAME: stackName,
             LAMBDA_ROLE_ARN: role.roleArn,
+            ECR_DKR_ENDPOINT: Service("ECR_DKR").Endpoint
         },
     });
     workflowStorageTable.grantReadWriteData(createWorkflowFunction);
@@ -137,6 +138,13 @@ export function buildCreateWorkflowFunction(
             effect: iam.Effect.ALLOW,
             actions: ["iam:PassRole"],
             resources: [IAMArn("*VAMS*").role],
+        })
+    );
+    createWorkflowFunction.addToRolePolicy(
+        new iam.PolicyStatement({
+            effect: iam.Effect.ALLOW,
+            actions: ["iam:PassRole"],
+            resources: [IAMArn("*vams*").role],
         })
     );
     suppressCdkNagErrorsByGrantReadWrite(createWorkflowFunction);
@@ -254,6 +262,11 @@ export function buildWorkflowRole(
                 effect: iam.Effect.ALLOW,
                 actions: ["iam:PassRole"],
                 resources: [IAMArn("*VAMS*").role],
+            }),
+            new iam.PolicyStatement({
+                effect: iam.Effect.ALLOW,
+                actions: ["iam:PassRole"],
+                resources: [IAMArn("*vams*").role],
             }),
         ],
     });

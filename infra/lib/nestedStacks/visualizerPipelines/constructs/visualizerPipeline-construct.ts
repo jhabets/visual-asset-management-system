@@ -23,9 +23,13 @@ import { BatchFargatePipelineConstruct } from "./batch-fargate-pipeline";
 import { NagSuppressions } from "cdk-nag";
 import { CfnOutput } from "aws-cdk-lib";
 import { LayerVersion } from "aws-cdk-lib/aws-lambda";
-import * as Service from "../../../../lib/helper/service-helper";
+import * as ServiceHelper from "../../../../lib/helper/service-helper";
+import { Service } from "../../../../lib/helper/service-helper";
+import * as Config from "../../../../config/config";
+import { generateUniqueNameHash } from "../../../helper/security";
 
 export interface VisualizationPipelineConstructProps extends cdk.StackProps {
+    config: Config.Config;
     storage: storageResources;
     vpc: ec2.IVpc;
     visualizerPipelineSubnets: ec2.ISubnet[];
@@ -104,7 +108,7 @@ export class VisualizationPipelineConstruct extends NestedStack {
             statements: [
                 new iam.PolicyStatement({
                     actions: ["states:SendTaskSuccess", "states:SendTaskFailure"],
-                    resources: [`arn:${Service.Partition()}:states:${region}:${account}:*`],
+                    resources: [`arn:${ServiceHelper.Partition()}:states:${region}:${account}:*`],
                 }),
             ],
         });
@@ -113,7 +117,7 @@ export class VisualizationPipelineConstruct extends NestedStack {
             this,
             "VisualizerPipelineContainerExecutionRole",
             {
-                assumedBy: new iam.ServicePrincipal("ecs-tasks.amazonaws.com"),
+                assumedBy: Service("ECS_TASKS").Principal,
                 inlinePolicies: {
                     InputBucketPolicy: inputBucketPolicy,
                     OutputBucketPolicy: outputBucketPolicy,
@@ -129,7 +133,7 @@ export class VisualizationPipelineConstruct extends NestedStack {
         );
 
         const containerJobRole = new iam.Role(this, "VisualizerPipelineContainerJobRole", {
-            assumedBy: new iam.ServicePrincipal("ecs-tasks.amazonaws.com"),
+            assumedBy: Service("ECS_TASKS").Principal,
             inlinePolicies: {
                 InputBucketPolicy: inputBucketPolicy,
                 OutputBucketPolicy: outputBucketPolicy,
@@ -315,7 +319,7 @@ export class VisualizationPipelineConstruct extends NestedStack {
             {
                 logGroupName:
                     "/aws/vendedlogs/VAMSstateMachine-VizPipeline" +
-                    Math.floor(Math.random() * 100000000),
+                    generateUniqueNameHash(props.config.env.coreStackName,  props.config.env.account, "PointCloudVisualizerPipelineProcessing-StateMachineLogGroup", 10),
                 retention: logs.RetentionDays.TWO_YEARS,
                 removalPolicy: cdk.RemovalPolicy.DESTROY,
             }

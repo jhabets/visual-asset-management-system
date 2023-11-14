@@ -12,6 +12,8 @@ import * as cdk from "aws-cdk-lib";
 import { LayerVersion } from "aws-cdk-lib/aws-lambda";
 import { LAMBDA_PYTHON_RUNTIME } from "../../config/config";
 import * as Service from "../../lib/helper/service-helper";
+import * as Config from "../../config/config";
+import * as ec2 from "aws-cdk-lib/aws-ec2";
 
 export function buildSearchFunction(
     scope: Construct,
@@ -19,7 +21,8 @@ export function buildSearchFunction(
     aosEndpoint: string,
     indexNameParam: string,
     storageResources: storageResources,
-    useProvisioned: boolean
+    config: Config.Config,
+    vpc: ec2.IVpc
 ): lambda.Function {
     const name = "search";
     const fun = new lambda.Function(scope, name, {
@@ -29,10 +32,11 @@ export function buildSearchFunction(
         layers: [lambdaCommonBaseLayer],
         timeout: Duration.minutes(15),
         memorySize: 3008,
+        vpc: (config.app.openSearch.useProvisioned.enabled || (config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas))? vpc : undefined, //Use VPC when provisioned OS or flag to use for all lambdas
         environment: {
             AOS_ENDPOINT_PARAM: aosEndpoint,
             AOS_INDEX_NAME_PARAM: indexNameParam,
-            AOS_TYPE: useProvisioned ? "es" : "aoss",
+            AOS_TYPE: config.app.openSearch.useProvisioned.enabled ? "es" : "aoss",
             AUTH_ENTITIES_TABLE: storageResources.dynamo.authEntitiesStorageTable.tableName,
             DATABASE_STORAGE_TABLE_NAME: storageResources.dynamo.databaseStorageTable.tableName,
         },
@@ -45,7 +49,7 @@ export function buildSearchFunction(
             resources: [
                 `arn:${Service.Partition()}:ssm:${cdk.Stack.of(scope).region}:${
                     cdk.Stack.of(scope).account
-                }:parameter/${cdk.Stack.of(scope).stackName}/*`,
+                }:parameter/${config.env.coreStackName}/*`,
             ],
         })
     );

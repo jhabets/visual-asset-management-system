@@ -1,4 +1,4 @@
-#  Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#  Copyright 2023 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #  SPDX-License-Identifier: Apache-2.0
 
 import os
@@ -47,6 +47,7 @@ try:
     workflow_Database = os.environ["WORKFLOW_STORAGE_TABLE_NAME"]
     stack_name = os.environ["VAMS_STACK_NAME"]
     upload_all_function = os.environ['UPLOAD_ALL_LAMBDA_FUNCTION_NAME']
+    ecrDkrEndpoint = os.environ['ECR_DKR_ENDPOINT']
 except:
     print("Failed Loading Environment Variables")
     response['body'] = json.dumps({
@@ -224,9 +225,14 @@ def create_step_function(pipelines, databaseId, workflowId):
             }
         ))
 
+    #Make sure workFlowName is not longer than 80 characters
+    workFlowName = stack_name + "-" + workflowId
+    if len(workFlowName) > 80:
+        workFlowName = workFlowName[-79:] #use 79 characters for buffer
+
     workflow_graph = Chain(steps)
     branching_workflow = Workflow(
-        name=stack_name + "-" + workflowId,
+        name=workFlowName,
         definition=workflow_graph,
         role=role,
     )
@@ -278,13 +284,13 @@ def create_sagemaker_step(databaseId, region, role, account_id, job_names, insta
     try:
         userResource = json.loads(pipeline['userProvidedResource'])
         if userResource['isProvided'] == False:
-            image_uri = account_id+'.dkr.ecr.'+region + \
-                '.amazonaws.com/'+pipeline['name']
+            image_uri = account_id + "." + ecrDkrEndpoint + \
+                '/'+pipeline['name']
         else:
             image_uri = userResource['resourceId']
     except KeyError:  # For pipelines created before user provided resources were implemented
-        image_uri = account_id+'.dkr.ecr.'+region + \
-            '.amazonaws.com/'+pipeline['name']
+        image_uri = account_id + "." + ecrDkrEndpoint + \
+            '/'+pipeline['name']
 
     processor = Processor(
         role=role,

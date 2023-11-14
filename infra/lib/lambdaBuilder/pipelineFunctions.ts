@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2023 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -46,6 +46,8 @@ export function buildCreatePipelineFunction(
             LAMBDA_PIPELINE_SAMPLE_FUNCTION_KEY:
                 "sample_lambda_pipeline/lambda_pipeline_deployment_package.zip",
             ROLE_TO_ATTACH_TO_LAMBDA_PIPELINE: newPipelineLambdaRole.roleArn,
+            SAGEMAKER_PRINCIPAL: Service("SAGEMAKER").PrincipalString,
+            ECR_DKR_ENDPOINT: Service("ECR_DKR").Endpoint
         },
     });
     enablePipelineFunction.grantInvoke(createPipelineFunction);

@@ -9,12 +9,15 @@ import * as sfn from "aws-cdk-lib/aws-stepfunctions";
 import * as tasks from "aws-cdk-lib/aws-stepfunctions-tasks";
 import * as logs from "aws-cdk-lib/aws-logs";
 import * as s3 from "aws-cdk-lib/aws-s3";
-import { Duration, Names } from "aws-cdk-lib";
+import { Duration } from "aws-cdk-lib";
 import { JsonPath, TaskInput } from "aws-cdk-lib/aws-stepfunctions";
 import * as cdk from "aws-cdk-lib";
+import * as Config from "../../../../config/config";
+import { generateUniqueNameHash } from "../../../helper/security";
 
 export function buildUploadAssetWorkflow(
     scope: Construct,
+    config: Config.Config,
     uploadAssetFunction: lambda.Function,
     updateMetadataFunction: lambda.Function,
     executeWorkflowFunction: lambda.Function,
@@ -88,7 +91,7 @@ export function buildUploadAssetWorkflow(
 
     const logGroup = new logs.LogGroup(scope, "UploadAssetWorkflowLogs", {
         logGroupName:
-            "/aws/vendedlogs/VAMSUploadAssetWorkflowLogs" + Math.floor(Math.random() * 100000000),
+            "/aws/vendedlogs/VAMSUploadAssetWorkflowLogs" + generateUniqueNameHash(config.env.coreStackName,  config.env.account, "UploadAssetWorkflowLogs", 10),
         retention: logs.RetentionDays.TWO_YEARS,
         removalPolicy: cdk.RemovalPolicy.DESTROY,
     });

@@ -33,7 +33,10 @@ export interface AlbS3WebsiteAlbDeployConstructProps extends cdk.StackProps {
     webAcl: string;
     apiUrl: string;
     vpc: ec2.IVpc;
-    subnets: ec2.ISubnet[];
+    albSubnets: ec2.ISubnet[];
+    s3VPCEndpoint: ec2.InterfaceVpcEndpoint;
+    albSecurityGroup: ec2.SecurityGroup;
+    vpceSecurityGroup: ec2.SecurityGroup;
 }
 
 /**
@@ -57,13 +60,14 @@ export class AlbS3WebsiteAlbDeployConstruct extends Construct {
      */
     public endPointURL: string;
     public webAppBucketName: string;
+    public albEndpoint: string;
 
     constructor(parent: Construct, name: string, props: AlbS3WebsiteAlbDeployConstructProps) {
         super(parent, name);
 
         props = { ...defaultProps, ...props };
 
-        const accessLogsBucket = new s3.Bucket(this, "AccessLogsBucket", {
+        const accessLogsBucket = new s3.Bucket(this, "WebAppBucketAccessLogs", {
             encryption: s3.BucketEncryption.S3_MANAGED,
             serverAccessLogsPrefix: "web-app-access-log-S3bucket-logs/",
             versioned: true,
@@ -96,27 +100,17 @@ export class AlbS3WebsiteAlbDeployConstruct extends Construct {
         const acmDomainCertificate = acm.Certificate.fromCertificateArn(
             this,
             "DomainCertificateImported",
-            props.config.app.useAlb.certificateARN
+            props.config.app.useAlb.certificateArn
         );
-
-        //Create ALB security group and open to any IP on port 443/80
-        const webAppALBSecurityGroup = new ec2.SecurityGroup(this, "WepAppDistroALBSecurityGroup", {
-            vpc: props.vpc,
-            allowAllOutbound: true,
-            description: "Web Application Distribution for ALB Security Group",
-        });
-
-        webAppALBSecurityGroup.connections.allowFromAnyIpv4(ec2.Port.tcp(80));
-        webAppALBSecurityGroup.connections.allowFromAnyIpv4(ec2.Port.tcp(443));
 
         // Create an ALB
         const alb = new elbv2.ApplicationLoadBalancer(this, "WebAppDistroALB", {
             loadBalancerName: `${
                 props.config.name + "-core-" + props.config.app.baseStackName
             }-WebAppALB`.substring(0, 32),
-            internetFacing: props.config.app.useAlb.publicSubnet,
+            internetFacing: props.config.app.useAlb.usePublicSubnet,
             vpc: props.vpc,
-            securityGroup: webAppALBSecurityGroup,
+            securityGroup: props.albSecurityGroup,
         });
 
         //Add access logging on ALB
@@ -139,39 +133,15 @@ export class AlbS3WebsiteAlbDeployConstruct extends Construct {
             },
         });
 
-        //Create VPC Endpoint for ALB-<->S3 Comms
-        const webAppVPCESecurityGroup = new ec2.SecurityGroup(
-            this,
-            "WepAppDistroVPCS3EndpointSecurityGroup",
-            {
-                vpc: props.vpc,
-                allowAllOutbound: true,
-                description: "Web Application Distribution for VPC S3 Endpoint Security Group",
-            }
-        );
-
-        //TODO: Figure out why an extra rule is getting added to allow all HTTPS inbound traffic from the VPC CIDR
         //Add ingress rules (HTTP/HTTPS) to VPC Endpoint security group
-        webAppVPCESecurityGroup.connections.allowFrom(alb, ec2.Port.tcp(443));
-        webAppVPCESecurityGroup.connections.allowFrom(alb, ec2.Port.tcp(80));
+        props.vpceSecurityGroup.connections.allowFrom(alb, ec2.Port.tcp(443));
+        props.vpceSecurityGroup.connections.allowFrom(alb, ec2.Port.tcp(80));
 
-        // Create VPC interface endpoint for S3 (Needed for ALB<->S3)
-        const s3VPCEndpoint = new ec2.InterfaceVpcEndpoint(this, "S3InterfaceVPCEndpoint", {
-            vpc: props.vpc,
-            privateDnsEnabled: false,
-            service: ec2.InterfaceVpcEndpointAwsService.S3,
-            subnets: {
-                subnetType: props.config.app.useAlb.publicSubnet
-                    ? ec2.SubnetType.PUBLIC
-                    : undefined,
-            },
-            securityGroups: [webAppVPCESecurityGroup],
-        });
 
         //TODO: Figure out why this policy is not working and still letting requests through for other bucket names (use ALB dns name to test)
         //TODO?: Specifically add a deny policy for anything outside of bucket
         //Add policy to VPC endpoint to only allow access to the specific S3 Bucket
-        s3VPCEndpoint.addToPolicy(
+        props.s3VPCEndpoint.addToPolicy(
             new iam.PolicyStatement({
                 resources: [webAppBucket.arnForObjects("*"), webAppBucket.bucketArn],
                 actions: ["s3:Get*", "s3:List*"],
@@ -192,7 +162,7 @@ export class AlbS3WebsiteAlbDeployConstruct extends Construct {
                         action: "describeNetworkInterfaces",
                         outputPaths: [`NetworkInterfaces.${index}.PrivateIpAddress`],
                         parameters: {
-                            NetworkInterfaceIds: s3VPCEndpoint.vpcEndpointNetworkInterfaceIds,
+                            NetworkInterfaceIds: props.s3VPCEndpoint.vpcEndpointNetworkInterfaceIds,
                         },
                         physicalResourceId: customResources.PhysicalResourceId.of(
                             Date.now().toString()
@@ -203,7 +173,7 @@ export class AlbS3WebsiteAlbDeployConstruct extends Construct {
                         action: "describeNetworkInterfaces",
                         outputPaths: [`NetworkInterfaces.${index}.PrivateIpAddress`],
                         parameters: {
-                            NetworkInterfaceIds: s3VPCEndpoint.vpcEndpointNetworkInterfaceIds,
+                            NetworkInterfaceIds: props.s3VPCEndpoint.vpcEndpointNetworkInterfaceIds,
                         },
                         physicalResourceId: customResources.PhysicalResourceId.of(
                             Date.now().toString()
@@ -323,8 +293,8 @@ export class AlbS3WebsiteAlbDeployConstruct extends Construct {
 
         // Optional: Add alias to ALB if hosted zone ID provided (must match domain root of provided domain host)
         if (
-            props.config.app.useAlb.optionalHostedZoneID != "" &&
-            props.config.app.useAlb.optionalHostedZoneID != "UNDEFINED"
+            props.config.app.useAlb.optionalHostedZoneId != "" &&
+            props.config.app.useAlb.optionalHostedZoneId != "UNDEFINED"
         ) {
             const zone = route53.HostedZone.fromHostedZoneAttributes(
                 this,
@@ -334,7 +304,7 @@ export class AlbS3WebsiteAlbDeployConstruct extends Construct {
                         props.config.app.useAlb.domainHost.indexOf(".") + 1,
                         props.config.app.useAlb.domainHost.length
                     ),
-                    hostedZoneId: props.config.app.useAlb.optionalHostedZoneID,
+                    hostedZoneId: props.config.app.useAlb.optionalHostedZoneId,
                 }
             );
 
@@ -367,7 +337,7 @@ export class AlbS3WebsiteAlbDeployConstruct extends Construct {
         });
 
         webAppBucketPolicy.addCondition("StringEquals", {
-            "aws:SourceVpce": s3VPCEndpoint.vpcEndpointId,
+            "aws:SourceVpce": props.s3VPCEndpoint.vpcEndpointId,
         });
 
         webAppBucket.addToResourcePolicy(webAppBucketPolicy);
@@ -375,6 +345,7 @@ export class AlbS3WebsiteAlbDeployConstruct extends Construct {
         // assign public properties
         this.endPointURL = `https://${props.config.app.useAlb.domainHost}`;
         this.webAppBucketName = webAppBucket.bucketName;
+        this.albEndpoint = alb.loadBalancerDnsName;
 
         new cdk.CfnOutput(this, "webAppAlbDns", {
             value: alb.loadBalancerDnsName,
@@ -387,23 +358,5 @@ export class AlbS3WebsiteAlbDeployConstruct extends Construct {
         // export any cf outputs
         new cdk.CfnOutput(this, "webAppBucket", { value: webAppBucket.bucketName });
 
-        //Nag Supressions
-        NagSuppressions.addResourceSuppressions(webAppVPCESecurityGroup, [
-            {
-                id: "AwsSolutions-EC23",
-                reason: "Web App VPC Endpoint Security Group is restricted to ALB on ports 443 and 80.",
-            },
-            {
-                id: "CdkNagValidationFailure",
-                reason: "Validation failure due to inherent nature of CDK Nag Validations of CIDR ranges", //https://github.com/cdklabs/cdk-nag/issues/817
-            },
-        ]);
-
-        NagSuppressions.addResourceSuppressions(webAppALBSecurityGroup, [
-            {
-                id: "AwsSolutions-EC23",
-                reason: "Web App ALB Security Group is purposely left open to any IP (0.0.0.0) on port 443 and 80 as this is the public website entry point",
-            },
-        ]);
     }
 }

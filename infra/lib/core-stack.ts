@@ -24,8 +24,10 @@ import * as Config from "../config/config";
 import { VAMS_APP_FEATURES } from "../config/common/vamsAppFeatures";
 import { VisualizerPipelineBuilderNestedStack } from "./nestedStacks/visualizerPipelines/visualizerPipelineBuilder-nestedStack";
 import { LambdaLayersBuilderNestedStack } from "./nestedStacks/apiLambda/lambdaLayersBuilder-nestedStack";
+import { VPCBuilderNestedStack } from "./nestedStacks/vpc/vpcBuilder-nestedStack";
 import { IamRoleTransform } from "./aspects/iam-role-transform.aspect";
 import { Aspects } from "aws-cdk-lib";
+import * as ec2 from "aws-cdk-lib/aws-ec2";
 
 export interface EnvProps {
     env: cdk.Environment;
@@ -37,11 +39,14 @@ export interface EnvProps {
 }
 
 export class CoreVAMSStack extends cdk.Stack {
+
+    private enabledFeatures: string[] = []
+    private webAppBuildPath:string = "../web/build"
+
+    private vpc:ec2.IVpc
+
     constructor(scope: Construct, id: string, props: EnvProps) {
         super(scope, id, { ...props, crossRegionReferences: true });
-
-        const enabledFeatures: string[] = [];
-        const webAppBuildPath = "../web/build";
 
         const adminEmailAddress = new cdk.CfnParameter(this, "adminEmailAddress", {
             type: "String",
@@ -74,19 +79,28 @@ export class CoreVAMSStack extends cdk.Stack {
 
         //Setup GovCloud Feature Enabled
         if (props.config.app.govCloud.enabled) {
-            enabledFeatures.push(VAMS_APP_FEATURES.GOVCLOUD);
+            this.enabledFeatures.push(VAMS_APP_FEATURES.GOVCLOUD);
         }
 
         //Setup ALB Feature Enabled
         if (props.config.app.useAlb.enabled) {
-            enabledFeatures.push(VAMS_APP_FEATURES.ALBDEPLOY);
+            this.enabledFeatures.push(VAMS_APP_FEATURES.ALBDEPLOY);
         }
 
         //Select auth provider
         if (props.config.app.authProvider.useCognito.enabled) {
-            enabledFeatures.push(VAMS_APP_FEATURES.AUTHPROVIDER_COGNITO);
-        } else if (props.config.app.authProvider.useExternalOATHIdp.enabled) {
-            enabledFeatures.push(VAMS_APP_FEATURES.AUTHPROVIDER_EXTERNALOATHIDP);
+            this.enabledFeatures.push(VAMS_APP_FEATURES.AUTHPROVIDER_COGNITO);
+        } else if (props.config.app.authProvider.useExternalOathIdp.enabled) {
+            this.enabledFeatures.push(VAMS_APP_FEATURES.AUTHPROVIDER_EXTERNALOATHIDP);
+        }
+
+        //Deploy VPC (nested stack)
+        if(props.config.app.useGlobalVpc) {
+            const vpcBuilderNestedStack = new VPCBuilderNestedStack(this, "VPCBuilder", {
+                config: props.config,
+            });
+
+            this.vpc = vpcBuilderNestedStack.vpc
         }
 
         //Deploy Storage Resources (nested stack)
@@ -120,7 +134,7 @@ export class CoreVAMSStack extends cdk.Stack {
         //TODO: Migrate rest of settings to main config file
         if (props.config.app.authProvider.useCognito.useSaml) {
             cognitoProps.samlSettings = samlSettings;
-            enabledFeatures.push(VAMS_APP_FEATURES.AUTHPROVIDER_COGNITO_SAML);
+            this.enabledFeatures.push(VAMS_APP_FEATURES.AUTHPROVIDER_COGNITO_SAML);
         }
 
         const cognitoResourcesNestedStack = new CognitoWebNativeNestedStack(
@@ -142,7 +156,8 @@ export class CoreVAMSStack extends cdk.Stack {
         //Deploy Static Website and any API proxies (nested stack)
         const staticWebBuilderNestedStack = new StaticWebBuilderNestedStack(this, "StaticWeb", {
             config: props.config,
-            webAppBuildPath: webAppBuildPath,
+            vpc: this.vpc,
+            webAppBuildPath: this.webAppBuildPath,
             apiUrl: apiNestedStack.apiUrl,
             storageResources: storageResourcesNestedStack.storageResources,
             ssmWafArn: props.ssmWafArn,
@@ -154,20 +169,23 @@ export class CoreVAMSStack extends cdk.Stack {
         const apiBuilderNestedStack = new ApiBuilderNestedStack(
             this,
             "ApiBuilder",
+            props.config,
             apiNestedStack.apiGatewayV2,
             storageResourcesNestedStack.storageResources,
             lambdaLayers.lambdaCommonBaseLayer,
-            lambdaLayers.lambdaCommonServiceSDKLayer
+            lambdaLayers.lambdaCommonServiceSDKLayer,
+            this.vpc
         );
 
         //Deploy OpenSearch Serverless (nested stack)
         const searchBuilderNestedStack = new SearchBuilderNestedStack(
             this,
             "SearchBuilder",
+            props.config,
             apiNestedStack.apiGatewayV2,
             storageResourcesNestedStack.storageResources,
             lambdaLayers.lambdaCommonBaseLayer,
-            props.config.app.openSearch.useProvisioned.enabled
+            this.vpc,
         );
 
         //Deploy Location Services (Nested Stack) and setup feature enabled
@@ -179,7 +197,7 @@ export class CoreVAMSStack extends cdk.Stack {
                     role: cognitoResourcesNestedStack.authenticatedRole,
                 }
             );
-            enabledFeatures.push(VAMS_APP_FEATURES.LOCATIONSERVICES);
+            this.enabledFeatures.push(VAMS_APP_FEATURES.LOCATIONSERVICES);
         }
 
         ///Optional Pipelines (Nested Stack)
@@ -189,12 +207,10 @@ export class CoreVAMSStack extends cdk.Stack {
                 "VisualizerPipelineBuilder",
                 {
                     ...props,
+                    config: props.config,
                     storageResources: storageResourcesNestedStack.storageResources,
                     lambdaCommonBaseLayer: lambdaLayers.lambdaCommonBaseLayer,
-                    optionalVPCID:
-                        props.config.app.pipelines.usePointCloudVisualization.optionalVPCID,
-                    vpcCidrRange:
-                        props.config.app.pipelines.usePointCloudVisualization.vpcCidrRange,
+                    vpc: this.vpc
                 }
             );
         }
@@ -207,7 +223,7 @@ export class CoreVAMSStack extends cdk.Stack {
                 appFeatureEnabledTable:
                     storageResourcesNestedStack.storageResources.dynamo
                         .appFeatureEnabledStorageTable,
-                featuresEnabled: enabledFeatures,
+                featuresEnabled: this.enabledFeatures,
             }
         );
 
@@ -269,6 +285,19 @@ export class CoreVAMSStack extends cdk.Stack {
             description: "S3 bucket for template notebooks",
         });
 
+        const vpcIdOutput = new cdk.CfnOutput(this, "VpcIdOutput", {
+            value: this.vpc.vpcId,
+            description: "VPC ID created or used by VAMS deployment",
+        });
+
+        if(props.config.app.useAlb.enabled) {
+            const albEndpointOutput = new cdk.CfnOutput(this, "AlbEndpointOutput", {
+                value: staticWebBuilderNestedStack.albEndpoint,
+                description: "ALB DNS Endpoint to use for primary domain host DNS routing to static web site",
+            });
+        }
+
+        //Add tags to stack
         cdk.Tags.of(this).add("vams:stackname", props.stackName);
 
         //Add for Systems Manager->Application Manager Cost Tracking for main VAMS Stack
@@ -311,6 +340,22 @@ export class CoreVAMSStack extends cdk.Stack {
                     appliesTo: [
                         {
                             regex: "/.*AWSLambdaBasicExecutionRole$/g",
+                        },
+                    ],
+                },
+            ],
+            true
+        );
+
+        NagSuppressions.addResourceSuppressions(
+            this,
+            [
+                {
+                    id: "AwsSolutions-IAM4",
+                    reason: "Intend to use AWSLambdaVPCAccessExecutionRole as is at this stage of this project.",
+                    appliesTo: [
+                        {
+                            regex: "/.*AWSLambdaVPCAccessExecutionRole$/g",
                         },
                     ],
                 },

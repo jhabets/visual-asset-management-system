@@ -10,10 +10,12 @@ import { join } from "path";
 import * as dotenv from "dotenv";
 import * as cdk from "aws-cdk-lib";
 
-//Top level configurations
 dotenv.config();
+
+//Top level configurations
 export const LAMBDA_PYTHON_RUNTIME = Runtime.PYTHON_3_10;
 export const LAMBDA_NODE_RUNTIME = Runtime.NODEJS_18_X;
+export const OPENSEARCH_VERSION = cdk.aws_opensearchservice.EngineVersion.OPENSEARCH_2_7
 
 export function getConfig(app: cdk.App): Config {
     const file: string = readFileSync(join(__dirname, "config.json"), {
@@ -59,45 +61,79 @@ export function getConfig(app: cdk.App): Config {
             false)
     );
 
-    //If we are govCloud, we always use FIPS, ALB deploy, and disable opensearch serverless + location service (currently not supported in GovCloud 08-29-2023)
+    //If we are govCloud, we always use FIPS, Full use VPC, ALB deploy, use OpenSearch Provisioned (serverless not available in GovCloud), and disable location service (currently not supported in GovCloud 08-29-2023)
     if (config.app.govCloud.enabled) {
+
+        if(!config.app.useFips || !config.app.useGlobalVpc.enabled || !config.app.useGlobalVpc.useForAllLambdas || !config.app.useAlb.enabled || config.app.openSearch.useProvisioned.enabled || config.app.useLocationService.enabled) {
+            console.warn("Configuration Warning: Due to GovCloud being enabled, auto-enabling Use Global VPC, use VPC For All Lambdas, Use ALB, and Use OpenSearch Provisioned flag and disabling Use Location Services flag")
+        }
+
         config.app.useFips = true;
+        config.app.useGlobalVpc.enabled = true;
+        config.app.useGlobalVpc.useForAllLambdas = true; //FedRAMP best practices require all Lambdas/OpenSearch behind VPC
         config.app.useAlb.enabled = true;
         config.app.openSearch.useProvisioned.enabled = true;
         config.app.useLocationService.enabled = false;
     }
 
-    //Any configuration error checks
+    //If using ALB, visualizer pipelines, or opensearch provisioned, make sure Global VPC is on as this needs to be in a VPC
+    if (config.app.useAlb.enabled || config.app.pipelines.usePointCloudVisualization.enabled || config.app.openSearch.useProvisioned.enabled)
+    {
+        if(!config.app.useGlobalVpc.enabled) {
+            console.warn("Configuration Warning: Due to ALB, Visualization Pipeline, or OpenSearch Provisioned being enabled, auto-enabling Use Global VPC flag")
+        }
+
+        config.app.useGlobalVpc.enabled = true;
+    }
+
+    //Any configuration warnings/errors checks
+    if (
+        config.app.useGlobalVpc.enabled &&
+        (!config.app.useGlobalVpc.addVpcEndpoints)
+    ) {
+        console.warn("Configuration Warning: This configuration has disabled Add VPC Endpoints. Please manually ensure the VPC used has all nessesary VPC Interface Endpoints to ensure proper VAMS operations.")
+    }
+
+    if (
+        config.app.useGlobalVpc.enabled &&
+        (config.app.useGlobalVpc.vpcCidrRange == "UNDEFINED" &&
+        config.app.useGlobalVpc.optionalExternalVpcId== "UNDEFINED")
+    ) {
+        throw new Error(
+            "Configuration Error: Must define either a global VPC Cidr Range or an External VPC ID."
+        );
+    }
+
     if (
         config.app.useAlb.enabled &&
-        (config.app.useAlb.certificateARN == "UNDEFINED" ||
+        (config.app.useAlb.certificateArn == "UNDEFINED" ||
             config.app.useAlb.domainHost == "UNDEFINED")
     ) {
         throw new Error(
-            "Cannot use ALB deployment without specifying a valid domain hostname and a ACM Certificate ARN to use for SSL/TLS security!"
+            "Configuration Error: Cannot use ALB deployment without specifying a valid domain hostname and a ACM Certificate ARN to use for SSL/TLS security!"
         );
     }
 
     if (config.app.adminEmailAddress == "" || config.app.adminEmailAddress == "UNDEFINED") {
         throw new Error(
-            "Must specify an initial admin email address as part of this deployment configuration!"
+            "Configuration Error: Must specify an initial admin email address as part of this deployment configuration!"
         );
     }
 
     //Error check when implementing auth providers
     if (
         config.app.authProvider.useCognito.enabled &&
-        config.app.authProvider.useExternalOATHIdp.enabled
+        config.app.authProvider.useExternalOathIdp.enabled
     ) {
-        throw new Error("Must specify only one authentication method!");
+        throw new Error("Configuration Error: Must specify only one authentication method!");
     }
 
     if (
-        config.app.authProvider.useExternalOATHIdp.enabled &&
-        config.app.authProvider.useExternalOATHIdp.idpAuthProviderUrl == "UNDEFINED"
+        config.app.authProvider.useExternalOathIdp.enabled &&
+        config.app.authProvider.useExternalOathIdp.idpAuthProviderUrl == "UNDEFINED"
     ) {
         throw new Error(
-            "Must specify a external IDP auth URL when using an external OATH provider!"
+            "Configuration Error: Must specify a external IDP auth URL when using an external OATH provider!"
         );
     }
 
@@ -110,6 +146,7 @@ export interface ConfigPublic {
     env: {
         account: string;
         region: string;
+        coreStackName: string;
     };
     //removalPolicy: RemovalPolicy;
     //autoDelete: boolean;
@@ -121,6 +158,13 @@ export interface ConfigPublic {
         govCloud: {
             enabled: boolean;
         };
+        useGlobalVpc: {
+            enabled: boolean;
+            useForAllLambdas: boolean;
+            addVpcEndpoints: boolean;
+            optionalExternalVpcId: string;
+            vpcCidrRange: string;
+        };
         openSearch: {
             useProvisioned: {
                 enabled: boolean;
@@ -131,18 +175,14 @@ export interface ConfigPublic {
         };
         useAlb: {
             enabled: boolean;
-            publicSubnet: boolean;
-            vpcCidrRange: string;
-            optionalVPCID: string;
+            usePublicSubnet: boolean;
             domainHost: string;
-            certificateARN: string;
-            optionalHostedZoneID: string;
+            certificateArn: string;
+            optionalHostedZoneId: string;
         };
         pipelines: {
             usePointCloudVisualization: {
                 enabled: boolean;
-                vpcCidrRange: string;
-                optionalVPCID: string;
             };
         };
         authProvider: {
@@ -150,7 +190,7 @@ export interface ConfigPublic {
                 enabled: boolean;
                 useSaml: boolean;
             };
-            useExternalOATHIdp: {
+            useExternalOathIdp: {
                 enabled: boolean;
                 idpAuthProviderUrl: string;
             };

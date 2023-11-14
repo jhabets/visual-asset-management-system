@@ -25,6 +25,12 @@ Parameters:
     AssetBucketArn:
         Description: Arn for s3 bucket used by vams assets.
         Type: String
+    EcrDkrEndpoint:
+        Description: The endpoint address for ECR Docker Registry (DKR)
+        Type: String
+    SagemakerPrincipal:
+        Description: The Principal Name for Sagemaker
+        Type: String
     SageMakeNotebookInstanceType:
         Description: Instance type for SageMaker notebook instance
         Type: String
@@ -55,7 +61,7 @@ Resources:
                     - Effect: Allow
                       Principal:
                           Service:
-                              - sagemaker.amazonaws.com
+                              - !Ref SagemakerPrincipal
                       Action:
                           - "sts:AssumeRole"
             Path: /
@@ -239,6 +245,9 @@ Resources:
                           /etc/profile.d/jupyter-env.sh
 
                           echo "export S3_NAME=${SagemakerBucketName}" >>
+                          /etc/profile.d/jupyter-env.sh
+
+                          echo "export ECR_DKR_ENDPOINT=${EcrDkrEndpoint}" >>
                           /etc/profile.d/jupyter-env.sh
 
                           # initctl restart jupyter-server --no-wait

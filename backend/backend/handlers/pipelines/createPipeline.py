@@ -1,4 +1,4 @@
-#  Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#  Copyright 2023 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #  SPDX-License-Identifier: Apache-2.0
 
 import os
@@ -26,6 +26,8 @@ class CreatePipeline():
         self.lambda_role_to_attach = env['ROLE_TO_ATTACH_TO_LAMBDA_PIPELINE']
         self.lambda_pipeline_sample_function_bucket = env['LAMBDA_PIPELINE_SAMPLE_FUNCTION_BUCKET']
         self.lambda_pipeline_sample_function_key = env['LAMBDA_PIPELINE_SAMPLE_FUNCTION_KEY']
+        self.sagemaker_principal = env['SAGEMAKER_PRINCIPAL']
+        self.ecr_dkr_endpoint = env['ECR_DKR_ENDPOINT']
 
         self.table = dynamodb.Table(self.db_table_name)
 
@@ -156,6 +158,14 @@ class CreatePipeline():
                 {
                     'ParameterKey': 'PipelineName',
                     'ParameterValue': body['pipelineId']
+                },
+                {
+                    'ParameterKey': 'SagemakerPrincipal',
+                    'ParameterValue': self.sagemaker_principal 
+                },
+                {
+                    'ParameterKey': 'EcrDkrEndpoint',
+                    'ParameterValue': self.ecr_dkr_endpoint
                 },
                 {
                     'ParameterKey': 'SageMakeNotebookInstanceType',

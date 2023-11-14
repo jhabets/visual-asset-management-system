@@ -178,7 +178,8 @@ class SearchAOS():
 
     @staticmethod
     def from_env(env=os.environ):
-        print("env endpoint", env.get("AOS_ENDPOINT"))
+        print("env AOS endpoint param:", env.get("AOS_ENDPOINT_PARAM"))
+        print("env Index name param:", env.get("AOS_INDEX_NAME_PARAM"))
         print("env region", env.get("AWS_REGION"))
         region = env.get('AWS_REGION')
         service = env.get('AOS_TYPE')  # aoss (serverless) or es (provisioned)
@@ -188,6 +189,9 @@ class SearchAOS():
         host = get_ssm_parameter_value('AOS_ENDPOINT_PARAM', region, env)
         indexName = get_ssm_parameter_value(
             'AOS_INDEX_NAME_PARAM', region, env)
+        
+        print("AOS endpoint:", host)
+        print("Index endpoint:", indexName)
 
         return SearchAOS(
             host=host,

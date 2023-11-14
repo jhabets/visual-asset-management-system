@@ -10,14 +10,16 @@ import { storageResources } from "../storage/storageBuilder-nestedStack";
 import { LayerVersion } from "aws-cdk-lib/aws-lambda";
 import * as cdk from "aws-cdk-lib";
 import { NestedStack } from "aws-cdk-lib";
-import { VpcSecurityGroupGatewayVisualizerPipelineConstruct } from "./constructs/vpc-securitygroup-gateway-visualizerPipeline-construct";
+import { SecurityGroupGatewayVisualizerPipelineConstruct } from "./constructs/securitygroup-gateway-visualizerPipeline-construct";
 import { VisualizationPipelineConstruct } from "./constructs/visualizerPipeline-construct";
+import * as ec2 from "aws-cdk-lib/aws-ec2";
+import * as Config from "../../../config/config";
 
 export interface VisualizerPipelineBuilderNestedStackProps extends cdk.StackProps {
+    config: Config.Config;
+    vpc: ec2.IVpc;
     storageResources: storageResources;
     lambdaCommonBaseLayer: LayerVersion;
-    optionalVPCID: string;
-    vpcCidrRange: string;
 }
 
 /**
@@ -34,20 +36,21 @@ export class VisualizerPipelineBuilderNestedStack extends NestedStack {
 
         props = { ...defaultProps, ...props };
 
-        const visualizerPipelineNetwork = new VpcSecurityGroupGatewayVisualizerPipelineConstruct(
+        const visualizerPipelineNetwork = new SecurityGroupGatewayVisualizerPipelineConstruct(
             this,
             "VisualizerPipelineNetwork",
             {
                 ...props,
-                optionalExistingVPCId: props.optionalVPCID,
-                vpcCidrRange: props.vpcCidrRange,
+                config: props.config,
+                vpc: props.vpc
             }
         );
 
         const visualizerPipeline = new VisualizationPipelineConstruct(this, "VisualizerPipeline", {
             ...props,
+            config: props.config,
             storage: props.storageResources,
-            vpc: visualizerPipelineNetwork.vpc,
+            vpc: props.vpc,
             visualizerPipelineSubnets: visualizerPipelineNetwork.subnets.pipeline,
             visualizerPipelineSecurityGroups: [visualizerPipelineNetwork.securityGroups.pipeline],
             lambdaCommonBaseLayer: props.lambdaCommonBaseLayer,

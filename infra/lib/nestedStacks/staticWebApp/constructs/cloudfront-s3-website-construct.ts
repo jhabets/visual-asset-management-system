@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2023 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -14,6 +14,7 @@ import { Construct } from "constructs";
 import { requireTLSAddToResourcePolicy } from "../../../helper/security";
 import { NagSuppressions } from "cdk-nag";
 import * as Config from "../../../../config/config";
+import { Service } from "../../../helper/service-helper";
 
 export interface CloudFrontS3WebSiteConstructProps extends cdk.StackProps {
     /**
@@ -107,11 +108,11 @@ export class CloudFrontS3WebSiteConstruct extends Construct {
         const connectSrc = [
             "'self'",
             props.cognitoDomain,
-            `https://cognito-idp.${props.config.env.region}.amazonaws.com/`,
-            `https://cognito-identity.${props.config.env.region}.amazonaws.com/`,
+            `https://${Service("COGNITO_IDP").Endpoint}/`, 
+            `https://${Service("COGNITO_IDENTITY").Endpoint}/`,
             `https://${props.apiUrl}`,
             `https://${props.assetBucketUrl}`,
-            `https://maps.geo.${props.config.env.region}.amazonaws.com/`,
+            `https://maps.${Service("GEO").Endpoint}/`, 
         ];
 
         const scriptSrc = [
@@ -119,8 +120,8 @@ export class CloudFrontS3WebSiteConstruct extends Construct {
             "blob:",
             "'sha256-fUpTbA+CO0BMxLmoVHffhbh3ZTLkeobgwlFl5ICCQmg='", // script in index.html
             props.cognitoDomain,
-            `https://cognito-idp.${props.config.env.region}.amazonaws.com/`,
-            `https://cognito-identity.${props.config.env.region}.amazonaws.com/`,
+            `https://${Service("COGNITO_IDP").Endpoint}/`, 
+            `https://${Service("COGNITO_IDENTITY").Endpoint}/`,
             `https://${props.apiUrl}`,
             `https://${props.assetBucketUrl}`,
         ];

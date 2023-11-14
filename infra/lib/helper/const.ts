@@ -107,7 +107,9 @@ export type SERVICE =
     | "DYNAMODB"
     | "EBS"
     | "EC2"
+    | "ECR_DKR"
     | "ECS"
+    | "ECS_TASKS"
     | "EDGE_SAGEMAKER"
     | "EKS"
     | "ELASTICACHE"
@@ -422,7 +424,9 @@ export const TYPE_SERVICE_LOOKUP = {
     DYNAMODB: "dynamodb",
     EBS: "ebs",
     EC2: "ec2",
+    ECR_DKR: "ecr-dkr",
     ECS: "ecs",
+    ECS_TASKS: "ecs-tasks",
     EDGE_SAGEMAKER: "edge.sagemaker",
     EKS: "eks",
     ELASTICACHE: "elasticache",
@@ -2312,6 +2316,38 @@ export const SERVICE_LOOKUP: { [key: string]: { [partition: string]: IServiceInf
             fipsHostname: "ec2-fips.{region}.sc2s.sgov.gov",
         },
     },
+    "ecr-dkr": {
+        aws: {
+            arn: "XXX",
+            principal: "XXX",
+            hostname: "dkr.ecr.{region}.amazonaws.com",
+            fipsHostname: "dkr.ecr-fips.{region}.amazonaws.com",
+        },
+        "aws-cn": {
+            arn: "XXX",
+            principal: "XXX",
+            hostname: "dkr.ecr.{region}.amazonaws.com.cn",
+            fipsHostname: "dkr.ecr-fips.{region}.amazonaws.com.cn",
+        },
+        "aws-us-gov": {
+            arn: "XXX",
+            principal: "XXX",
+            hostname: "dkr.ecr.{region}.amazonaws.com",
+            fipsHostname: "dkr.ecr-fips.{region}.amazonaws.com",
+        },
+        "aws-iso": {
+            arn: "XXX",
+            principal: "XXX",
+            hostname: "dkr.ecr.{region}.c2s.ic.gov",
+            fipsHostname: "dkr.ecr-fips.{region}.c2s.ic.gov",
+        },
+        "aws-iso-b": {
+            arn: "XXX",
+            principal: "XXX",
+            hostname: "dkr.ecr.{region}.sc2s.sgov.gov",
+            fipsHostname: "dkr.ecr-fips.{region}.sc2s.sgov.gov",
+        },
+    },
     ecs: {
         aws: {
             arn: "arn:aws:ecs:{region}:{account-id}:{resource-id}",
@@ -2340,6 +2376,38 @@ export const SERVICE_LOOKUP: { [key: string]: { [partition: string]: IServiceInf
         "aws-iso-b": {
             arn: "arn:aws-iso-b:ecs:{region}:{account-id}:{resource-id}",
             principal: "ecs.sc2s.sgov.gov",
+            hostname: "ecs.{region}.sc2s.sgov.gov",
+            fipsHostname: "ecs-fips.{region}.sc2s.sgov.gov",
+        },
+    },
+    "ecs-tasks": {
+        aws: {
+            arn: "arn:aws:ecs:{region}:{account-id}:{resource-id}",
+            principal: "ecs-tasks.amazonaws.com",
+            hostname: "ecs.{region}.amazonaws.com",
+            fipsHostname: "ecs-fips.{region}.amazonaws.com",
+        },
+        "aws-cn": {
+            arn: "arn:aws-cn:ecs:{region}:{account-id}:{resource-id}",
+            principal: "ecs-tasks.amazonaws.com.cn",
+            hostname: "ecs.{region}.amazonaws.com.cn",
+            fipsHostname: "ecs-fips.{region}.amazonaws.com.cn",
+        },
+        "aws-us-gov": {
+            arn: "arn:aws-us-gov:ecs:{region}:{account-id}:{resource-id}",
+            principal: "ecs-tasks.amazonaws.com",
+            hostname: "ecs.{region}.amazonaws.com",
+            fipsHostname: "ecs-fips.{region}.amazonaws.com",
+        },
+        "aws-iso": {
+            arn: "arn:aws-iso:ecs:{region}:{account-id}:{resource-id}",
+            principal: "ecs-tasks.c2s.ic.gov",
+            hostname: "ecs.{region}.c2s.ic.gov",
+            fipsHostname: "ecs-fips.{region}.c2s.ic.gov",
+        },
+        "aws-iso-b": {
+            arn: "arn:aws-iso-b:ecs:{region}:{account-id}:{resource-id}",
+            principal: "ecs-tasks.sc2s.sgov.gov",
             hostname: "ecs.{region}.sc2s.sgov.gov",
             fipsHostname: "ecs-fips.{region}.sc2s.sgov.gov",
         },

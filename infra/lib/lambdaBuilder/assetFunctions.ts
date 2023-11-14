@@ -13,6 +13,7 @@ import { suppressCdkNagErrorsByGrantReadWrite } from "../helper/security";
 import * as sfn from "aws-cdk-lib/aws-stepfunctions";
 import { LayerVersion } from "aws-cdk-lib/aws-lambda";
 import { LAMBDA_PYTHON_RUNTIME } from "../../config/config";
+import { Service } from "../helper/service-helper";
 
 export function buildAssetService(
     scope: Construct,
@@ -222,6 +223,7 @@ export function buildDownloadAssetFunction(
         memorySize: 3008,
         environment: {
             ASSET_STORAGE_TABLE_NAME: assetStorageTable.tableName,
+            S3_ENDPOINT: Service("S3").Endpoint
         },
     });
     assetStorageBucket.grantRead(downloadAssetFunction);

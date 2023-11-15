@@ -43,14 +43,16 @@ export class VPCBuilderNestedStack extends NestedStack {
         //ALBReqs - 2AZ - Private or PublicSubnet (Each)
         //OpenSearchProvisioned - 3AZ - Private Subnet (Each)
         if(props.config.app.openSearch.useProvisioned.enabled) {
-            this.azCount = 3
+            this.azCount = 3;
         }
         else if(props.config.app.useAlb.enabled) {
-            this.azCount = 2
+            this.azCount = 2;
         }
         else
             //Visualizer pipeline and/or lambda functions only
-            this.azCount = 1 
+            this.azCount = 1;
+
+        console.log("VPC AZ Count: ", this.azCount);
 
         if (props.config.app.useGlobalVpc.optionalExternalVpcId != null && props.config.app.useGlobalVpc.optionalExternalVpcId != "undefined") {
             //Use Existing VPC
@@ -158,9 +160,35 @@ export class VPCBuilderNestedStack extends NestedStack {
                 "Allow UDP for ECR Access"
             );
 
-                 /**
-                 * VPC Endpoints
-                 */
+                /**
+             * VPC Endpoints
+             */
+
+            //Get subnets to put Endpoints in (no more than 1 subnet per AZ)
+            const subnets:ec2.ISubnet[] = []
+            const azUsed:string[] = []
+    
+            this.vpc.isolatedSubnets.forEach( (element) => {
+                if (azUsed.indexOf(element.availabilityZone) == -1) {
+                    azUsed.push(element.availabilityZone)
+                    subnets.push(element)
+                }
+            });
+
+            this.vpc.privateSubnets.forEach( (element) => {
+                if (azUsed.indexOf(element.availabilityZone) == -1) {
+                    azUsed.push(element.availabilityZone)
+                    subnets.push(element)
+                }
+            });
+
+            this.vpc.publicSubnets.forEach( (element) => {
+                if (azUsed.indexOf(element.availabilityZone) == -1) {
+                    azUsed.push(element.availabilityZone)
+                    subnets.push(element)
+                }
+            });
+
             //Add VPC endpoints based on configuration options
             //Note: This is mostly to not duplicate endpoints if bringing in an external VPC that already has the needed endpoints for the services
             //Note: More switching is done to avoid creating endpoints when not needed (mostly for cost)
@@ -174,7 +202,7 @@ export class VPCBuilderNestedStack extends NestedStack {
                         vpc: this.vpc,
                         privateDnsEnabled: true,
                         service: ec2.InterfaceVpcEndpointAwsService.BATCH,
-                        subnets: { subnets: (props.config.app.useAlb.enabled && props.config.app.useAlb.usePublicSubnet)? this.vpc.isolatedSubnets.concat(this.vpc.publicSubnets) : this.vpc.isolatedSubnets},
+                        subnets: { subnets: subnets},
                         securityGroups: [vpceSecurityGroup],
                     });
                 }
@@ -187,7 +215,7 @@ export class VPCBuilderNestedStack extends NestedStack {
                         vpc: this.vpc,
                         privateDnsEnabled: true, // Needed for Fargate<->ECR
                         service: ec2.InterfaceVpcEndpointAwsService.ECR,
-                        subnets: { subnets: (props.config.app.useAlb.enabled && props.config.app.useAlb.usePublicSubnet)? this.vpc.isolatedSubnets.concat(this.vpc.publicSubnets) : this.vpc.isolatedSubnets},
+                        subnets: { subnets: subnets},
                         securityGroups: [vpceSecurityGroup],
                     });
 
@@ -196,7 +224,7 @@ export class VPCBuilderNestedStack extends NestedStack {
                         vpc: this.vpc,
                         privateDnsEnabled: true, // Needed for Fargate<->ECR
                         service: ec2.InterfaceVpcEndpointAwsService.ECR_DOCKER,
-                        subnets: { subnets: (props.config.app.useAlb.enabled && props.config.app.useAlb.usePublicSubnet)? this.vpc.isolatedSubnets.concat(this.vpc.publicSubnets) : this.vpc.isolatedSubnets},
+                        subnets: { subnets: subnets},
                         securityGroups: [vpceSecurityGroup],
                     });
 
@@ -205,7 +233,7 @@ export class VPCBuilderNestedStack extends NestedStack {
                         vpc: this.vpc,
                         privateDnsEnabled: true,
                         service: ec2.InterfaceVpcEndpointAwsService.CLOUDWATCH_LOGS,
-                        subnets: { subnets: (props.config.app.useAlb.enabled && props.config.app.useAlb.usePublicSubnet)? this.vpc.isolatedSubnets.concat(this.vpc.publicSubnets) : this.vpc.isolatedSubnets},
+                        subnets: { subnets: subnets},
                         securityGroups: [vpceSecurityGroup],
                     });
 
@@ -214,7 +242,7 @@ export class VPCBuilderNestedStack extends NestedStack {
                         vpc: this.vpc,
                         privateDnsEnabled: true,
                         service: ec2.InterfaceVpcEndpointAwsService.SNS,
-                        subnets: { subnets: (props.config.app.useAlb.enabled && props.config.app.useAlb.usePublicSubnet)? this.vpc.isolatedSubnets.concat(this.vpc.publicSubnets) : this.vpc.isolatedSubnets},
+                        subnets: { subnets: subnets},
                         securityGroups: [vpceSecurityGroup],
                     });
 
@@ -223,7 +251,7 @@ export class VPCBuilderNestedStack extends NestedStack {
                         vpc: this.vpc,
                         privateDnsEnabled: true,
                         service: ec2.InterfaceVpcEndpointAwsService.STEP_FUNCTIONS,
-                        subnets: { subnets: (props.config.app.useAlb.enabled && props.config.app.useAlb.usePublicSubnet)? this.vpc.isolatedSubnets.concat(this.vpc.publicSubnets) : this.vpc.isolatedSubnets},
+                        subnets: { subnets: subnets},
                         securityGroups: [vpceSecurityGroup],
                     });
 
@@ -237,7 +265,7 @@ export class VPCBuilderNestedStack extends NestedStack {
                         vpc: this.vpc,
                         privateDnsEnabled: true,
                         service: ec2.InterfaceVpcEndpointAwsService.SSM,
-                        subnets: { subnets: (props.config.app.useAlb.enabled && props.config.app.useAlb.usePublicSubnet)? this.vpc.isolatedSubnets.concat(this.vpc.publicSubnets) : this.vpc.isolatedSubnets},
+                        subnets: { subnets: subnets},
                         securityGroups: [vpceSecurityGroup]
                     });
                 }
@@ -250,7 +278,7 @@ export class VPCBuilderNestedStack extends NestedStack {
                         vpc: this.vpc,
                         privateDnsEnabled: true,
                         service: ec2.InterfaceVpcEndpointAwsService.LAMBDA,
-                        subnets: { subnets: (props.config.app.useAlb.enabled && props.config.app.useAlb.usePublicSubnet)? this.vpc.isolatedSubnets.concat(this.vpc.publicSubnets) : this.vpc.isolatedSubnets},
+                        subnets: { subnets: subnets},
                         securityGroups: [vpceSecurityGroup],
                     });
 
@@ -259,7 +287,7 @@ export class VPCBuilderNestedStack extends NestedStack {
                         vpc: this.vpc,
                         privateDnsEnabled: true,
                         service: ec2.InterfaceVpcEndpointAwsService.STS,
-                        subnets: { subnets: (props.config.app.useAlb.enabled && props.config.app.useAlb.usePublicSubnet)? this.vpc.isolatedSubnets.concat(this.vpc.publicSubnets) : this.vpc.isolatedSubnets},
+                        subnets: { subnets: subnets},
                         securityGroups: [vpceSecurityGroup],
                     });
                 }
@@ -269,12 +297,12 @@ export class VPCBuilderNestedStack extends NestedStack {
             if(props.config.app.useGlobalVpc.addVpcEndpoints) {
                 this.vpc.addGatewayEndpoint("S3Endpoint", {
                     service: ec2.GatewayVpcEndpointAwsService.S3,
-                    subnets: [{ subnets: (props.config.app.useAlb.enabled && props.config.app.useAlb.usePublicSubnet)? this.vpc.isolatedSubnets.concat(this.vpc.publicSubnets) : this.vpc.isolatedSubnets}],
+                    subnets: [{subnets: subnets}],
                 });
 
                 this.vpc.addGatewayEndpoint("DynamoEndpoint", {
                     service: ec2.GatewayVpcEndpointAwsService.DYNAMODB,
-                    subnets: [{ subnets: (props.config.app.useAlb.enabled && props.config.app.useAlb.usePublicSubnet)? this.vpc.isolatedSubnets.concat(this.vpc.publicSubnets) : this.vpc.isolatedSubnets}],
+                    subnets: [{ subnets: subnets}],
                 });
             }
 

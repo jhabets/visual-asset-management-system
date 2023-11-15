@@ -50,7 +50,7 @@ export function requireTLSAddToResourcePolicy(bucket: s3.Bucket) {
     );
 }
 
-export function generateUniqueNameHash(stackName:string, accountId:string, resourceIdentifier:string, maxLength:number=32) {
+export function generateUniqueNameHash(stackName:string, accountId:string, resourceIdentifier:string, maxLength=32) {
     const hash = crypto.getHashes();
     const hashPwd = crypto.createHash('sha1')
             .update(stackName+accountId+resourceIdentifier).digest('hex').toString().toLowerCase();

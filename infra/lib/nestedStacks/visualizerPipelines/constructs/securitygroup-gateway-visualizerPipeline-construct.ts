@@ -36,7 +36,7 @@ export class SecurityGroupGatewayVisualizerPipelineConstruct extends Construct {
         pipeline: ec2.ISecurityGroup;
     };
 
-    private isSubnetIsolated:boolean = true;
+    private isSubnetIsolated = true;
 
     constructor(
         parent: Construct,

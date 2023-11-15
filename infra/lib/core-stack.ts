@@ -41,7 +41,7 @@ export interface EnvProps {
 export class CoreVAMSStack extends cdk.Stack {
 
     private enabledFeatures: string[] = []
-    private webAppBuildPath:string = "../web/build"
+    private webAppBuildPath = "../web/build"
 
     private vpc:ec2.IVpc
     private vpceSecurityGroup:ec2.ISecurityGroup

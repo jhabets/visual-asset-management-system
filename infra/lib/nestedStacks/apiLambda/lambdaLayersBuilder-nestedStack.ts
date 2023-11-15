@@ -1,12 +1,10 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable no-useless-escape */
 /*
  * Copyright 2023 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
 import { Construct } from "constructs";
-import { Names } from "aws-cdk-lib";
-import { LayerVersion } from "aws-cdk-lib/aws-lambda";
 import * as cdk from "aws-cdk-lib";
 import { NestedStack } from "aws-cdk-lib";
 import { LAMBDA_PYTHON_RUNTIME } from "../../../config/config";
@@ -18,8 +16,7 @@ export type LambdaLayersBuilderNestedStackProps = cdk.StackProps;
  * Default input properties
  */
 const defaultProps: Partial<LambdaLayersBuilderNestedStackProps> = {
-    //stackName: "",
-    //env: {},
+
 };
 
 export class LambdaLayersBuilderNestedStack extends NestedStack {

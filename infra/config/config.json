@@ -21,22 +21,22 @@
         },
         "openSearch": {
             "useProvisioned": {
-                "enabled": false
+                "enabled": true
             }
         },
         "useLocationService": {
-            "enabled": true
+            "enabled": false
         },
         "useAlb": {
-            "enabled": false,
+            "enabled": true,
             "usePublicSubnet": true,
-            "domainHost": "vams1.scheurik.people.aws.dev",
-            "certificateArn": "arn:aws:acm:us-east-1:465557923944:certificate/85391730-2e85-42c9-ada8-333e26a72f95",
-            "optionalHostedZoneId": "Z0886931FQXQZD8RU4ZM"
+            "domainHost": "vams2.scheurik.people.aws.dev",
+            "certificateArn": "arn:aws:acm:us-east-1:519113086097:certificate/89b0b144-eef4-4370-b25b-20195c4f8f24",
+            "optionalHostedZoneId": ""
         },
         "pipelines": {
             "usePointCloudVisualization": {
-                "enabled": true
+                "enabled": false
             }
         },
         "authProvider": {

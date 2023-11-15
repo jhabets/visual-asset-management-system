@@ -307,7 +307,7 @@ export function buildPipelineLambdaSubnetIds(
     
 
     if(config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas) {
-        let subnetsArray:String[] = []
+        const subnetsArray:string[] = []
 
         vpc.privateSubnets.forEach( (element) => {
             subnetsArray.push(element.subnetId)

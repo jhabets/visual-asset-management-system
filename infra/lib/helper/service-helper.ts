@@ -32,7 +32,7 @@ class ServiceFormatter {
         return arn;
     }
 
-    public URL() {}
+    //public URL() {}
     public get Endpoint() {
         return config.app.useFips
             ? this.replaceValues(this.service.fipsHostname)

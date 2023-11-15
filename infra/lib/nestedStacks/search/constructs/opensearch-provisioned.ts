@@ -89,8 +89,8 @@ export class OpensearchProvisionedConstruct extends Construct {
 
         //Loop through all private + isolated subnets and store subnets in an array up to the total number of data nodes specified
         //Note: Make sure each subnet chosen is in a different availability zone. OS Domains are very sensitive about choosing the right subnets. 
-        let subnets:ec2.ISubnet[] = []
-        let azUsed:string[] = []
+        const subnets:ec2.ISubnet[] = []
+        const azUsed:string[] = []
 
         props.vpc.isolatedSubnets.forEach( (element) => {
             if (azUsed.indexOf(element.availabilityZone) == -1 && subnets.length < props.dataNodesCount!) {

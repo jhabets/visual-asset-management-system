@@ -30,7 +30,7 @@ export function buildAuthFunctions(
     vpc: ec2.IVpc
 ): AuthFunctions {
     const storageBucketRole = new iam.Role(scope, "storageBucketRole", {
-        assumedBy: Service("LAMBDA").Principal, 
+        assumedBy: Service("LAMBDA").Principal,
     });
 
     storageResources.s3.assetBucket.grantReadWrite(storageBucketRole);
@@ -58,14 +58,21 @@ export function buildAuthFunctions(
     );
 
     return {
-        groups: buildAuthFunction(scope, lambdaCommonBaseLayer, storageResources, config, vpc, "groups"),
+        groups: buildAuthFunction(
+            scope,
+            lambdaCommonBaseLayer,
+            storageResources,
+            config,
+            vpc,
+            "groups"
+        ),
         constraints: buildAuthFunction(
             scope,
             lambdaCommonBaseLayer,
             storageResources,
             config,
             vpc,
-            "finegrainedaccessconstraints",
+            "finegrainedaccessconstraints"
         ),
         scopeds3access,
     };
@@ -87,7 +94,10 @@ export function buildAuthFunction(
         layers: [lambdaCommonBaseLayer],
         timeout: Duration.minutes(1),
         memorySize: 512,
-        vpc: (config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas)? vpc : undefined, //Use VPC when flagged to use for all lambdas
+        vpc:
+            config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
+                ? vpc
+                : undefined, //Use VPC when flagged to use for all lambdas
         environment: {
             TABLE_NAME: storageResources.dynamo.authEntitiesStorageTable.tableName,
             ASSET_STORAGE_TABLE_NAME: storageResources.dynamo.assetStorageTable.tableName,

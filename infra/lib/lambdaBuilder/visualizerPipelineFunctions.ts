@@ -32,7 +32,10 @@ export function buildExecuteVisualizerPCPipelineFunction(
         layers: [lambdaCommonBaseLayer],
         timeout: Duration.minutes(5),
         memorySize: 256,
-        vpc: (config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas)? vpc : undefined, //Use VPC when flagged to use for all lambdas
+        vpc:
+            config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
+                ? vpc
+                : undefined, //Use VPC when flagged to use for all lambdas
         environment: {
             DEST_BUCKET_NAME: assetVisualizerBucket.bucketName,
             SNS_VISUALIZER_PIPELINE_PC_TOPICARN: pipelineSNSTopic.topicArn,

@@ -33,7 +33,10 @@ export function buildWorkflowService(
         layers: [lambdaCommonBaseLayer],
         timeout: Duration.minutes(15),
         memorySize: 3008,
-        vpc: (config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas)? vpc : undefined, //Use VPC when flagged to use for all lambdas
+        vpc:
+            config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
+                ? vpc
+                : undefined, //Use VPC when flagged to use for all lambdas
         environment: {
             WORKFLOW_STORAGE_TABLE_NAME: storageResources.dynamo.workflowStorageTable.tableName,
             ASSET_STORAGE_TABLE_NAME: storageResources.dynamo.assetStorageTable.tableName,
@@ -70,7 +73,10 @@ export function buildRunProcessingJobFunction(
         layers: [lambdaCommonBaseLayer],
         timeout: Duration.minutes(15),
         memorySize: 3008,
-        vpc: (config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas)? vpc : undefined, //Use VPC when flagged to use for all lambdas
+        vpc:
+            config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
+                ? vpc
+                : undefined, //Use VPC when flagged to use for all lambdas
         environment: {},
     });
     return runProcessingJobFunction;
@@ -91,7 +97,10 @@ export function buildListlWorkflowExecutionsFunction(
         layers: [lambdaCommonBaseLayer],
         timeout: Duration.minutes(15),
         memorySize: 3008,
-        vpc: (config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas)? vpc : undefined, //Use VPC when flagged to use for all lambdas
+        vpc:
+            config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
+                ? vpc
+                : undefined, //Use VPC when flagged to use for all lambdas
         environment: {
             WORKFLOW_EXECUTION_STORAGE_TABLE_NAME: workflowExecutionStorageTable.tableName,
         },
@@ -126,13 +135,16 @@ export function buildCreateWorkflowFunction(
         layers: [lambdaCommonServiceSDKLayer],
         timeout: Duration.minutes(15),
         memorySize: 3008,
-        vpc: (config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas)? vpc : undefined, //Use VPC when flagged to use for all lambdas
+        vpc:
+            config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
+                ? vpc
+                : undefined, //Use VPC when flagged to use for all lambdas
         environment: {
             WORKFLOW_STORAGE_TABLE_NAME: workflowStorageTable.tableName,
             UPLOAD_ALL_LAMBDA_FUNCTION_NAME: uploadAllAssetFunction.functionName,
             VAMS_STACK_NAME: stackName,
             LAMBDA_ROLE_ARN: role.roleArn,
-            ECR_DKR_ENDPOINT: Service("ECR_DKR").Endpoint
+            ECR_DKR_ENDPOINT: Service("ECR_DKR").Endpoint,
         },
     });
     workflowStorageTable.grantReadWriteData(createWorkflowFunction);
@@ -184,7 +196,10 @@ export function buildRunWorkflowFunction(
         layers: [lambdaCommonBaseLayer],
         timeout: Duration.minutes(15),
         memorySize: 3008,
-        vpc: (config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas)? vpc : undefined, //Use VPC when flagged to use for all lambdas
+        vpc:
+            config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
+                ? vpc
+                : undefined, //Use VPC when flagged to use for all lambdas
         environment: {
             WORKFLOW_STORAGE_TABLE_NAME: workflowStorageTable.tableName,
             PIPELINE_STORAGE_TABLE_NAME: pipelineStorageTable.tableName,

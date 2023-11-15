@@ -24,7 +24,10 @@ export function buildAddCommentLambdaFunction(
         layers: [lambdaCommonBaseLayer],
         timeout: Duration.minutes(15),
         memorySize: 3008,
-        vpc: (config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas)? vpc : undefined, //Use VPC when flagged to use for all lambdas
+        vpc:
+            config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
+                ? vpc
+                : undefined, //Use VPC when flagged to use for all lambdas
         environment: {
             COMMENT_STORAGE_TABLE_NAME: commentStorageTable.tableName,
         },
@@ -48,7 +51,10 @@ export function buildEditCommentLambdaFunction(
         layers: [lambdaCommonBaseLayer],
         timeout: Duration.minutes(15),
         memorySize: 3008,
-        vpc: (config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas)? vpc : undefined, //Use VPC when flagged to use for all lambdas
+        vpc:
+            config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
+                ? vpc
+                : undefined, //Use VPC when flagged to use for all lambdas
         environment: {
             COMMENT_STORAGE_TABLE_NAME: commentStorageTable.tableName,
         },
@@ -73,7 +79,10 @@ export function buildCommentService(
         layers: [lambdaCommonBaseLayer],
         timeout: Duration.minutes(15),
         memorySize: 3008,
-        vpc: (config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas)? vpc : undefined, //Use VPC when flagged to use for all lambdas
+        vpc:
+            config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
+                ? vpc
+                : undefined, //Use VPC when flagged to use for all lambdas
         environment: {
             COMMENT_STORAGE_TABLE_NAME: commentStorageTable.tableName,
             ASSET_STORAGE_TABLE_NAME: assetStorageTable.tableName,

@@ -153,7 +153,7 @@ export class CognitoWebNativeNestedStack extends NestedStack {
             ],
         });
 
-        const cognitoIdentityPrincipal:string = Service("COGNITO_IDENTITY").PrincipalString
+        const cognitoIdentityPrincipal: string = Service("COGNITO_IDENTITY").PrincipalString;
         const unauthenticatedRole = new iam.Role(this, "DefaultUnauthenticatedRole", {
             assumedBy: new iam.FederatedPrincipal(
                 cognitoIdentityPrincipal,
@@ -318,10 +318,10 @@ export class CognitoWebNativeNestedStack extends NestedStack {
         identityPool: cognito.CfnIdentityPool,
         props: CognitoWebNativeNestedStackProps
     ) {
-        const cognitoIdentityPrincipal:string = Service("COGNITO_IDENTITY").PrincipalString
+        const cognitoIdentityPrincipal: string = Service("COGNITO_IDENTITY").PrincipalString;
         const authenticatedRole = new iam.Role(this, id, {
             assumedBy: new iam.FederatedPrincipal(
-                cognitoIdentityPrincipal, 
+                cognitoIdentityPrincipal,
                 {
                     StringEquals: {
                         "cognito-identity.amazonaws.com:aud": identityPool.ref,

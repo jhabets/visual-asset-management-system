@@ -55,7 +55,7 @@ export function searchBuilder(
             config: config,
             principalArn: [],
             indexName: indexName,
-            vpc: vpc
+            vpc: vpc,
         });
 
         const indexingFunction = buildMetadataIndexingFunction(
@@ -132,7 +132,7 @@ export function searchBuilder(
         const aos = new OpensearchProvisionedConstruct(scope, "AOS", {
             indexName: indexName,
             config: config,
-            vpc: vpc
+            vpc: vpc,
         });
 
         const indexingFunction = buildMetadataIndexingFunction(

@@ -28,7 +28,10 @@ export function buildCreateDatabaseLambdaFunction(
         layers: [lambdaCommonBaseLayer],
         timeout: Duration.minutes(15),
         memorySize: 3008,
-        vpc: (config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas)? vpc : undefined, //Use VPC when flagged to use for all lambdas
+        vpc:
+            config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
+                ? vpc
+                : undefined, //Use VPC when flagged to use for all lambdas
         environment: {
             DATABASE_STORAGE_TABLE_NAME: databaseStorageTable.tableName,
         },
@@ -55,7 +58,10 @@ export function buildDatabaseService(
         layers: [lambdaCommonBaseLayer],
         timeout: Duration.minutes(15),
         memorySize: 3008,
-        vpc: (config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas)? vpc : undefined, //Use VPC when flagged to use for all lambdas
+        vpc:
+            config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
+                ? vpc
+                : undefined, //Use VPC when flagged to use for all lambdas
         environment: {
             DATABASE_STORAGE_TABLE_NAME: databaseStorageTable.tableName,
             ASSET_STORAGE_TABLE_NAME: assetStorageTable.tableName,

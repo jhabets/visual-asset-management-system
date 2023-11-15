@@ -108,11 +108,11 @@ export class CloudFrontS3WebSiteConstruct extends Construct {
         const connectSrc = [
             "'self'",
             props.cognitoDomain,
-            `https://${Service("COGNITO_IDP").Endpoint}/`, 
+            `https://${Service("COGNITO_IDP").Endpoint}/`,
             `https://${Service("COGNITO_IDENTITY").Endpoint}/`,
             `https://${props.apiUrl}`,
             `https://${props.assetBucketUrl}`,
-            `https://maps.${Service("GEO").Endpoint}/`, 
+            `https://maps.${Service("GEO").Endpoint}/`,
         ];
 
         const scriptSrc = [
@@ -120,7 +120,7 @@ export class CloudFrontS3WebSiteConstruct extends Construct {
             "blob:",
             "'sha256-fUpTbA+CO0BMxLmoVHffhbh3ZTLkeobgwlFl5ICCQmg='", // script in index.html
             props.cognitoDomain,
-            `https://${Service("COGNITO_IDP").Endpoint}/`, 
+            `https://${Service("COGNITO_IDP").Endpoint}/`,
             `https://${Service("COGNITO_IDENTITY").Endpoint}/`,
             `https://${props.apiUrl}`,
             `https://${props.assetBucketUrl}`,

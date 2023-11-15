@@ -35,7 +35,10 @@ export function buildAssetService(
         layers: [lambdaCommonBaseLayer],
         timeout: Duration.minutes(15),
         memorySize: 3008,
-        vpc: (config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas)? vpc : undefined, //Use VPC when flagged to use for all lambdas
+        vpc:
+            config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
+                ? vpc
+                : undefined, //Use VPC when flagged to use for all lambdas
         environment: {
             DATABASE_STORAGE_TABLE_NAME: databaseStorageTable.tableName,
             ASSET_STORAGE_TABLE_NAME: assetStorageTable.tableName,
@@ -69,7 +72,10 @@ export function buildAssetFiles(
         layers: [lambdaCommonBaseLayer],
         timeout: Duration.minutes(15),
         memorySize: 3008,
-        vpc: (config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas)? vpc : undefined, //Use VPC when flagged to use for all lambdas
+        vpc:
+            config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
+                ? vpc
+                : undefined, //Use VPC when flagged to use for all lambdas
         environment: {
             ASSET_STORAGE_TABLE_NAME: assetStorageTable.tableName,
         },
@@ -100,7 +106,10 @@ export function buildUploadAssetFunction(
         layers: [lambdaCommonBaseLayer],
         timeout: Duration.minutes(15),
         memorySize: 3008,
-        vpc: (config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas)? vpc : undefined, //Use VPC when flagged to use for all lambdas
+        vpc:
+            config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
+                ? vpc
+                : undefined, //Use VPC when flagged to use for all lambdas
         environment: {
             DATABASE_STORAGE_TABLE_NAME: databaseStorageTable.tableName,
             ASSET_STORAGE_TABLE_NAME: assetStorageTable.tableName,
@@ -132,7 +141,10 @@ export function buildUploadAllAssetsFunction(
         layers: [lambdaCommonBaseLayer],
         timeout: Duration.minutes(15),
         memorySize: 3008,
-        vpc: (config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas)? vpc : undefined, //Use VPC when flagged to use for all lambdas
+        vpc:
+            config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
+                ? vpc
+                : undefined, //Use VPC when flagged to use for all lambdas
         environment: {
             DATABASE_STORAGE_TABLE_NAME: databaseStorageTable.tableName,
             ASSET_STORAGE_TABLE_NAME: assetStorageTable.tableName,
@@ -165,7 +177,10 @@ export function buildAssetMetadataFunction(
         layers: [lambdaCommonBaseLayer],
         timeout: Duration.minutes(15),
         memorySize: 3008,
-        vpc: (config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas)? vpc : undefined, //Use VPC when flagged to use for all lambdas
+        vpc:
+            config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
+                ? vpc
+                : undefined, //Use VPC when flagged to use for all lambdas
         environment: {
             ASSET_STORAGE_TABLE_NAME: assetStorageTable.tableName,
         },
@@ -193,7 +208,10 @@ export function buildAssetColumnsFunction(
         layers: [lambdaCommonBaseLayer],
         timeout: Duration.minutes(15),
         memorySize: 3008,
-        vpc: (config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas)? vpc : undefined, //Use VPC when flagged to use for all lambdas
+        vpc:
+            config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
+                ? vpc
+                : undefined, //Use VPC when flagged to use for all lambdas
         environment: {
             ASSET_STORAGE_TABLE_NAME: assetStorageTable.tableName,
         },
@@ -220,7 +238,10 @@ export function buildFetchVisualizerAssetFunction(
         layers: [lambdaCommonBaseLayer],
         timeout: Duration.minutes(15),
         memorySize: 3008,
-        vpc: (config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas)? vpc : undefined, //Use VPC when flagged to use for all lambdas
+        vpc:
+            config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
+                ? vpc
+                : undefined, //Use VPC when flagged to use for all lambdas
         environment: {
             ASSET_VISUALIZER_BUCKET_NAME: assetVisualizerStorageBucket.bucketName,
         },
@@ -246,10 +267,13 @@ export function buildDownloadAssetFunction(
         layers: [lambdaCommonBaseLayer],
         timeout: Duration.minutes(15),
         memorySize: 3008,
-        vpc: (config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas)? vpc : undefined, //Use VPC when flagged to use for all lambdas
+        vpc:
+            config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
+                ? vpc
+                : undefined, //Use VPC when flagged to use for all lambdas
         environment: {
             ASSET_STORAGE_TABLE_NAME: assetStorageTable.tableName,
-            S3_ENDPOINT: Service("S3").Endpoint
+            S3_ENDPOINT: Service("S3").Endpoint,
         },
     });
     assetStorageBucket.grantRead(downloadAssetFunction);
@@ -276,7 +300,10 @@ export function buildRevertAssetFunction(
         layers: [lambdaCommonBaseLayer],
         timeout: Duration.minutes(15),
         memorySize: 3008,
-        vpc: (config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas)? vpc : undefined, //Use VPC when flagged to use for all lambdas
+        vpc:
+            config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
+                ? vpc
+                : undefined, //Use VPC when flagged to use for all lambdas
         environment: {
             DATABASE_STORAGE_TABLE_NAME: databaseStorageTable.tableName,
             ASSET_STORAGE_TABLE_NAME: assetStorageTable.tableName,
@@ -307,7 +334,10 @@ export function buildUploadAssetWorkflowFunction(
         layers: [lambdaCommonBaseLayer],
         timeout: Duration.minutes(15),
         memorySize: 3008,
-        vpc: (config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas)? vpc : undefined, //Use VPC when flagged to use for all lambdas
+        vpc:
+            config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
+                ? vpc
+                : undefined, //Use VPC when flagged to use for all lambdas
         environment: {
             UPLOAD_WORKFLOW_ARN: uploadAssetWorkflowStateMachine.stateMachineArn,
         },

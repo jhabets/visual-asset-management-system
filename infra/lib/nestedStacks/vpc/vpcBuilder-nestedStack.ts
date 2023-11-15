@@ -27,11 +27,10 @@ const defaultProps: Partial<VPCBuilderNestedStackProps> = {
 };
 
 export class VPCBuilderNestedStack extends NestedStack {
+    public vpc: ec2.IVpc;
+    public vpceSecurityGroup: ec2.ISecurityGroup;
 
-    public vpc:ec2.IVpc
-    public vpceSecurityGroup: ec2.ISecurityGroup
-
-    private azCount:number
+    private azCount: number;
 
     constructor(parent: Construct, name: string, props: VPCBuilderNestedStackProps) {
         super(parent, name);
@@ -42,19 +41,20 @@ export class VPCBuilderNestedStack extends NestedStack {
         //VisualizerPipelineReqs - 1Az - Private Subnet (Each)
         //ALBReqs - 2AZ - Private or PublicSubnet (Each)
         //OpenSearchProvisioned - 3AZ - Private Subnet (Each)
-        if(props.config.app.openSearch.useProvisioned.enabled) {
+        if (props.config.app.openSearch.useProvisioned.enabled) {
             this.azCount = 3;
-        }
-        else if(props.config.app.useAlb.enabled) {
+        } else if (props.config.app.useAlb.enabled) {
             this.azCount = 2;
         }
-        else
-            //Visualizer pipeline and/or lambda functions only
-            this.azCount = 1;
+        //Visualizer pipeline and/or lambda functions only
+        else this.azCount = 1;
 
         console.log("VPC AZ Count: ", this.azCount);
 
-        if (props.config.app.useGlobalVpc.optionalExternalVpcId != null && props.config.app.useGlobalVpc.optionalExternalVpcId != "undefined") {
+        if (
+            props.config.app.useGlobalVpc.optionalExternalVpcId != null &&
+            props.config.app.useGlobalVpc.optionalExternalVpcId != "undefined"
+        ) {
             //Use Existing VPC
             const getExistingVpc = ec2.Vpc.fromLookup(this, "ImportedVPC", {
                 isDefault: false,
@@ -62,28 +62,40 @@ export class VPCBuilderNestedStack extends NestedStack {
             });
 
             //Error case checks on existing VPC
-            if (getExistingVpc.isolatedSubnets.length == 0 && getExistingVpc.privateSubnets.length == 0) {
+            if (
+                getExistingVpc.isolatedSubnets.length == 0 &&
+                getExistingVpc.privateSubnets.length == 0
+            ) {
                 throw new Error(
                     "Existing VPC must have at least 1 private/isolated subnet already setup!"
                 );
             }
 
-            if(props.config.app.openSearch.useProvisioned.enabled && (getExistingVpc.isolatedSubnets.length+getExistingVpc.privateSubnets.length) < 3) {
+            if (
+                props.config.app.openSearch.useProvisioned.enabled &&
+                getExistingVpc.isolatedSubnets.length + getExistingVpc.privateSubnets.length < 3
+            ) {
                 //Todo: check to make sure we have at least 3 AZ coverage on the subnets
                 throw new Error(
                     "Existing VPC must have at least 3 private/isolated subnets in different AZs already setup when using OpenSearch provisioned!"
                 );
             }
 
-            if (props.config.app.useAlb.enabled && ((props.config.app.useAlb.usePublicSubnet && getExistingVpc.publicSubnets.length < 2) 
-            || (!props.config.app.useAlb.usePublicSubnet && (getExistingVpc.isolatedSubnets.length+getExistingVpc.privateSubnets.length) < 2))) {
+            if (
+                props.config.app.useAlb.enabled &&
+                ((props.config.app.useAlb.usePublicSubnet &&
+                    getExistingVpc.publicSubnets.length < 2) ||
+                    (!props.config.app.useAlb.usePublicSubnet &&
+                        getExistingVpc.isolatedSubnets.length +
+                            getExistingVpc.privateSubnets.length <
+                            2))
+            ) {
                 throw new Error(
                     "Existing VPC must have at least 2 private or public subnets already setup when specifying the use of a ALB (based on Public Subnet Use Configuration)!"
                 );
             }
 
             this.vpc = getExistingVpc;
-
         } else {
             /**
              * Subnets
@@ -98,7 +110,6 @@ export class VPCBuilderNestedStack extends NestedStack {
                 name: "public-subnet",
                 subnetType: ec2.SubnetType.PUBLIC,
                 cidrMask: 22, // 1024
-
             };
 
             /**
@@ -107,7 +118,12 @@ export class VPCBuilderNestedStack extends NestedStack {
             const vpcLogsGroups = new LogGroup(this, "CloudWatchVAMSVpc", {
                 logGroupName:
                     "/aws/vendedlogs/VAMSCloudWatchVPCLogs" +
-                    generateUniqueNameHash(props.config.env.coreStackName,  props.config.env.account, "VAMSCloudWatchVPCLogs", 10),
+                    generateUniqueNameHash(
+                        props.config.env.coreStackName,
+                        props.config.env.account,
+                        "VAMSCloudWatchVPCLogs",
+                        10
+                    ),
                 retention: RetentionDays.ONE_WEEK,
                 removalPolicy: cdk.RemovalPolicy.DESTROY,
             });
@@ -116,8 +132,11 @@ export class VPCBuilderNestedStack extends NestedStack {
 
             this.vpc = new ec2.Vpc(this, "Vpc", {
                 ipAddresses: ec2.IpAddresses.cidr(props.config.app.useGlobalVpc.vpcCidrRange),
-                subnetConfiguration: (props.config.app.useAlb.enabled && props.config.app.useAlb.usePublicSubnet)? [subnetPrivateConfig, subnetPublicConfig] : [subnetPrivateConfig], //If the ALB is public, include the public subnets
-                maxAzs: this.azCount, 
+                subnetConfiguration:
+                    props.config.app.useAlb.enabled && props.config.app.useAlb.usePublicSubnet
+                        ? [subnetPrivateConfig, subnetPublicConfig]
+                        : [subnetPrivateConfig], //If the ALB is public, include the public subnets
+                maxAzs: this.azCount,
                 enableDnsHostnames: true,
                 enableDnsSupport: true,
                 flowLogs: {
@@ -129,17 +148,13 @@ export class VPCBuilderNestedStack extends NestedStack {
             });
 
             /**
-                 * Security Groups
-                 */
-            const vpceSecurityGroup = new ec2.SecurityGroup(
-                this,
-                "VPCeSecurityGroup",
-                {
-                    vpc: this.vpc,
-                    allowAllOutbound: true,
-                    description: "VPC Endpoints Security Group",
-                }
-            );
+             * Security Groups
+             */
+            const vpceSecurityGroup = new ec2.SecurityGroup(this, "VPCeSecurityGroup", {
+                vpc: this.vpc,
+                allowAllOutbound: true,
+                description: "VPC Endpoints Security Group",
+            });
 
             this.vpceSecurityGroup = vpceSecurityGroup;
 
@@ -160,62 +175,62 @@ export class VPCBuilderNestedStack extends NestedStack {
                 "Allow UDP for ECR Access"
             );
 
-                /**
+            /**
              * VPC Endpoints
              */
 
             //Get subnets to put Endpoints in (no more than 1 subnet per AZ)
-            const subnets:ec2.ISubnet[] = []
-            const azUsed:string[] = []
-    
-            this.vpc.isolatedSubnets.forEach( (element) => {
+            const subnets: ec2.ISubnet[] = [];
+            const azUsed: string[] = [];
+
+            this.vpc.isolatedSubnets.forEach((element) => {
                 if (azUsed.indexOf(element.availabilityZone) == -1) {
-                    azUsed.push(element.availabilityZone)
-                    subnets.push(element)
+                    azUsed.push(element.availabilityZone);
+                    subnets.push(element);
                 }
             });
 
-            this.vpc.privateSubnets.forEach( (element) => {
+            this.vpc.privateSubnets.forEach((element) => {
                 if (azUsed.indexOf(element.availabilityZone) == -1) {
-                    azUsed.push(element.availabilityZone)
-                    subnets.push(element)
+                    azUsed.push(element.availabilityZone);
+                    subnets.push(element);
                 }
             });
 
-            this.vpc.publicSubnets.forEach( (element) => {
+            this.vpc.publicSubnets.forEach((element) => {
                 if (azUsed.indexOf(element.availabilityZone) == -1) {
-                    azUsed.push(element.availabilityZone)
-                    subnets.push(element)
+                    azUsed.push(element.availabilityZone);
+                    subnets.push(element);
                 }
             });
 
             //Add VPC endpoints based on configuration options
             //Note: This is mostly to not duplicate endpoints if bringing in an external VPC that already has the needed endpoints for the services
             //Note: More switching is done to avoid creating endpoints when not needed (mostly for cost)
-            if(props.config.app.useGlobalVpc.addVpcEndpoints)
-            {
+            if (props.config.app.useGlobalVpc.addVpcEndpoints) {
                 //Visualizer Pipeline-Only Required Endpoints
-                if(props.config.app.pipelines.usePointCloudVisualization.enabled)
-                {
+                if (props.config.app.pipelines.usePointCloudVisualization.enabled) {
                     // Create VPC endpoint for Batch
                     new ec2.InterfaceVpcEndpoint(this, "BatchEndpoint", {
                         vpc: this.vpc,
                         privateDnsEnabled: true,
                         service: ec2.InterfaceVpcEndpointAwsService.BATCH,
-                        subnets: { subnets: subnets},
+                        subnets: { subnets: subnets },
                         securityGroups: [vpceSecurityGroup],
                     });
                 }
 
                 //All Lambda and Visualizer Pipeline Required Endpoints
-                if(props.config.app.useGlobalVpc.useForAllLambdas || props.config.app.pipelines.usePointCloudVisualization.enabled)
-                {
+                if (
+                    props.config.app.useGlobalVpc.useForAllLambdas ||
+                    props.config.app.pipelines.usePointCloudVisualization.enabled
+                ) {
                     // Create VPC endpoint for ECR API
                     new ec2.InterfaceVpcEndpoint(this, "ECRAPIEndpoint", {
                         vpc: this.vpc,
                         privateDnsEnabled: true, // Needed for Fargate<->ECR
                         service: ec2.InterfaceVpcEndpointAwsService.ECR,
-                        subnets: { subnets: subnets},
+                        subnets: { subnets: subnets },
                         securityGroups: [vpceSecurityGroup],
                     });
 
@@ -224,7 +239,7 @@ export class VPCBuilderNestedStack extends NestedStack {
                         vpc: this.vpc,
                         privateDnsEnabled: true, // Needed for Fargate<->ECR
                         service: ec2.InterfaceVpcEndpointAwsService.ECR_DOCKER,
-                        subnets: { subnets: subnets},
+                        subnets: { subnets: subnets },
                         securityGroups: [vpceSecurityGroup],
                     });
 
@@ -233,7 +248,7 @@ export class VPCBuilderNestedStack extends NestedStack {
                         vpc: this.vpc,
                         privateDnsEnabled: true,
                         service: ec2.InterfaceVpcEndpointAwsService.CLOUDWATCH_LOGS,
-                        subnets: { subnets: subnets},
+                        subnets: { subnets: subnets },
                         securityGroups: [vpceSecurityGroup],
                     });
 
@@ -242,7 +257,7 @@ export class VPCBuilderNestedStack extends NestedStack {
                         vpc: this.vpc,
                         privateDnsEnabled: true,
                         service: ec2.InterfaceVpcEndpointAwsService.SNS,
-                        subnets: { subnets: subnets},
+                        subnets: { subnets: subnets },
                         securityGroups: [vpceSecurityGroup],
                     });
 
@@ -251,34 +266,34 @@ export class VPCBuilderNestedStack extends NestedStack {
                         vpc: this.vpc,
                         privateDnsEnabled: true,
                         service: ec2.InterfaceVpcEndpointAwsService.STEP_FUNCTIONS,
-                        subnets: { subnets: subnets},
+                        subnets: { subnets: subnets },
                         securityGroups: [vpceSecurityGroup],
                     });
-
                 }
 
                 //All Lambda and OpenSearch Provisioned Required Endpoints
-                if(props.config.app.useGlobalVpc.useForAllLambdas || props.config.app.openSearch.useProvisioned.enabled)
-                {
+                if (
+                    props.config.app.useGlobalVpc.useForAllLambdas ||
+                    props.config.app.openSearch.useProvisioned.enabled
+                ) {
                     // Create VPC endpoint for SSM
                     new ec2.InterfaceVpcEndpoint(this, "SSMEndpoint", {
                         vpc: this.vpc,
                         privateDnsEnabled: true,
                         service: ec2.InterfaceVpcEndpointAwsService.SSM,
-                        subnets: { subnets: subnets},
-                        securityGroups: [vpceSecurityGroup]
+                        subnets: { subnets: subnets },
+                        securityGroups: [vpceSecurityGroup],
                     });
                 }
 
                 //All Lambda Required Endpoints
-                if(props.config.app.useGlobalVpc.useForAllLambdas)
-                {
+                if (props.config.app.useGlobalVpc.useForAllLambdas) {
                     // Create VPC endpoint for Lambda
                     new ec2.InterfaceVpcEndpoint(this, "LambdaEndpoint", {
                         vpc: this.vpc,
                         privateDnsEnabled: true,
                         service: ec2.InterfaceVpcEndpointAwsService.LAMBDA,
-                        subnets: { subnets: subnets},
+                        subnets: { subnets: subnets },
                         securityGroups: [vpceSecurityGroup],
                     });
 
@@ -287,30 +302,27 @@ export class VPCBuilderNestedStack extends NestedStack {
                         vpc: this.vpc,
                         privateDnsEnabled: true,
                         service: ec2.InterfaceVpcEndpointAwsService.STS,
-                        subnets: { subnets: subnets},
+                        subnets: { subnets: subnets },
                         securityGroups: [vpceSecurityGroup],
                     });
                 }
             }
 
             //Add Global Gateway Endpoints (no cost so we add for everything)
-            if(props.config.app.useGlobalVpc.addVpcEndpoints) {
+            if (props.config.app.useGlobalVpc.addVpcEndpoints) {
                 this.vpc.addGatewayEndpoint("S3Endpoint", {
                     service: ec2.GatewayVpcEndpointAwsService.S3,
-                    subnets: [{subnets: subnets}],
+                    subnets: [{ subnets: subnets }],
                 });
 
                 this.vpc.addGatewayEndpoint("DynamoEndpoint", {
                     service: ec2.GatewayVpcEndpointAwsService.DYNAMODB,
-                    subnets: [{ subnets: subnets}],
+                    subnets: [{ subnets: subnets }],
                 });
             }
 
-
-        //Nag Supressions
-        NagSuppressions.addResourceSuppressions(
-            vpceSecurityGroup,
-            [
+            //Nag Supressions
+            NagSuppressions.addResourceSuppressions(vpceSecurityGroup, [
                 {
                     id: "AwsSolutions-EC23",
                     reason: "VPCe Security Group is restricted to VPC cidr range on ports 443 and 53",
@@ -319,12 +331,8 @@ export class VPCBuilderNestedStack extends NestedStack {
                     id: "CdkNagValidationFailure",
                     reason: "Validation failure due to inherent nature of CDK Nag Validations of CIDR ranges", //https://github.com/cdklabs/cdk-nag/issues/817
                 },
-            ]
-        );
-            
-
+            ]);
         }
-
 
         /**
          * Outputs
@@ -332,7 +340,5 @@ export class VPCBuilderNestedStack extends NestedStack {
         new CfnOutput(this, "VPCId", {
             value: this.vpc.vpcId,
         });
-    
-
     }
 }

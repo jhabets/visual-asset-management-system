@@ -32,7 +32,11 @@ export function buildSearchFunction(
         layers: [lambdaCommonBaseLayer],
         timeout: Duration.minutes(15),
         memorySize: 3008,
-        vpc: (config.app.openSearch.useProvisioned.enabled || (config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas))? vpc : undefined, //Use VPC when provisioned OS or flag to use for all lambdas
+        vpc:
+            config.app.openSearch.useProvisioned.enabled ||
+            (config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas)
+                ? vpc
+                : undefined, //Use VPC when provisioned OS or flag to use for all lambdas
         environment: {
             AOS_ENDPOINT_PARAM: aosEndpoint,
             AOS_INDEX_NAME_PARAM: indexNameParam,

@@ -39,12 +39,11 @@ export interface EnvProps {
 }
 
 export class CoreVAMSStack extends cdk.Stack {
+    private enabledFeatures: string[] = [];
+    private webAppBuildPath = "../web/build";
 
-    private enabledFeatures: string[] = []
-    private webAppBuildPath = "../web/build"
-
-    private vpc:ec2.IVpc
-    private vpceSecurityGroup:ec2.ISecurityGroup
+    private vpc: ec2.IVpc;
+    private vpceSecurityGroup: ec2.ISecurityGroup;
 
     constructor(scope: Construct, id: string, props: EnvProps) {
         super(scope, id, { ...props, crossRegionReferences: true });
@@ -96,13 +95,13 @@ export class CoreVAMSStack extends cdk.Stack {
         }
 
         //Deploy VPC (nested stack)
-        if(props.config.app.useGlobalVpc.enabled) {
+        if (props.config.app.useGlobalVpc.enabled) {
             const vpcBuilderNestedStack = new VPCBuilderNestedStack(this, "VPCBuilder", {
                 config: props.config,
             });
 
-            this.vpc = vpcBuilderNestedStack.vpc
-            this.vpceSecurityGroup = vpcBuilderNestedStack.vpceSecurityGroup
+            this.vpc = vpcBuilderNestedStack.vpc;
+            this.vpceSecurityGroup = vpcBuilderNestedStack.vpceSecurityGroup;
         }
 
         //Deploy Storage Resources (nested stack)
@@ -293,10 +292,11 @@ export class CoreVAMSStack extends cdk.Stack {
             description: "VPC ID created or used by VAMS deployment",
         });
 
-        if(props.config.app.useAlb.enabled) {
+        if (props.config.app.useAlb.enabled) {
             const albEndpointOutput = new cdk.CfnOutput(this, "AlbEndpointOutput", {
                 value: staticWebBuilderNestedStack.albEndpoint,
-                description: "ALB DNS Endpoint to use for primary domain host DNS routing to static web site",
+                description:
+                    "ALB DNS Endpoint to use for primary domain host DNS routing to static web site",
             });
         }
 

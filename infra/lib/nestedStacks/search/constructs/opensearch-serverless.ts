@@ -16,7 +16,7 @@ import { NagSuppressions } from "cdk-nag";
 import * as Config from "../../../../config/config";
 import { generateUniqueNameHash } from "../../../helper/security";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
-import { aws_opensearchserverless as opensearchserverless } from 'aws-cdk-lib';
+import { aws_opensearchserverless as opensearchserverless } from "aws-cdk-lib";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 
 interface OpensearchServerlessConstructProps extends cdk.StackProps {
@@ -29,39 +29,50 @@ interface OpensearchServerlessConstructProps extends cdk.StackProps {
 export class OpensearchServerlessConstruct extends Construct {
     public aossEndpointUrl: string;
     collectionUid: string;
-    config: Config.Config
-    useVPCEndpoint: boolean
-    vpcEndpointAOSS: cdk.aws_opensearchserverless.CfnVpcEndpoint
-    vpcEndpointAOSSSecurityGroup: ec2.SecurityGroup
+    config: Config.Config;
+    useVPCEndpoint: boolean;
+    vpcEndpointAOSS: cdk.aws_opensearchserverless.CfnVpcEndpoint;
+    vpcEndpointAOSSSecurityGroup: ec2.SecurityGroup;
 
     constructor(parent: Construct, name: string, props: OpensearchServerlessConstructProps) {
         super(parent, name);
 
-        this.collectionUid = ("collection" + generateUniqueNameHash(props.config.env.coreStackName, props.config.env.account, "AOSSCollection", 10)).toLowerCase();
-        this.config = props.config
+        this.collectionUid = (
+            "collection" +
+            generateUniqueNameHash(
+                props.config.env.coreStackName,
+                props.config.env.account,
+                "AOSSCollection",
+                10
+            )
+        ).toLowerCase();
+        this.config = props.config;
 
-        this.useVPCEndpoint = props.config.app.useGlobalVpc.enabled && props.config.app.useGlobalVpc.useForAllLambdas
+        this.useVPCEndpoint =
+            props.config.app.useGlobalVpc.enabled && props.config.app.useGlobalVpc.useForAllLambdas;
 
-        const subNetsVPCe = props.vpc.selectSubnets({subnetType: ec2.SubnetType.PRIVATE_ISOLATED}).subnets //Todo: Add other subnet types to get full range of subnets
-        const subNetIDsVPCe = props.vpc.selectSubnets({subnetType: ec2.SubnetType.PRIVATE_ISOLATED}).subnetIds //Todo: Add other subnet types to get full range of subnets
+        const subNetsVPCe = props.vpc.selectSubnets({
+            subnetType: ec2.SubnetType.PRIVATE_ISOLATED,
+        }).subnets; //Todo: Add other subnet types to get full range of subnets
+        const subNetIDsVPCe = props.vpc.selectSubnets({
+            subnetType: ec2.SubnetType.PRIVATE_ISOLATED,
+        }).subnetIds; //Todo: Add other subnet types to get full range of subnets
 
-        //Create Open Search VPC endpoint if we are using a VPC for all our lambda functions 
+        //Create Open Search VPC endpoint if we are using a VPC for all our lambda functions
         //Note: Ignoring addVpcEndpoint configuration on purpose as this is required to create to attach to a collection network security policy. must create at this juncture
-        if(this.useVPCEndpoint)
-        {
-            const aossVPCESecurityGroup = new ec2.SecurityGroup(
-                this,
-                "AossVPCESecurityGroup",
-                {
-                    vpc: props.vpc,
-                    allowAllOutbound: true, //allows all output on endpoint to the service
-                    description: "AOSS VPC Endpoint Security Group",
-                }
-            );
+        if (this.useVPCEndpoint) {
+            const aossVPCESecurityGroup = new ec2.SecurityGroup(this, "AossVPCESecurityGroup", {
+                vpc: props.vpc,
+                allowAllOutbound: true, //allows all output on endpoint to the service
+                description: "AOSS VPC Endpoint Security Group",
+            });
 
             //Allow connections from any VPC IP
-            aossVPCESecurityGroup.addIngressRule(ec2.Peer.ipv4(props.vpc.vpcCidrBlock), ec2.Port.tcp(443))
-            this.vpcEndpointAOSSSecurityGroup = aossVPCESecurityGroup
+            aossVPCESecurityGroup.addIngressRule(
+                ec2.Peer.ipv4(props.vpc.vpcCidrBlock),
+                ec2.Port.tcp(443)
+            );
+            this.vpcEndpointAOSSSecurityGroup = aossVPCESecurityGroup;
 
             // let subNetIDsVPCe: string[] = []
 
@@ -81,18 +92,27 @@ export class OpensearchServerlessConstruct extends Construct {
 
             //Add VPC Endpoint here instead of global VPC as it's directly needed to configure AOSS
             //(https://docs.aws.amazon.com/opensearch-service/latest/developerguide/serverless-network.html, https://docs.aws.amazon.com/opensearch-service/latest/developerguide/serverless-vpc.html, https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_opensearchserverless.CfnVpcEndpoint.html)
-            const cfnVpcEndpoint = new opensearchserverless.CfnVpcEndpoint(this, 'AOSSCfnVpcEndpoint', {
-                name: 'aossendpoint'+generateUniqueNameHash(props.config.env.coreStackName, props.config.env.account, "AOSSCfnVpcEndpoint", 10).toLowerCase(),
-                subnetIds: subNetIDsVPCe,
-                vpcId: props.vpc.vpcId,
-                securityGroupIds: [aossVPCESecurityGroup.securityGroupId],
-            });
+            const cfnVpcEndpoint = new opensearchserverless.CfnVpcEndpoint(
+                this,
+                "AOSSCfnVpcEndpoint",
+                {
+                    name:
+                        "aossendpoint" +
+                        generateUniqueNameHash(
+                            props.config.env.coreStackName,
+                            props.config.env.account,
+                            "AOSSCfnVpcEndpoint",
+                            10
+                        ).toLowerCase(),
+                    subnetIds: subNetIDsVPCe,
+                    vpcId: props.vpc.vpcId,
+                    securityGroupIds: [aossVPCESecurityGroup.securityGroupId],
+                }
+            );
 
-            cfnVpcEndpoint.applyRemovalPolicy(cdk.RemovalPolicy.DESTROY)
-            this.vpcEndpointAOSS = cfnVpcEndpoint
-
+            cfnVpcEndpoint.applyRemovalPolicy(cdk.RemovalPolicy.DESTROY);
+            this.vpcEndpointAOSS = cfnVpcEndpoint;
         }
-
 
         const schemaDeploy = new njslambda.NodejsFunction(
             this,
@@ -104,8 +124,8 @@ export class OpensearchServerlessConstruct extends Construct {
                     externalModules: ["aws-sdk"],
                 },
                 runtime: LAMBDA_NODE_RUNTIME,
-                vpc: props.vpc
-                //Note: This schema deploy resource must run in the VPC in order to communicate with the AOSS and associated VPC Endpoint. 
+                vpc: props.vpc,
+                //Note: This schema deploy resource must run in the VPC in order to communicate with the AOSS and associated VPC Endpoint.
             }
         );
 
@@ -140,7 +160,15 @@ export class OpensearchServerlessConstruct extends Construct {
             AWSOwnedKey: true,
         };
         const encryptionPolicyCfn = new aoss.CfnSecurityPolicy(this, "OSEncryptionPolicy", {
-            name: (`ep` + generateUniqueNameHash(props.config.env.coreStackName, props.config.env.account, "OSEncryptionPolicy", 20)).toLowerCase(),
+            name: (
+                `ep` +
+                generateUniqueNameHash(
+                    props.config.env.coreStackName,
+                    props.config.env.account,
+                    "OSEncryptionPolicy",
+                    20
+                )
+            ).toLowerCase(),
             policy: JSON.stringify(encryptionPolicy),
             type: "encryption",
         });
@@ -152,18 +180,25 @@ export class OpensearchServerlessConstruct extends Construct {
                     { ResourceType: "dashboard", Resource: [`collection/${collection.name}`] },
                 ],
                 AllowFromPublic: !this.useVPCEndpoint,
-                SourceVPCEs: this.useVPCEndpoint? [this.vpcEndpointAOSS.ref] : [],
+                SourceVPCEs: this.useVPCEndpoint ? [this.vpcEndpointAOSS.ref] : [],
             },
         ];
 
         const networkPolicyCfn = new aoss.CfnSecurityPolicy(this, "OSNetworkPolicy", {
-            name: (`np` + generateUniqueNameHash(props.config.env.coreStackName, props.config.env.account, "OSNetworkPolicy", 20)).toLowerCase(),
+            name: (
+                `np` +
+                generateUniqueNameHash(
+                    props.config.env.coreStackName,
+                    props.config.env.account,
+                    "OSNetworkPolicy",
+                    20
+                )
+            ).toLowerCase(),
             policy: JSON.stringify(networkPolicy),
             type: "network",
         });
 
-        if(this.useVPCEndpoint)
-            networkPolicyCfn.node.addDependency(this.vpcEndpointAOSS);
+        if (this.useVPCEndpoint) networkPolicyCfn.node.addDependency(this.vpcEndpointAOSS);
 
         collection.addDependency(encryptionPolicyCfn);
         collection.addDependency(networkPolicyCfn);
@@ -176,7 +211,7 @@ export class OpensearchServerlessConstruct extends Construct {
         schemaDeployProvider.node.addDependency(collection);
         schemaDeployProvider.node.addDependency(accessPolicy);
 
-        if(this.useVPCEndpoint) {
+        if (this.useVPCEndpoint) {
             schemaDeployProvider.node.addDependency(this.vpcEndpointAOSSSecurityGroup);
             schemaDeployProvider.node.addDependency(this.vpcEndpointAOSS);
         }
@@ -202,22 +237,18 @@ export class OpensearchServerlessConstruct extends Construct {
             },
         ]);
 
-        if(this.useVPCEndpoint) {
+        if (this.useVPCEndpoint) {
             //Nag Supressions
-            NagSuppressions.addResourceSuppressions(
-                this.vpcEndpointAOSSSecurityGroup,
-                [
-                    {
-                        id: "AwsSolutions-EC23",
-                        reason: "VPC Endpoint Security Group is restricted to VPC cidr range on ports 443",
-                    },
-                    {
-                        id: "CdkNagValidationFailure",
-                        reason: "Validation failure due to inherent nature of CDK Nag Validations of CIDR ranges", //https://github.com/cdklabs/cdk-nag/issues/817
-                    },
-                ]
-            );
-
+            NagSuppressions.addResourceSuppressions(this.vpcEndpointAOSSSecurityGroup, [
+                {
+                    id: "AwsSolutions-EC23",
+                    reason: "VPC Endpoint Security Group is restricted to VPC cidr range on ports 443",
+                },
+                {
+                    id: "CdkNagValidationFailure",
+                    reason: "Validation failure due to inherent nature of CDK Nag Validations of CIDR ranges", //https://github.com/cdklabs/cdk-nag/issues/817
+                },
+            ]);
         }
     }
 
@@ -261,7 +292,14 @@ export class OpensearchServerlessConstruct extends Construct {
         ];
 
         const accessPolicy = new aoss.CfnAccessPolicy(construct, "Policy", {
-            name: "ac" + generateUniqueNameHash(this.config.env.coreStackName, this.config.env.account, "ac"+construct.role?.roleArn, 20),
+            name:
+                "ac" +
+                generateUniqueNameHash(
+                    this.config.env.coreStackName,
+                    this.config.env.account,
+                    "ac" + construct.role?.roleArn,
+                    20
+                ),
             type: "data",
             policy: JSON.stringify(policy),
         });
@@ -277,13 +315,13 @@ export class OpensearchServerlessConstruct extends Construct {
     }
 
     public grantVPCeAccess(lambdaFunction: lambda.Function) {
-
         //Add rules to VPC endpoints if we created it
-        if(this.useVPCEndpoint)
-        {
-            this.vpcEndpointAOSSSecurityGroup.connections.allowFrom(lambdaFunction, ec2.Port.tcp(443));
+        if (this.useVPCEndpoint) {
+            this.vpcEndpointAOSSSecurityGroup.connections.allowFrom(
+                lambdaFunction,
+                ec2.Port.tcp(443)
+            );
         }
-
     }
 
     private _grantCollectionAccess(principalsForAOSS: (string | undefined)[]) {
@@ -308,7 +346,14 @@ export class OpensearchServerlessConstruct extends Construct {
         ];
 
         const accessPolicy = new aoss.CfnAccessPolicy(this, "Policy", {
-            name: "acp" + generateUniqueNameHash(this.config.env.coreStackName, this.config.env.account, "acp"+principalsForAOSS.toString(), 20),
+            name:
+                "acp" +
+                generateUniqueNameHash(
+                    this.config.env.coreStackName,
+                    this.config.env.account,
+                    "acp" + principalsForAOSS.toString(),
+                    20
+                ),
             type: "data",
             policy: JSON.stringify(policy),
         });

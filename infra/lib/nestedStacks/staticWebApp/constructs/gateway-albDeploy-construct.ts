@@ -37,8 +37,7 @@ export class GatewayAlbDeployConstruct extends Construct {
         webAppVPCE: ec2.SecurityGroup;
     };
 
-    readonly s3VpcEndpoint:ec2.InterfaceVpcEndpoint
-
+    readonly s3VpcEndpoint: ec2.InterfaceVpcEndpoint;
 
     constructor(parent: Construct, name: string, props: GatewayAlbDeployConstructProps) {
         super(parent, name);
@@ -49,18 +48,14 @@ export class GatewayAlbDeployConstruct extends Construct {
 
         //For pipelines grab the appropriate subnet based on if we are deploying to public or private/isolate subnets
         //At this point we already know there is at least 2 public or private/isolate subnets with other checks previously done
-        if (props.config.app.useAlb.usePublicSubnet)
-        {
+        if (props.config.app.useAlb.usePublicSubnet) {
             this.subnets = {
-                webApp: this.vpc.publicSubnets
+                webApp: this.vpc.publicSubnets,
             };
-        }
-        else
-        {
+        } else {
             this.subnets = {
-                webApp: this.vpc.privateSubnets.concat(this.vpc.isolatedSubnets)
+                webApp: this.vpc.privateSubnets.concat(this.vpc.isolatedSubnets),
             };
-
         }
 
         //Create ALB security group and open to any IP on port 443/80
@@ -87,9 +82,8 @@ export class GatewayAlbDeployConstruct extends Construct {
 
         this.securityGroups = {
             webAppALB: webAppALBSecurityGroup,
-            webAppVPCE: webAppVPCESecurityGroup
+            webAppVPCE: webAppVPCESecurityGroup,
         };
-
 
         // Create VPC interface endpoint for S3 (Needed for ALB<->S3)
         //Note: This endpoint should be created despite the GlobalVPC flag of create endpoint or not in order to setup ALB listeners properly
@@ -97,12 +91,11 @@ export class GatewayAlbDeployConstruct extends Construct {
             vpc: props.vpc,
             privateDnsEnabled: false,
             service: ec2.InterfaceVpcEndpointAwsService.S3,
-            subnets: { subnets: this.subnets.webApp},
+            subnets: { subnets: this.subnets.webApp },
             securityGroups: [webAppVPCESecurityGroup],
         });
 
-        this.s3VpcEndpoint = s3VPCEndpoint
-
+        this.s3VpcEndpoint = s3VPCEndpoint;
 
         //Nag Supressions
         NagSuppressions.addResourceSuppressions(webAppVPCESecurityGroup, [
@@ -116,13 +109,11 @@ export class GatewayAlbDeployConstruct extends Construct {
             },
         ]);
 
-
         NagSuppressions.addResourceSuppressions(webAppALBSecurityGroup, [
             {
                 id: "AwsSolutions-EC23",
                 reason: "Web App ALB Security Group is purposely left open to any IP (0.0.0.0) on port 443 and 80 as this is the public website entry point",
             },
         ]);
-
     }
 }

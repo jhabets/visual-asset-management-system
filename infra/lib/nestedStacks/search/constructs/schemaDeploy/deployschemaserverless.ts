@@ -109,7 +109,6 @@ export const handler: Handler = async function (event: any) {
 
     console.log("established opensearch client connection");
 
-
     const exists_resp = await client.indices.exists({
         index: event?.ResourceProperties?.indexName,
     });

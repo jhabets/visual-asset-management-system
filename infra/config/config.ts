@@ -15,7 +15,7 @@ dotenv.config();
 //Top level configurations
 export const LAMBDA_PYTHON_RUNTIME = Runtime.PYTHON_3_10;
 export const LAMBDA_NODE_RUNTIME = Runtime.NODEJS_18_X;
-export const OPENSEARCH_VERSION = cdk.aws_opensearchservice.EngineVersion.OPENSEARCH_2_7
+export const OPENSEARCH_VERSION = cdk.aws_opensearchservice.EngineVersion.OPENSEARCH_2_7;
 
 export function getConfig(app: cdk.App): Config {
     const file: string = readFileSync(join(__dirname, "config.json"), {
@@ -30,8 +30,8 @@ export function getConfig(app: cdk.App): Config {
     config.dockerDefaultPlatform = <string>process.env.DOCKER_DEFAULT_PLATFORM;
     config.enableCdkNag = true;
 
-    console.log("Python Version: ",LAMBDA_PYTHON_RUNTIME.name);
-    console.log("Node Version: ",LAMBDA_NODE_RUNTIME.name);
+    console.log("Python Version: ", LAMBDA_PYTHON_RUNTIME.name);
+    console.log("Node Version: ", LAMBDA_NODE_RUNTIME.name);
 
     //Main Variables (Parameter fall-back chain: context -> config file -> environment variables -> other fallback)
     config.env.account = <string>(config.env.account || process.env.CDK_DEFAULT_ACCOUNT);
@@ -66,9 +66,17 @@ export function getConfig(app: cdk.App): Config {
 
     //If we are govCloud, we always use FIPS, Full use VPC, ALB deploy, use OpenSearch Provisioned (serverless not available in GovCloud), and disable location service (currently not supported in GovCloud 08-29-2023)
     if (config.app.govCloud.enabled) {
-
-        if(!config.app.useFips || !config.app.useGlobalVpc.enabled || !config.app.useGlobalVpc.useForAllLambdas || !config.app.useAlb.enabled || config.app.openSearch.useProvisioned.enabled || config.app.useLocationService.enabled) {
-            console.warn("Configuration Warning: Due to GovCloud being enabled, auto-enabling Use Global VPC, use VPC For All Lambdas, Use ALB, and Use OpenSearch Provisioned flag and disabling Use Location Services flag")
+        if (
+            !config.app.useFips ||
+            !config.app.useGlobalVpc.enabled ||
+            !config.app.useGlobalVpc.useForAllLambdas ||
+            !config.app.useAlb.enabled ||
+            config.app.openSearch.useProvisioned.enabled ||
+            config.app.useLocationService.enabled
+        ) {
+            console.warn(
+                "Configuration Warning: Due to GovCloud being enabled, auto-enabling Use Global VPC, use VPC For All Lambdas, Use ALB, and Use OpenSearch Provisioned flag and disabling Use Location Services flag"
+            );
         }
 
         config.app.useFips = true;
@@ -80,27 +88,31 @@ export function getConfig(app: cdk.App): Config {
     }
 
     //If using ALB, visualizer pipelines, or opensearch provisioned, make sure Global VPC is on as this needs to be in a VPC
-    if (config.app.useAlb.enabled || config.app.pipelines.usePointCloudVisualization.enabled || config.app.openSearch.useProvisioned.enabled)
-    {
-        if(!config.app.useGlobalVpc.enabled) {
-            console.warn("Configuration Warning: Due to ALB, Visualization Pipeline, or OpenSearch Provisioned being enabled, auto-enabling Use Global VPC flag")
+    if (
+        config.app.useAlb.enabled ||
+        config.app.pipelines.usePointCloudVisualization.enabled ||
+        config.app.openSearch.useProvisioned.enabled
+    ) {
+        if (!config.app.useGlobalVpc.enabled) {
+            console.warn(
+                "Configuration Warning: Due to ALB, Visualization Pipeline, or OpenSearch Provisioned being enabled, auto-enabling Use Global VPC flag"
+            );
         }
 
         config.app.useGlobalVpc.enabled = true;
     }
 
     //Any configuration warnings/errors checks
-    if (
-        config.app.useGlobalVpc.enabled &&
-        (!config.app.useGlobalVpc.addVpcEndpoints)
-    ) {
-        console.warn("Configuration Warning: This configuration has disabled Add VPC Endpoints. Please manually ensure the VPC used has all nessesary VPC Interface Endpoints to ensure proper VAMS operations.")
+    if (config.app.useGlobalVpc.enabled && !config.app.useGlobalVpc.addVpcEndpoints) {
+        console.warn(
+            "Configuration Warning: This configuration has disabled Add VPC Endpoints. Please manually ensure the VPC used has all nessesary VPC Interface Endpoints to ensure proper VAMS operations."
+        );
     }
 
     if (
         config.app.useGlobalVpc.enabled &&
-        (config.app.useGlobalVpc.vpcCidrRange == "UNDEFINED" &&
-        config.app.useGlobalVpc.optionalExternalVpcId== "UNDEFINED")
+        config.app.useGlobalVpc.vpcCidrRange == "UNDEFINED" &&
+        config.app.useGlobalVpc.optionalExternalVpcId == "UNDEFINED"
     ) {
         throw new Error(
             "Configuration Error: Must define either a global VPC Cidr Range or an External VPC ID."

@@ -42,7 +42,10 @@ export function buildMetadataFunction(
         layers: [lambdaCommonBaseLayer],
         timeout: Duration.minutes(15),
         memorySize: 3008,
-        vpc: (config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas)? vpc : undefined, //Use VPC when flagged to use for all lambdas
+        vpc:
+            config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
+                ? vpc
+                : undefined, //Use VPC when flagged to use for all lambdas
         environment: {
             METADATA_STORAGE_TABLE_NAME: storageResources.dynamo.metadataStorageTable.tableName,
             ASSET_STORAGE_TABLE_NAME: storageResources.dynamo.assetStorageTable.tableName,
@@ -72,7 +75,11 @@ export function buildMetadataIndexingFunction(
         layers: [lambdaCommonBaseLayer],
         timeout: Duration.minutes(15),
         memorySize: 3008,
-        vpc: (config.app.openSearch.useProvisioned.enabled || (config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas))? vpc : undefined, //Use VPC when provisioned OS or flag to use for all lambdas
+        vpc:
+            config.app.openSearch.useProvisioned.enabled ||
+            (config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas)
+                ? vpc
+                : undefined, //Use VPC when provisioned OS or flag to use for all lambdas
         environment: {
             METADATA_STORAGE_TABLE_NAME: storageResources.dynamo.metadataStorageTable.tableName,
             ASSET_STORAGE_TABLE_NAME: storageResources.dynamo.assetStorageTable.tableName,

@@ -137,7 +137,6 @@ export class AlbS3WebsiteAlbDeployConstruct extends Construct {
         props.vpceSecurityGroup.connections.allowFrom(alb, ec2.Port.tcp(443));
         props.vpceSecurityGroup.connections.allowFrom(alb, ec2.Port.tcp(80));
 
-
         //TODO: Figure out why this policy is not working and still letting requests through for other bucket names (use ALB dns name to test)
         //TODO?: Specifically add a deny policy for anything outside of bucket
         //Add policy to VPC endpoint to only allow access to the specific S3 Bucket
@@ -357,6 +356,5 @@ export class AlbS3WebsiteAlbDeployConstruct extends Construct {
 
         // export any cf outputs
         new cdk.CfnOutput(this, "webAppBucket", { value: webAppBucket.bucketName });
-
     }
 }

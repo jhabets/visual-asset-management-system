@@ -102,14 +102,10 @@ export class StaticWebBuilderNestedStack extends NestedStack {
             this.endpointURL = website.endPointURL;
         } else {
             //Deploy with ALB (aka, use ALB->VPCEndpoint->S3 as path for web deployment)
-            const webAppDistroNetwork = new GatewayAlbDeployConstruct(
-                this,
-                "WebAppDistroNetwork",
-                {
-                    ...props,
-                    vpc: props.vpc
-                }
-            );
+            const webAppDistroNetwork = new GatewayAlbDeployConstruct(this, "WebAppDistroNetwork", {
+                ...props,
+                vpc: props.vpc,
+            });
 
             const website = new AlbS3WebsiteAlbDeployConstruct(this, "WebApp", {
                 ...props,
@@ -122,7 +118,7 @@ export class StaticWebBuilderNestedStack extends NestedStack {
                 albSubnets: webAppDistroNetwork.subnets.webApp,
                 s3VPCEndpoint: webAppDistroNetwork.s3VpcEndpoint,
                 albSecurityGroup: webAppDistroNetwork.securityGroups.webAppALB,
-                vpceSecurityGroup: webAppDistroNetwork.securityGroups.webAppVPCE
+                vpceSecurityGroup: webAppDistroNetwork.securityGroups.webAppVPCE,
             });
 
             /**

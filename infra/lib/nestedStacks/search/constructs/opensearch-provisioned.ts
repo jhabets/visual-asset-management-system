@@ -59,7 +59,7 @@ export class OpensearchProvisionedConstruct extends Construct {
     aosName: string;
     domain: cdk.aws_opensearchservice.Domain;
     domainEndpoint: string;
-    config: Config.Config
+    config: Config.Config;
 
     constructor(scope: Construct, name: string, props: OpensearchProvisionedConstructProps) {
         super(scope, name);
@@ -88,20 +88,26 @@ export class OpensearchProvisionedConstruct extends Construct {
         })();
 
         //Loop through all private + isolated subnets and store subnets in an array up to the total number of data nodes specified
-        //Note: Make sure each subnet chosen is in a different availability zone. OS Domains are very sensitive about choosing the right subnets. 
-        const subnets:ec2.ISubnet[] = []
-        const azUsed:string[] = []
+        //Note: Make sure each subnet chosen is in a different availability zone. OS Domains are very sensitive about choosing the right subnets.
+        const subnets: ec2.ISubnet[] = [];
+        const azUsed: string[] = [];
 
-        props.vpc.isolatedSubnets.forEach( (element) => {
-            if (azUsed.indexOf(element.availabilityZone) == -1 && subnets.length < props.dataNodesCount!) {
-                azUsed.push(element.availabilityZone)
-                subnets.push(element)
+        props.vpc.isolatedSubnets.forEach((element) => {
+            if (
+                azUsed.indexOf(element.availabilityZone) == -1 &&
+                subnets.length < props.dataNodesCount!
+            ) {
+                azUsed.push(element.availabilityZone);
+                subnets.push(element);
             }
         });
-        props.vpc.privateSubnets.forEach( (element) => {
-            if (azUsed.indexOf(element.availabilityZone) == -1 && subnets.length < props.dataNodesCount!) {
-                azUsed.push(element.availabilityZone)
-                subnets.push(element)
+        props.vpc.privateSubnets.forEach((element) => {
+            if (
+                azUsed.indexOf(element.availabilityZone) == -1 &&
+                subnets.length < props.dataNodesCount!
+            ) {
+                azUsed.push(element.availabilityZone);
+                subnets.push(element);
             }
         });
 
@@ -118,8 +124,7 @@ export class OpensearchProvisionedConstruct extends Construct {
                 enabled: true,
             },
             vpc: props.vpc,
-            vpcSubnets: [{subnets: subnets,
-                        onePerAz: true }],
+            vpcSubnets: [{ subnets: subnets, onePerAz: true }],
             capacity: {
                 dataNodeInstanceType: props.dataNodeInstanceType,
                 dataNodes: props.dataNodesCount,
@@ -156,8 +161,8 @@ export class OpensearchProvisionedConstruct extends Construct {
                     externalModules: ["aws-sdk"],
                 },
                 runtime: LAMBDA_NODE_RUNTIME,
-                vpc: props.vpc
-                //Note: This schema deploy resource must run in the VPC in order to communicate with the AOS provisioned running in the VPC. 
+                vpc: props.vpc,
+                //Note: This schema deploy resource must run in the VPC in order to communicate with the AOS provisioned running in the VPC.
             }
         );
 
@@ -178,7 +183,7 @@ export class OpensearchProvisionedConstruct extends Construct {
         );
 
         this.grantOSDomainAccess(schemaDeploy);
-        
+
         const schemaDeployProvider = new cr.Provider(
             this,
             "OpensearchProvisionedDeploySchemaProvider",
@@ -233,7 +238,6 @@ export class OpensearchProvisionedConstruct extends Construct {
     }
 
     public grantOSDomainAccess(lambdaFunction: lambda.Function & { role?: cdk.aws_iam.IRole }) {
-
         //Restrict to role ARNS of the lambda functions accessing opensearch (main access policy for opensearch provisioned + VPC security group)
         const opensearchDomainPolicy = new cdk.aws_iam.PolicyStatement({
             effect: cdk.aws_iam.Effect.ALLOW,

@@ -40,7 +40,10 @@ export function buildCreatePipelineFunction(
         layers: [lambdaCommonBaseLayer],
         timeout: Duration.minutes(15),
         memorySize: 3008,
-        vpc: (config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas)? vpc : undefined, //Use VPC when flagged to use for all lambdas
+        vpc:
+            config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
+                ? vpc
+                : undefined, //Use VPC when flagged to use for all lambdas
         environment: {
             PIPELINE_STORAGE_TABLE_NAME: pipelineStorageTable.tableName,
             S3_BUCKET: artefactsBucket.bucketName,
@@ -57,7 +60,7 @@ export function buildCreatePipelineFunction(
             ECR_DKR_ENDPOINT: Service("ECR_DKR").Endpoint,
             LAMBDA_PYTHON_VERSION: LAMBDA_PYTHON_RUNTIME.name,
             SUBNET_IDS: newPipelineSubnetIds, //Determines if we put the pipeline lambdas in a VPC or not
-            SECURITYGROUP_IDS: newPipelineLambdaSecurityGroup.securityGroupId //used if subnet IDs are passed in
+            SECURITYGROUP_IDS: newPipelineLambdaSecurityGroup.securityGroupId, //used if subnet IDs are passed in
         },
     });
     enablePipelineFunction.grantInvoke(createPipelineFunction);
@@ -137,15 +140,14 @@ export function buildCreatePipelineFunction(
             effect: iam.Effect.ALLOW,
             actions: [
                 "lambda:CreateFunction",
-                "lambda:UpdateFunctionConfiguration", 
-                "ec2:DescribeSecurityGroups", 
-                "ec2:DescribeSubnets", 
-                "ec2:DescribeVpcs" 
+                "lambda:UpdateFunctionConfiguration",
+                "ec2:DescribeSecurityGroups",
+                "ec2:DescribeSubnets",
+                "ec2:DescribeVpcs",
             ],
             resources: ["*"],
         })
     );
-
 
     suppressCdkNagErrorsByGrantReadWrite(createPipelineFunction);
     return createPipelineFunction;
@@ -166,7 +168,7 @@ function createRoleToAttachToLambdaPipelines(scope: Construct, assetBucket: s3.B
                             "s3:GetObjectVersion",
                         ],
                         resources: [`${assetBucket.bucketArn}`, `${assetBucket.bucketArn}/*`],
-                    })
+                    }),
                 ],
             }),
         },
@@ -192,7 +194,10 @@ export function buildPipelineService(
         layers: [lambdaCommonBaseLayer],
         timeout: Duration.minutes(15),
         memorySize: 3008,
-        vpc: (config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas)? vpc : undefined, //Use VPC when flagged to use for all lambdas
+        vpc:
+            config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
+                ? vpc
+                : undefined, //Use VPC when flagged to use for all lambdas
         environment: {
             PIPELINE_STORAGE_TABLE_NAME: storageResources.dynamo.pipelineStorageTable.tableName,
             ASSET_STORAGE_TABLE_NAME: storageResources.dynamo.assetStorageTable.tableName,
@@ -271,7 +276,10 @@ export function buildEnablePipelineFunction(
         layers: [lambdaCommonBaseLayer],
         timeout: Duration.minutes(15),
         memorySize: 3008,
-        vpc: (config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas)? vpc : undefined, //Use VPC when flagged to use for all lambdas
+        vpc:
+            config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
+                ? vpc
+                : undefined, //Use VPC when flagged to use for all lambdas
         environment: {
             PIPELINE_STORAGE_TABLE_NAME: pipelineStorageTable.tableName,
         },
@@ -282,18 +290,13 @@ export function buildEnablePipelineFunction(
 
 export function buildPipelineLambdaSecurityGroup(
     scope: Construct,
-    vpc: ec2.IVpc,
+    vpc: ec2.IVpc
 ): ec2.ISecurityGroup {
-    
-    const pipelineLambdaSecurityGroup = new ec2.SecurityGroup(
-        scope,
-        "VPCeSecurityGroup",
-        {
-            vpc: vpc,
-            allowAllOutbound: true,
-            description: "VPC Endpoints Security Group",
-        }
-    );
+    const pipelineLambdaSecurityGroup = new ec2.SecurityGroup(scope, "VPCeSecurityGroup", {
+        vpc: vpc,
+        allowAllOutbound: true,
+        description: "VPC Endpoints Security Group",
+    });
 
     return pipelineLambdaSecurityGroup;
 }
@@ -303,28 +306,23 @@ export function buildPipelineLambdaSubnetIds(
     vpc: ec2.IVpc,
     config: Config.Config
 ): string {
-    
-    
+    if (config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas) {
+        const subnetsArray: string[] = [];
 
-    if(config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas) {
-        const subnetsArray:string[] = []
-
-        vpc.privateSubnets.forEach( (element) => {
-            subnetsArray.push(element.subnetId)
-        }); 
-
-        vpc.isolatedSubnets.forEach( (element) => {
-                subnetsArray.push(element.subnetId)
-
+        vpc.privateSubnets.forEach((element) => {
+            subnetsArray.push(element.subnetId);
         });
 
-        vpc.publicSubnets.forEach( (element) => {
-                subnetsArray.push(element.subnetId)
+        vpc.isolatedSubnets.forEach((element) => {
+            subnetsArray.push(element.subnetId);
         });
 
-        return subnetsArray.join(',');
-    }
-    else {
+        vpc.publicSubnets.forEach((element) => {
+            subnetsArray.push(element.subnetId);
+        });
+
+        return subnetsArray.join(",");
+    } else {
         return "";
     }
 }

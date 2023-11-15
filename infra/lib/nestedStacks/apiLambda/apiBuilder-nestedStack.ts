@@ -78,7 +78,15 @@ export class ApiBuilderNestedStack extends NestedStack {
     ) {
         super(parent, name);
 
-        apiBuilder(this, config, api, storageResources, lambdaCommonBaseLayer, lambdaCommonServiceSDKLayer, vpc);
+        apiBuilder(
+            this,
+            config,
+            api,
+            storageResources,
+            lambdaCommonBaseLayer,
+            lambdaCommonServiceSDKLayer,
+            vpc
+        );
     }
 }
 
@@ -395,7 +403,13 @@ export function apiBuilder(
         api: api,
     });
 
-    const pipelineService = buildPipelineService(scope, lambdaCommonBaseLayer, storageResources, config, vpc);
+    const pipelineService = buildPipelineService(
+        scope,
+        lambdaCommonBaseLayer,
+        storageResources,
+        config,
+        vpc
+    );
     attachFunctionToApi(scope, pipelineService, {
         routePath: "/database/{databaseId}/pipelines",
         method: apigwv2.HttpMethod.GET,
@@ -418,7 +432,13 @@ export function apiBuilder(
     });
 
     //Workflows
-    const workflowService = buildWorkflowService(scope, lambdaCommonBaseLayer, storageResources, config, vpc);
+    const workflowService = buildWorkflowService(
+        scope,
+        lambdaCommonBaseLayer,
+        storageResources,
+        config,
+        vpc
+    );
     attachFunctionToApi(scope, workflowService, {
         routePath: "/database/{databaseId}/workflows",
         method: apigwv2.HttpMethod.GET,
@@ -564,7 +584,13 @@ export function apiBuilder(
         api: api,
     });
 
-    const authFunctions = buildAuthFunctions(scope, lambdaCommonBaseLayer, storageResources, config, vpc);
+    const authFunctions = buildAuthFunctions(
+        scope,
+        lambdaCommonBaseLayer,
+        storageResources,
+        config,
+        vpc
+    );
 
     attachFunctionToApi(scope, authFunctions.scopeds3access, {
         routePath: "/auth/scopeds3access",
@@ -595,7 +621,14 @@ export function apiBuilder(
     //https://github.com/aws/aws-cdk/issues/11100#issuecomment-904627081
 
     const accessLogs = new logs.LogGroup(scope, "VAMS-API-AccessLogs", {
-        logGroupName: "/aws/vendedlogs/VAMS-API-AccessLogs" + generateUniqueNameHash(config.env.coreStackName, config.env.account, "VAMS-API-AccessLogs", 10),
+        logGroupName:
+            "/aws/vendedlogs/VAMS-API-AccessLogs" +
+            generateUniqueNameHash(
+                config.env.coreStackName,
+                config.env.account,
+                "VAMS-API-AccessLogs",
+                10
+            ),
         retention: logs.RetentionDays.TWO_YEARS,
         removalPolicy: cdk.RemovalPolicy.DESTROY,
     });

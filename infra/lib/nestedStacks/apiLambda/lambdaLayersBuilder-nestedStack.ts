@@ -15,9 +15,7 @@ export type LambdaLayersBuilderNestedStackProps = cdk.StackProps;
 /**
  * Default input properties
  */
-const defaultProps: Partial<LambdaLayersBuilderNestedStackProps> = {
-
-};
+const defaultProps: Partial<LambdaLayersBuilderNestedStackProps> = {};
 
 export class LambdaLayersBuilderNestedStack extends NestedStack {
     public lambdaCommonBaseLayer: pylambda.PythonLayerVersion;

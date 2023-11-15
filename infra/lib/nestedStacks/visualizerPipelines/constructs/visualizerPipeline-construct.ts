@@ -319,7 +319,12 @@ export class VisualizationPipelineConstruct extends NestedStack {
             {
                 logGroupName:
                     "/aws/vendedlogs/VAMSstateMachine-VizPipeline" +
-                    generateUniqueNameHash(props.config.env.coreStackName,  props.config.env.account, "PointCloudVisualizerPipelineProcessing-StateMachineLogGroup", 10),
+                    generateUniqueNameHash(
+                        props.config.env.coreStackName,
+                        props.config.env.account,
+                        "PointCloudVisualizerPipelineProcessing-StateMachineLogGroup",
+                        10
+                    ),
                 retention: logs.RetentionDays.TWO_YEARS,
                 removalPolicy: cdk.RemovalPolicy.DESTROY,
             }

@@ -51,16 +51,14 @@ export class SecurityGroupGatewayVisualizerPipelineConstruct extends Construct {
 
         //For pipelines we are only deploying in 1 subnet/AZ, so just grab the top one from the isolated/private subnet list
         //At this point we already know there is at least 1 private/isolate subnet with other checks previously done
-        if(this.vpc.isolatedSubnets.length > 0) {
+        if (this.vpc.isolatedSubnets.length > 0) {
             this.subnets = {
-                pipeline: [this.vpc.isolatedSubnets[0]] 
+                pipeline: [this.vpc.isolatedSubnets[0]],
             };
             this.isSubnetIsolated = true;
-        }
-        else
-        {
+        } else {
             this.subnets = {
-                pipeline: [this.vpc.privateSubnets[0]] 
+                pipeline: [this.vpc.privateSubnets[0]],
             };
             this.isSubnetIsolated = false;
         }
@@ -174,7 +172,6 @@ export class SecurityGroupGatewayVisualizerPipelineConstruct extends Construct {
         //         securityGroups: [pipelineSecurityGroup],
         //     });
         // }
-
 
         // //Nag Supressions
         // NagSuppressions.addResourceSuppressionsByPath(

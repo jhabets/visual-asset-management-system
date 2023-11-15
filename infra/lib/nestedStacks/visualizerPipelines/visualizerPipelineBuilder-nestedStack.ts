@@ -25,9 +25,7 @@ export interface VisualizerPipelineBuilderNestedStackProps extends cdk.StackProp
 /**
  * Default input properties
  */
-const defaultProps: Partial<VisualizerPipelineBuilderNestedStackProps> = {
-
-};
+const defaultProps: Partial<VisualizerPipelineBuilderNestedStackProps> = {};
 
 export class VisualizerPipelineBuilderNestedStack extends NestedStack {
     constructor(parent: Construct, name: string, props: VisualizerPipelineBuilderNestedStackProps) {

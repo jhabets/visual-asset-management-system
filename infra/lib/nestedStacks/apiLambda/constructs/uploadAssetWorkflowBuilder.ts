@@ -91,7 +91,13 @@ export function buildUploadAssetWorkflow(
 
     const logGroup = new logs.LogGroup(scope, "UploadAssetWorkflowLogs", {
         logGroupName:
-            "/aws/vendedlogs/VAMSUploadAssetWorkflowLogs" + generateUniqueNameHash(config.env.coreStackName,  config.env.account, "UploadAssetWorkflowLogs", 10),
+            "/aws/vendedlogs/VAMSUploadAssetWorkflowLogs" +
+            generateUniqueNameHash(
+                config.env.coreStackName,
+                config.env.account,
+                "UploadAssetWorkflowLogs",
+                10
+            ),
         retention: logs.RetentionDays.TWO_YEARS,
         removalPolicy: cdk.RemovalPolicy.DESTROY,
     });

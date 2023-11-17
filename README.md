@@ -107,9 +107,13 @@ You can identify stable releases by their tag. Fetch the tags `git fetch --all -
 
 7. (Optional) Override the the CDK stack name and region for deployment with environment variables `export AWS_REGION=us-east-1 && export STACK_NAME=dev` - replace with the region you would like to deploy to and the name you want to associate with the cloudformation stack that the CDK will deploy.
 
-8. `npm run deploy.dev` - An account is created in an AWS Cognito User Pool using the email address specified in the infrastructure config file. Expect an email from no-reply@verificationemail.com with a temporary password.
+8. (FIPS Use Only) If deploying with FIPS, enable FIPS environment variables for AWS CLI `export AWS_USE_FIPS_ENDPOINT=true` and enable `app.useFips` in the `config.json` configuration file in `/infra/config`
 
-    7a. Ensure that docker is running before deploying as a container will need to be built
+9. (External VPC Import Only) If importing an external VPC with subnets in the `config.json` configuration, run `cdk synth --all --require-approval never --context loadContextIgnoreChecks=true` to import the VPC ID/Subnets context before full deployment. Failing to run this with the context setting or configuration setting of `loadContextIgnoreChecks` will cause the deployment to fail.
+
+10. `npm run deploy.dev` - An account is created in an AWS Cognito User Pool using the email address specified in the infrastructure config file. Expect an email from no-reply@verificationemail.com with a temporary password.
+
+    10a. Ensure that docker is running before deploying as a container will need to be built
 
 #### Deployment Success
 
@@ -147,12 +151,13 @@ Configuration files can be found in `/infra/config` with `config.json` being the
 
 Recommended minimum fields to update are `region`, `adminEmailAddress`, and `baseStackName` when using the default provided templates.
 
-Some configuraiton options can be overriden at time of deployment with either environment variables or cdk context parameters (--context X) used with `cdk deploy`
+Some configuration options can be overriden at time of deployment with either environment variables or cdk context parameters (--context X) used with `cdk deploy`
 
 -   `name` | default: vams | #Base application name to use in the full CDK stack name
 
 -   `env.account` | default: NULL | #AWS Account to use for CDK deployment. If null, pulled from CDK environment.
 -   `env.region` | default: us-east-1 | #AWS Region to use for CDK deployment. If null, pulled from CDK environment.
+-   `env.loadContextIgnoreChecks` | default: false | #XXX
 
 -   `app.baseStackName` | default: prod | #Base stack stage environment name to use when creating full CDK stack name.
 -   `app.stagingBucketName` | default: NULL | #Staging bucket for transfering assets between deployment. If null, no staging bucket will be created.
@@ -161,22 +166,36 @@ Some configuraiton options can be overriden at time of deployment with either en
 
 -   `app.govCloud.enabled` | default: false | #Feature to deploy to the AWS GovCloud partition. Will automatically turn VAMS features on/off based on service support.
 
--   `app.useOpenSearchServerless.enabled` | default: true | #Feature to deploy the Open Search service for VAMS asset searching. If false, will revert back to limited asset UI filter capability.
+-   `app.useGlobalVpc.enabled` | default: false | #Will create a global VPC to use for various configuration feature options. Using an ALB, OpenSearch Provisioned, or the Point Cloud Visualization Pipeline will force this setting to true. All options under this section only apply if this setting is set/force to 'true'.
+-   `app.useGlobalVpc.useForAllLambdas` | default: false | #Feature will deploy all lambdas created behind the VPC and create needed interface endpoints to support communications. Reccomended only for select deployments based on security (FedRamp) or external component VPC-only access (e.g. RDS).
+-   `app.useGlobalVpc.addVpcEndpoints` | default: true | #Will generate all needed VPC endpoints on either newly created VPC or imported VPC. Note: ALB S3 VPCe will be created if using an ALB regardless of this setting due to unique setup nature of that VPCe and ALB listeners tie.
+-   `app.useGlobalVpc.optionalExternalVpcId` | default: NULL | #Specify an existing VPC ID to import from the given region instead of creating a new VPC. If specified, will override any internal generation and will require `app.useGlobalVpc.optionalExternalPrivateSubnetIds` and/or `app.useGlobalVpc.optionalExternalPublicSubnetIds` to be provided.
+-   `app.useGlobalVpc.optionalExternalPrivateSubnetIds` | default: NULL | #Comma deliminated list of private subnet IDs in the provided optional VPC to use. Must provide at least 1 private subnet, 2 if using an ALB (non-public subnet), and 3 if using opensearch provisioned.
+-   `app.useGlobalVpc.optionalExternalPublicSubnetIds` | default: NULL | #Comma deliminated list of public subnet IDs in the provided optional VPC to use. Will only be looked at if `app.useAlb.usePublicSubnet` is true. Required to have minimum of 2 public subnets for ALB.
+-   `app.useGlobalVpc.vpcCidrRange` | default: 10.1.0.0/16 | #Specifies the CIDR range to use for the new VPC created. Ignored if importing an external VPC.
 
--   `app.useLocationService.enabled` | default: false | #Feature to use location services to display maps data for asset metadata types that store global position coordinates
+-   `app.openSearch.useProvisioned.enabled` | default: false | #Feature to deploy opensearch serverless (default) or provisioned. When deploying with opeensearch provisioned, this will enable the use of the global VPC option. A minimum of 3 AZs will be used to deploy opensearch provisioned.
+
+-   `app.useLocationService.enabled` | default: true | #Feature to use location services to display maps data for asset metadata types that store global position coordinates
 
 -   `app.useAlb.enabled` | default: false | #Feature to swap in a Application Load Balancer instead of a CloudFront Deployment. This will 1) disable static webpage caching, 2) require a fixed web domain to be specified, 3) require a SSL/TLS certicate to be registered in AWS Certifcate Manager, and 4) have a S3 bucket name available in the partition that matches the domain name for the static website contents
--   `app.useAlb.publicSubnet` | default: false | #Specifies if the ALB should be available for access in a public or private subnet.
--   `app.useAlb.vpcCidrRange` | default: 10.1.0.0/16 | #Specifies the CIDR range to use for the new VPC created for the ALB
--   `app.useAlb.domainHost` | default: vams1.example.com | #Specifies the domain to use for the ALB and static webpage S3 bucket
--   `app.useAlb.certificateARN` | default: arn:aws-us-gov:acm:<REGION>:<ACCOUNTID>:certificate/<CERTIFICATEID> | #Specifies the existing ACM certificate to use for the ALB for HTTPS connections. ACM certificate must be for the `domainHost` specified and reside in the region being deployed to.
+-   `app.useAlb.usePublicSubnet` | default: false | #Specifies if the ALB should use a public subnet. If creating a new VPC, will create seperate public subnets for ALB. If importing an existing VPC, will require `app.useGlobalVpc.optionalExternalPublicSubnetIds` to be filled out.
+-   `app.useAlb.domainHost` | default: vams1.example.com | #Specifies the domain to use for the ALB and static webpage S3 bucket. Required to be filled out to use ALB.
+-   `app.useAlb.certificateARN` | default: arn:aws-us-gov:acm:<REGION>:<ACCOUNTID>:certificate/<CERTIFICATEID> | #Specifies the existing ACM certificate to use for the ALB for HTTPS connections. ACM certificate must be for the `domainHost` specified and reside in the region being deployed to. Required to be filled out to use ALB.
 -   `app.useAlb.optionalHostedZoneID` | default: NULL | #Optional route53 zone host ID to automatically create an alias for the `domainHost` specified to the created ALB.
 
--   `app.pipelines.usePointCloudVisualization.enabled` | default: false | #Feature to create a point cloud visualization processing pipeline to support point cloud file type viewing within the VAMS web UI.
--   `app.pipelines.usePointCloudVisualization.vpcCidrRange` | default: 10.2.0.0/16 | #Specifies the CIDR range to use for the new VPC created for the pipeline components
+-   `app.pipelines.usePointCloudVisualization.enabled` | default: false | #Feature to create a point cloud visualization processing pipeline to support point cloud file type viewing within the VAMS web UI. This will enable the global VPC option and all pipeline components will be put behind the VPC.
 
 -   `app.authProvider.useCognito.enabled` | default: true | #Feature to use Cognito Use Pools should be used for VAMS user management and authentication. At least 1 authProvider must be enabled in the configuration.
 -   `app.authProvider.useCognito.useSaml` | default: false | #Specifies if Cognito User Pools use a federated SAML from an external IDP integration.
+-   `app.authProvider.useExternalOathIdp.enabled` | default: false | #UNUSED. Reserved for future use
+-   `app.authProvider.useExternalOathIdp.idpAuthProviderUrl` | default: NULL | #UNUSED. Reserved for future use
+
+Additional configuration notes
+
+-   Gov Cloud - TBD
+-   Global VPC - TBD
+-   OpenSearch Provisioned - This service is very sensitive to VPC Subnet Availabilty Zone selection. If using an external VPC, make sure the provided private subnets are a minimum of 3 and are each in their own availability zone.
 
 ### Architecture components
 

@@ -53,13 +53,13 @@ export class VPCBuilderNestedStack extends NestedStack {
         console.log("VPC AZ Count: ", this.azCount);
 
         if (
-            props.config.app.useGlobalVpc.optionalExternalVpcId != null &&
+            props.config.app.useGlobalVpc.optionalExternalVpcId != "" &&
             props.config.app.useGlobalVpc.optionalExternalVpcId != "UNDEFINED"
         ) {
             //Use Existing VPC
             this.vpc = ec2.Vpc.fromLookup(this, "ImportedVPC", {
                 isDefault: false,
-                vpcId: props.config.app.useGlobalVpc.optionalExternalVpcId,
+                vpcId: props.config.app.useGlobalVpc.optionalExternalVpcId.trim(),
             });
 
             //Get subnet IDs provided
@@ -73,7 +73,7 @@ export class VPCBuilderNestedStack extends NestedStack {
                     if(this.vpc.isolatedSubnets && this.vpc.isolatedSubnets.length > 0) {
                         this.vpc.isolatedSubnets.forEach((vpcSubnet) => {
                             //console.log(element.subnetId, vpcSubnet.subnetId, "I")
-                            if(vpcSubnet.subnetId == element) {
+                            if(vpcSubnet.subnetId == element.trim()) {
                                 foundVPCSubnet = true
                                 this.privateSubnets.push(vpcSubnet);
                             }
@@ -82,7 +82,7 @@ export class VPCBuilderNestedStack extends NestedStack {
                     if(this.vpc.privateSubnets && this.vpc.privateSubnets.length > 0) {
                         this.vpc.privateSubnets.forEach((vpcSubnet) => {
                             //console.log(element.subnetId, vpcSubnet.subnetId, "Pr")
-                            if(vpcSubnet.subnetId == element) {
+                            if(vpcSubnet.subnetId == element.trim()) {
                                 foundVPCSubnet = true
                                 this.privateSubnets.push(vpcSubnet);
                             }

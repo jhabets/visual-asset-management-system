@@ -164,7 +164,7 @@ export class OpensearchServerlessConstruct extends Construct {
                     { ResourceType: "dashboard", Resource: [`collection/${collection.name}`] },
                 ],
                 AllowFromPublic: !this.useVPCEndpoint,
-                SourceVPCEs: this.useVPCEndpoint ? [this.vpcEndpointAOSS.ref] : [],
+                SourceVPCEs: this.useVPCEndpoint ? [this.vpcEndpointAOSS.ref] : undefined,
             },
         ];
 

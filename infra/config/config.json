@@ -2,7 +2,8 @@
     "name": "vams",
     "env": {
         "account": null,
-        "region": "us-east-1"
+        "region": "us-east-1",
+        "loadContextIgnoreChecks": false
     },
     "app": {
         "baseStackName": "prod",
@@ -16,7 +17,9 @@
             "enabled": true,
             "useForAllLambdas": true,
             "addVpcEndpoints": true,
-            "optionalExternalVpcId": null,
+            "optionalExternalVpcId": "vpc-0e6de2c86aeb20727",
+            "optionalExternalPrivateSubnetIds": "subnet-0353d9074b7371f21,subnet-002b3cfdd4e531c42,subnet-09f1748a48719d91e",
+            "optionalExternalPublicSubnetIds": "subnet-071358a4006030673,subnet-09510ac1b5801fd44,subnet-0374e23185c5e40e4",
             "vpcCidrRange": "10.1.0.0/16"
         },
         "openSearch": {

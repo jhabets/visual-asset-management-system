@@ -14,7 +14,8 @@ export function buildAddCommentLambdaFunction(
     lambdaCommonBaseLayer: LayerVersion,
     commentStorageTable: dynamodb.Table,
     config: Config.Config,
-    vpc: ec2.IVpc
+    vpc: ec2.IVpc,
+    subnets: ec2.ISubnet[]
 ): lambda.Function {
     const name = "addComment";
     const addCommentFunction = new lambda.Function(scope, name, {
@@ -28,6 +29,7 @@ export function buildAddCommentLambdaFunction(
             config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
                 ? vpc
                 : undefined, //Use VPC when flagged to use for all lambdas
+        vpcSubnets: config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas? {subnets: subnets} : undefined,
         environment: {
             COMMENT_STORAGE_TABLE_NAME: commentStorageTable.tableName,
         },
@@ -41,7 +43,8 @@ export function buildEditCommentLambdaFunction(
     lambdaCommonBaseLayer: LayerVersion,
     commentStorageTable: dynamodb.Table,
     config: Config.Config,
-    vpc: ec2.IVpc
+    vpc: ec2.IVpc,
+    subnets: ec2.ISubnet[]
 ): lambda.Function {
     const name = "editComment";
     const editCommentFunction = new lambda.Function(scope, name, {
@@ -55,6 +58,7 @@ export function buildEditCommentLambdaFunction(
             config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
                 ? vpc
                 : undefined, //Use VPC when flagged to use for all lambdas
+        vpcSubnets: config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas? {subnets: subnets} : undefined,
         environment: {
             COMMENT_STORAGE_TABLE_NAME: commentStorageTable.tableName,
         },
@@ -69,7 +73,8 @@ export function buildCommentService(
     commentStorageTable: dynamodb.Table,
     assetStorageTable: dynamodb.Table,
     config: Config.Config,
-    vpc: ec2.IVpc
+    vpc: ec2.IVpc,
+    subnets: ec2.ISubnet[]
 ): lambda.Function {
     const name = "commentService";
     const commentService = new lambda.Function(scope, name, {
@@ -83,6 +88,7 @@ export function buildCommentService(
             config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
                 ? vpc
                 : undefined, //Use VPC when flagged to use for all lambdas
+        vpcSubnets: config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas? {subnets: subnets} : undefined,
         environment: {
             COMMENT_STORAGE_TABLE_NAME: commentStorageTable.tableName,
             ASSET_STORAGE_TABLE_NAME: assetStorageTable.tableName,

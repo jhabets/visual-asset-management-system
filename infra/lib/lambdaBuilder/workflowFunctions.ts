@@ -23,7 +23,8 @@ export function buildWorkflowService(
     lambdaCommonBaseLayer: LayerVersion,
     storageResources: storageResources,
     config: Config.Config,
-    vpc: ec2.IVpc
+    vpc: ec2.IVpc,
+    subnets: ec2.ISubnet[]
 ): lambda.Function {
     const name = "workflowService";
     const workflowService = new lambda.Function(scope, name, {
@@ -37,6 +38,7 @@ export function buildWorkflowService(
             config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
                 ? vpc
                 : undefined, //Use VPC when flagged to use for all lambdas
+        vpcSubnets: config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas? {subnets: subnets} : undefined,
         environment: {
             WORKFLOW_STORAGE_TABLE_NAME: storageResources.dynamo.workflowStorageTable.tableName,
             ASSET_STORAGE_TABLE_NAME: storageResources.dynamo.assetStorageTable.tableName,
@@ -63,7 +65,8 @@ export function buildRunProcessingJobFunction(
     scope: Construct,
     lambdaCommonBaseLayer: LayerVersion,
     config: Config.Config,
-    vpc: ec2.IVpc
+    vpc: ec2.IVpc,
+    subnets: ec2.ISubnet[]
 ): lambda.Function {
     const name = "runProcessingJob";
     const runProcessingJobFunction = new lambda.Function(scope, name, {
@@ -77,6 +80,7 @@ export function buildRunProcessingJobFunction(
             config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
                 ? vpc
                 : undefined, //Use VPC when flagged to use for all lambdas
+        vpcSubnets: config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas? {subnets: subnets} : undefined,
         environment: {},
     });
     return runProcessingJobFunction;
@@ -87,7 +91,8 @@ export function buildListlWorkflowExecutionsFunction(
     lambdaCommonBaseLayer: LayerVersion,
     workflowExecutionStorageTable: dynamodb.Table,
     config: Config.Config,
-    vpc: ec2.IVpc
+    vpc: ec2.IVpc,
+    subnets: ec2.ISubnet[]
 ): lambda.Function {
     const name = "listExecutions";
     const listAllWorkflowsFunction = new lambda.Function(scope, name, {
@@ -101,6 +106,7 @@ export function buildListlWorkflowExecutionsFunction(
             config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
                 ? vpc
                 : undefined, //Use VPC when flagged to use for all lambdas
+        vpcSubnets: config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas? {subnets: subnets} : undefined,
         environment: {
             WORKFLOW_EXECUTION_STORAGE_TABLE_NAME: workflowExecutionStorageTable.tableName,
         },
@@ -124,7 +130,8 @@ export function buildCreateWorkflowFunction(
     uploadAllAssetFunction: lambda.Function,
     stackName: string,
     config: Config.Config,
-    vpc: ec2.IVpc
+    vpc: ec2.IVpc,
+    subnets: ec2.ISubnet[]
 ): lambda.Function {
     const role = buildWorkflowRole(scope, assetStorageBucket, uploadAllAssetFunction);
     const name = "createWorkflow";
@@ -139,6 +146,7 @@ export function buildCreateWorkflowFunction(
             config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
                 ? vpc
                 : undefined, //Use VPC when flagged to use for all lambdas
+        vpcSubnets: config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas? {subnets: subnets} : undefined,
         environment: {
             WORKFLOW_STORAGE_TABLE_NAME: workflowStorageTable.tableName,
             UPLOAD_ALL_LAMBDA_FUNCTION_NAME: uploadAllAssetFunction.functionName,
@@ -186,7 +194,8 @@ export function buildRunWorkflowFunction(
     workflowExecutionStorageTable: dynamodb.Table,
     assetStorageBucket: s3.Bucket,
     config: Config.Config,
-    vpc: ec2.IVpc
+    vpc: ec2.IVpc,
+    subnets: ec2.ISubnet[]
 ): lambda.Function {
     const name = "executeWorkflow";
     const runWorkflowFunction = new lambda.Function(scope, name, {
@@ -200,6 +209,7 @@ export function buildRunWorkflowFunction(
             config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
                 ? vpc
                 : undefined, //Use VPC when flagged to use for all lambdas
+        vpcSubnets: config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas? {subnets: subnets} : undefined,
         environment: {
             WORKFLOW_STORAGE_TABLE_NAME: workflowStorageTable.tableName,
             PIPELINE_STORAGE_TABLE_NAME: pipelineStorageTable.tableName,

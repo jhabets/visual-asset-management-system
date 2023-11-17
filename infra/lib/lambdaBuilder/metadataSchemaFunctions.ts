@@ -18,7 +18,8 @@ export function buildMetadataSchemaService(
     lambdaCommonBaseLayer: LayerVersion,
     storageResources: storageResources,
     config: Config.Config,
-    vpc: ec2.IVpc
+    vpc: ec2.IVpc,
+    subnets: ec2.ISubnet[]
 ): lambda.Function {
     const name = "schema";
     const fn = new lambda.Function(scope, name, {
@@ -32,6 +33,7 @@ export function buildMetadataSchemaService(
             config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
                 ? vpc
                 : undefined, //Use VPC when flagged to use for all lambdas
+        vpcSubnets: config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas? {subnets: subnets} : undefined,
         environment: {
             DATABASE_STORAGE_TABLE_NAME: storageResources.dynamo.databaseStorageTable.tableName,
             METADATA_SCHEMA_STORAGE_TABLE_NAME:

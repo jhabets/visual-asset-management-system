@@ -27,7 +27,8 @@ export function buildAuthFunctions(
     lambdaCommonBaseLayer: LayerVersion,
     storageResources: storageResources,
     config: Config.Config,
-    vpc: ec2.IVpc
+    vpc: ec2.IVpc,
+    subnets: ec2.ISubnet[]
 ): AuthFunctions {
     const storageBucketRole = new iam.Role(scope, "storageBucketRole", {
         assumedBy: Service("LAMBDA").Principal,
@@ -41,6 +42,7 @@ export function buildAuthFunctions(
         storageResources,
         config,
         vpc,
+        subnets,
         "scopeds3access",
         {
             AWS_PARTITION: ServiceHelper.Partition(),
@@ -64,6 +66,7 @@ export function buildAuthFunctions(
             storageResources,
             config,
             vpc,
+            subnets,
             "groups"
         ),
         constraints: buildAuthFunction(
@@ -72,6 +75,7 @@ export function buildAuthFunctions(
             storageResources,
             config,
             vpc,
+            subnets,
             "finegrainedaccessconstraints"
         ),
         scopeds3access,
@@ -84,6 +88,7 @@ export function buildAuthFunction(
     storageResources: storageResources,
     config: Config.Config,
     vpc: ec2.IVpc,
+    subnets: ec2.ISubnet[],
     name: string,
     environment?: { [key: string]: string }
 ): lambda.Function {
@@ -98,6 +103,7 @@ export function buildAuthFunction(
             config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
                 ? vpc
                 : undefined, //Use VPC when flagged to use for all lambdas
+        vpcSubnets: config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas? {subnets: subnets} : undefined,
         environment: {
             TABLE_NAME: storageResources.dynamo.authEntitiesStorageTable.tableName,
             ASSET_STORAGE_TABLE_NAME: storageResources.dynamo.assetStorageTable.tableName,

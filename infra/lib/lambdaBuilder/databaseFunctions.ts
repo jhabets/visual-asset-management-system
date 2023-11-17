@@ -18,7 +18,8 @@ export function buildCreateDatabaseLambdaFunction(
     lambdaCommonBaseLayer: LayerVersion,
     databaseStorageTable: dynamodb.Table,
     config: Config.Config,
-    vpc: ec2.IVpc
+    vpc: ec2.IVpc,
+    subnets: ec2.ISubnet[]
 ): lambda.Function {
     const name = "createDatabase";
     const createDatabaseFunction = new lambda.Function(scope, name, {
@@ -32,6 +33,7 @@ export function buildCreateDatabaseLambdaFunction(
             config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
                 ? vpc
                 : undefined, //Use VPC when flagged to use for all lambdas
+        vpcSubnets: config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas? {subnets: subnets} : undefined,
         environment: {
             DATABASE_STORAGE_TABLE_NAME: databaseStorageTable.tableName,
         },
@@ -48,7 +50,8 @@ export function buildDatabaseService(
     pipelineStorageTable: dynamodb.Table,
     assetStorageTable: dynamodb.Table,
     config: Config.Config,
-    vpc: ec2.IVpc
+    vpc: ec2.IVpc,
+    subnets: ec2.ISubnet[]
 ): lambda.Function {
     const name = "databaseService";
     const databaseService = new lambda.Function(scope, name, {
@@ -62,6 +65,7 @@ export function buildDatabaseService(
             config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
                 ? vpc
                 : undefined, //Use VPC when flagged to use for all lambdas
+        vpcSubnets: config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas? {subnets: subnets} : undefined,
         environment: {
             DATABASE_STORAGE_TABLE_NAME: databaseStorageTable.tableName,
             ASSET_STORAGE_TABLE_NAME: assetStorageTable.tableName,

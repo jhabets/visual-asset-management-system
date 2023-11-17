@@ -20,7 +20,8 @@ export function buildConfigService(
     assetStorageBucket: s3.Bucket,
     appFeatureEnabledStorageTable: dynamodb.Table,
     config: Config.Config,
-    vpc: ec2.IVpc
+    vpc: ec2.IVpc,
+    subnets: ec2.ISubnet[]
 ): lambda.Function {
     const name = "configService";
     const configService = new lambda.Function(scope, name, {
@@ -34,6 +35,7 @@ export function buildConfigService(
             config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
                 ? vpc
                 : undefined, //Use VPC when flagged to use for all lambdas
+        vpcSubnets: config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas? {subnets: subnets} : undefined,
         environment: {
             ASSET_STORAGE_BUCKET: assetStorageBucket.bucketName,
             APPFEATUREENABLED_STORAGE_TABLE_NAME: appFeatureEnabledStorageTable.tableName,

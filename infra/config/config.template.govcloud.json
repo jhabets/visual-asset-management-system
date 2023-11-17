@@ -2,7 +2,8 @@
     "name": "vams",
     "env": {
         "account": null,
-        "region": null
+        "region": null,
+        "loadContextIgnoreChecks": false
     },
     "app": {
         "baseStackName": "prod",
@@ -17,6 +18,8 @@
             "useForAllLambdas": true,
             "addVpcEndpoints": true,
             "optionalExternalVpcId": null,
+            "optionalExternalPrivateSubnetIds": null,
+            "optionalExternalPublicSubnetIds": null,
             "vpcCidrRange": "10.1.0.0/16"
         },
         "openSearch": {

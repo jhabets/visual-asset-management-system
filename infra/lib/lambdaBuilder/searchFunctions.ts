@@ -22,7 +22,8 @@ export function buildSearchFunction(
     indexNameParam: string,
     storageResources: storageResources,
     config: Config.Config,
-    vpc: ec2.IVpc
+    vpc: ec2.IVpc,
+    subnets: ec2.ISubnet[]
 ): lambda.Function {
     const name = "search";
     const fun = new lambda.Function(scope, name, {
@@ -37,6 +38,9 @@ export function buildSearchFunction(
             (config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas)
                 ? vpc
                 : undefined, //Use VPC when provisioned OS or flag to use for all lambdas
+        vpcSubnets: config.app.openSearch.useProvisioned.enabled ||
+            (config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas)? {subnets: subnets} : undefined,
+
         environment: {
             AOS_ENDPOINT_PARAM: aosEndpoint,
             AOS_INDEX_NAME_PARAM: indexNameParam,

@@ -359,7 +359,8 @@ export class VisualizationPipelineConstruct extends NestedStack {
             props.storage.s3.assetVisualizerBucket,
             props.storage.sns.assetBucketObjectCreatedTopic,
             props.config,
-            props.vpc
+            props.vpc,
+            props.visualizerPipelineSubnets,
         );
 
         visualizerPCPipelineExecuteFunction.addToRolePolicy(

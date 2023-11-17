@@ -43,6 +43,8 @@ export class CoreVAMSStack extends cdk.Stack {
     private webAppBuildPath = "../web/build";
 
     private vpc: ec2.IVpc;
+    private subnetsPrivate: ec2.ISubnet[];
+    private subnetsPublic: ec2.ISubnet[];
     private vpceSecurityGroup: ec2.ISecurityGroup;
 
     constructor(scope: Construct, id: string, props: EnvProps) {
@@ -102,6 +104,8 @@ export class CoreVAMSStack extends cdk.Stack {
 
             this.vpc = vpcBuilderNestedStack.vpc;
             this.vpceSecurityGroup = vpcBuilderNestedStack.vpceSecurityGroup;
+            this.subnetsPrivate = vpcBuilderNestedStack.privateSubnets;
+            this.subnetsPublic = vpcBuilderNestedStack.publicSubnets;
         }
 
         //Deploy Storage Resources (nested stack)
@@ -144,50 +148,127 @@ export class CoreVAMSStack extends cdk.Stack {
             cognitoProps
         );
 
-        // Deploy api gateway + amplify configuration endpoints (nested stack)
-        const apiNestedStack = new ApiGatewayV2AmplifyNestedStack(this, "Api", {
-            ...props,
-            userPool: cognitoResourcesNestedStack.userPool,
-            userPoolClient: cognitoResourcesNestedStack.webClientUserPool,
-            config: props.config,
-            cognitoWebClientId: cognitoResourcesNestedStack.webClientId,
-            cognitoIdentityPoolId: cognitoResourcesNestedStack.identityPoolId,
-        });
+        //Ignore stacks if we are only loading context (mostly for Imported VPC)
+        if(!props.config.env.loadContextIgnoreChecks) {
+            // Deploy api gateway + amplify configuration endpoints (nested stack)
+            const apiNestedStack = new ApiGatewayV2AmplifyNestedStack(this, "Api", {
+                ...props,
+                userPool: cognitoResourcesNestedStack.userPool,
+                userPoolClient: cognitoResourcesNestedStack.webClientUserPool,
+                config: props.config,
+                cognitoWebClientId: cognitoResourcesNestedStack.webClientId,
+                cognitoIdentityPoolId: cognitoResourcesNestedStack.identityPoolId,
+            });
 
-        //Deploy Static Website and any API proxies (nested stack)
-        const staticWebBuilderNestedStack = new StaticWebBuilderNestedStack(this, "StaticWeb", {
-            config: props.config,
-            vpc: this.vpc,
-            webAppBuildPath: this.webAppBuildPath,
-            apiUrl: apiNestedStack.apiUrl,
-            storageResources: storageResourcesNestedStack.storageResources,
-            ssmWafArn: props.ssmWafArn,
-            cognitoWebClientId: cognitoResourcesNestedStack.webClientId,
-            cognitoUserPoolId: cognitoResourcesNestedStack.userPoolId,
-        });
+            //Deploy Static Website and any API proxies (nested stack)
+            const staticWebBuilderNestedStack = new StaticWebBuilderNestedStack(this, "StaticWeb", {
+                config: props.config,
+                vpc: this.vpc,
+                subnetsPrivate: this.subnetsPrivate,
+                subnetsPublic: this.subnetsPublic,
+                webAppBuildPath: this.webAppBuildPath,
+                apiUrl: apiNestedStack.apiUrl,
+                storageResources: storageResourcesNestedStack.storageResources,
+                ssmWafArn: props.ssmWafArn,
+                cognitoWebClientId: cognitoResourcesNestedStack.webClientId,
+                cognitoUserPoolId: cognitoResourcesNestedStack.userPoolId,
+            });
 
-        //Deploy Backend API framework (nested stack)
-        const apiBuilderNestedStack = new ApiBuilderNestedStack(
-            this,
-            "ApiBuilder",
-            props.config,
-            apiNestedStack.apiGatewayV2,
-            storageResourcesNestedStack.storageResources,
-            lambdaLayers.lambdaCommonBaseLayer,
-            lambdaLayers.lambdaCommonServiceSDKLayer,
-            this.vpc
-        );
+            //Deploy Backend API framework (nested stack)
+            const apiBuilderNestedStack = new ApiBuilderNestedStack(
+                this,
+                "ApiBuilder",
+                props.config,
+                apiNestedStack.apiGatewayV2,
+                storageResourcesNestedStack.storageResources,
+                lambdaLayers.lambdaCommonBaseLayer,
+                lambdaLayers.lambdaCommonServiceSDKLayer,
+                this.vpc,
+                this.subnetsPrivate
+            );
 
-        //Deploy OpenSearch Serverless (nested stack)
-        const searchBuilderNestedStack = new SearchBuilderNestedStack(
-            this,
-            "SearchBuilder",
-            props.config,
-            apiNestedStack.apiGatewayV2,
-            storageResourcesNestedStack.storageResources,
-            lambdaLayers.lambdaCommonBaseLayer,
-            this.vpc
-        );
+            //Deploy OpenSearch Serverless (nested stack)
+            //Note: If we are loading context, this is one of the stacks we are ignoring
+            const searchBuilderNestedStack = new SearchBuilderNestedStack(
+                this,
+                "SearchBuilder",
+                props.config,
+                apiNestedStack.apiGatewayV2,
+                storageResourcesNestedStack.storageResources,
+                lambdaLayers.lambdaCommonBaseLayer,
+                this.vpc,
+                this.subnetsPrivate
+            );
+
+            ///Optional Pipelines (Nested Stack)
+            if (props.config.app.pipelines.usePointCloudVisualization.enabled) {
+                const visualizerPipelineNetworkNestedStack = new VisualizerPipelineBuilderNestedStack(
+                    this,
+                    "VisualizerPipelineBuilder",
+                    {
+                        ...props,
+                        config: props.config,
+                        storageResources: storageResourcesNestedStack.storageResources,
+                        lambdaCommonBaseLayer: lambdaLayers.lambdaCommonBaseLayer,
+                        vpc: this.vpc,
+                        vpceSecurityGroup: this.vpceSecurityGroup,
+                        subnets: this.subnetsPrivate
+                    }
+                );
+            }
+
+            //Write final output configurations (pulling forward from nested stacks)
+            const endPointURLParamsOutput = new cdk.CfnOutput(this, "WebsiteEndpointURLOutput", {
+                value: staticWebBuilderNestedStack.endpointURL,
+                description: "Website endpoint URL",
+            });
+
+            const webAppS3BucketNameParamsOutput = new cdk.CfnOutput(this, "WebAppS3BucketNameOutput", {
+                value: staticWebBuilderNestedStack.webAppS3BucketName,
+                description: "S3 Bucket for static web app files",
+            });
+
+            if (props.config.app.useAlb.enabled) {
+                const albEndpointOutput = new cdk.CfnOutput(this, "AlbEndpointOutput", {
+                    value: staticWebBuilderNestedStack.albEndpoint,
+                    description:
+                        "ALB DNS Endpoint to use for primary domain host DNS routing to static web site",
+                });
+            }
+
+            const gatewayURLParamsOutput = new cdk.CfnOutput(this, "APIGatewayURLOutput", {
+                value: apiNestedStack.apiUrl,
+                description: "API Gateway endpoint URL",
+            });
+
+            //Nag supressions
+            const refactorPaths = [
+                `/${props.stackName}/ApiBuilder/VAMSWorkflowIAMRole/Resource`,
+                `/${props.stackName}/ApiBuilder/storageBucketRole/DefaultPolicy/Resource`,
+            ];
+    
+            for (const path of refactorPaths) {
+                const reason = `Intention is to refactor this model away moving forward 
+                so that this type of access is not required within the stack.
+                Customers are advised to isolate VAMS to its own account in test and prod
+                as a substitute to tighter resource access.`;
+                NagSuppressions.addResourceSuppressionsByPath(
+                    this,
+                    path,
+                    [
+                        {
+                            id: "AwsSolutions-IAM5",
+                            reason: reason,
+                        },
+                        {
+                            id: "AwsSolutions-IAM4",
+                            reason: reason,
+                        },
+                    ],
+                    true
+                );
+            }
+        }
 
         //Deploy Location Services (Nested Stack) and setup feature enabled
         if (props.config.app.useLocationService.enabled) {
@@ -201,21 +282,6 @@ export class CoreVAMSStack extends cdk.Stack {
             this.enabledFeatures.push(VAMS_APP_FEATURES.LOCATIONSERVICES);
         }
 
-        ///Optional Pipelines (Nested Stack)
-        if (props.config.app.pipelines.usePointCloudVisualization.enabled) {
-            const visualizerPipelineNetworkNestedStack = new VisualizerPipelineBuilderNestedStack(
-                this,
-                "VisualizerPipelineBuilder",
-                {
-                    ...props,
-                    config: props.config,
-                    storageResources: storageResourcesNestedStack.storageResources,
-                    lambdaCommonBaseLayer: lambdaLayers.lambdaCommonBaseLayer,
-                    vpc: this.vpc,
-                    vpceSecurityGroup: this.vpceSecurityGroup,
-                }
-            );
-        }
 
         //Deploy Enabled Feature Tracking (Nested Stack)
         const customFeatureEnabledConfigNestedStack = new CustomFeatureEnabledConfigNestedStack(
@@ -230,15 +296,6 @@ export class CoreVAMSStack extends cdk.Stack {
         );
 
         //Write final output configurations (pulling forward from nested stacks)
-        const endPointURLParamsOutput = new cdk.CfnOutput(this, "WebsiteEndpointURLOutput", {
-            value: staticWebBuilderNestedStack.endpointURL,
-            description: "Website endpoint URL",
-        });
-
-        const gatewayURLParamsOutput = new cdk.CfnOutput(this, "APIGatewayURLOutput", {
-            value: apiNestedStack.apiUrl,
-            description: "API Gateway endpoint URL",
-        });
 
         const authCognitoUserPoolIdParamsOutput = new cdk.CfnOutput(
             this,
@@ -261,11 +318,6 @@ export class CoreVAMSStack extends cdk.Stack {
                 value: cognitoResourcesNestedStack.webClientId,
             }
         );
-
-        const webAppS3BucketNameParamsOutput = new cdk.CfnOutput(this, "WebAppS3BucketNameOutput", {
-            value: staticWebBuilderNestedStack.webAppS3BucketName,
-            description: "S3 Bucket for static web app files",
-        });
 
         const assetBucketOutput = new cdk.CfnOutput(this, "AssetS3BucketNameOutput", {
             value: storageResourcesNestedStack.storageResources.s3.assetBucket.bucketName,
@@ -292,13 +344,7 @@ export class CoreVAMSStack extends cdk.Stack {
             description: "VPC ID created or used by VAMS deployment",
         });
 
-        if (props.config.app.useAlb.enabled) {
-            const albEndpointOutput = new cdk.CfnOutput(this, "AlbEndpointOutput", {
-                value: staticWebBuilderNestedStack.albEndpoint,
-                description:
-                    "ALB DNS Endpoint to use for primary domain host DNS routing to static web site",
-            });
-        }
+
 
         //Add tags to stack
         cdk.Tags.of(this).add("vams:stackname", props.stackName);
@@ -383,8 +429,6 @@ export class CoreVAMSStack extends cdk.Stack {
         );
 
         const refactorPaths = [
-            `/${props.stackName}/ApiBuilder/VAMSWorkflowIAMRole/Resource`,
-            `/${props.stackName}/ApiBuilder/storageBucketRole/DefaultPolicy/Resource`,
             `/${props.stackName}/Cognito/DefaultUnauthenticatedRole/DefaultPolicy/Resource`,
             `/${props.stackName}/Cognito/DefaultAuthenticatedRole/DefaultPolicy/Resource`,
             `/${props.stackName}/Cognito/SuperAdminRole/DefaultPolicy/Resource`,

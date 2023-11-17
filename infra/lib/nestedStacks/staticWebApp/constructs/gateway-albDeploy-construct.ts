@@ -16,6 +16,8 @@ import { generateUniqueNameHash } from "../../../helper/security";
 export interface GatewayAlbDeployConstructProps extends cdk.StackProps {
     config: Config.Config;
     vpc: ec2.IVpc;
+    subnetsPrivate: ec2.ISubnet[];
+    subnetsPublic: ec2.ISubnet[];
 }
 
 const defaultProps: Partial<GatewayAlbDeployConstructProps> = {
@@ -46,17 +48,11 @@ export class GatewayAlbDeployConstruct extends Construct {
 
         this.vpc = props.vpc;
 
-        //For pipelines grab the appropriate subnet based on if we are deploying to public or private/isolate subnets
         //At this point we already know there is at least 2 public or private/isolate subnets with other checks previously done
-        if (props.config.app.useAlb.usePublicSubnet) {
-            this.subnets = {
-                webApp: this.vpc.publicSubnets,
-            };
-        } else {
-            this.subnets = {
-                webApp: this.vpc.privateSubnets.concat(this.vpc.isolatedSubnets),
-            };
-        }
+        this.subnets = {
+            webApp: props.config.app.useAlb.usePublicSubnet? props.subnetsPublic : props.subnetsPrivate,
+        };
+
 
         //Create ALB security group and open to any IP on port 443/80
         const webAppALBSecurityGroup = new ec2.SecurityGroup(this, "WepAppDistroALBSecurityGroup", {

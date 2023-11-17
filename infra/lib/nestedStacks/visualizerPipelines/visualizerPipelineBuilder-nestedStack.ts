@@ -17,6 +17,7 @@ import * as Config from "../../../config/config";
 export interface VisualizerPipelineBuilderNestedStackProps extends cdk.StackProps {
     config: Config.Config;
     vpc: ec2.IVpc;
+    subnets: ec2.ISubnet[];
     vpceSecurityGroup: ec2.ISecurityGroup;
     storageResources: storageResources;
     lambdaCommonBaseLayer: LayerVersion;
@@ -41,6 +42,7 @@ export class VisualizerPipelineBuilderNestedStack extends NestedStack {
                 config: props.config,
                 vpc: props.vpc,
                 vpceSecurityGroup: props.vpceSecurityGroup,
+                subnets: props.subnets,
             }
         );
 

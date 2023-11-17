@@ -20,10 +20,11 @@ export function buildMetadataFunctions(
     lambdaCommonBaseLayer: LayerVersion,
     storageResources: storageResources,
     config: Config.Config,
-    vpc: ec2.IVpc
+    vpc: ec2.IVpc,
+    subnets: ec2.ISubnet[]
 ): lambda.Function[] {
     return ["create", "read", "update", "delete"].map((f) =>
-        buildMetadataFunction(scope, lambdaCommonBaseLayer, storageResources, config, vpc, f)
+        buildMetadataFunction(scope, lambdaCommonBaseLayer, storageResources, config, vpc, subnets, f)
     );
 }
 
@@ -33,6 +34,7 @@ export function buildMetadataFunction(
     storageResources: storageResources,
     config: Config.Config,
     vpc: ec2.IVpc,
+    subnets: ec2.ISubnet[],
     name: string
 ): lambda.Function {
     const fun = new lambda.Function(scope, name + "-metadata", {
@@ -46,6 +48,7 @@ export function buildMetadataFunction(
             config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
                 ? vpc
                 : undefined, //Use VPC when flagged to use for all lambdas
+        vpcSubnets: config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas? {subnets: subnets} : undefined,
         environment: {
             METADATA_STORAGE_TABLE_NAME: storageResources.dynamo.metadataStorageTable.tableName,
             ASSET_STORAGE_TABLE_NAME: storageResources.dynamo.assetStorageTable.tableName,
@@ -66,7 +69,8 @@ export function buildMetadataIndexingFunction(
     indexNameParam: string,
     handlerType: "a" | "m",
     config: Config.Config,
-    vpc: ec2.IVpc
+    vpc: ec2.IVpc,
+    subnets: ec2.ISubnet[]
 ): lambda.Function {
     const fun = new lambda.Function(scope, "idx" + handlerType, {
         code: lambda.Code.fromAsset(path.join(__dirname, `../../../backend/backend`)),
@@ -80,6 +84,9 @@ export function buildMetadataIndexingFunction(
             (config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas)
                 ? vpc
                 : undefined, //Use VPC when provisioned OS or flag to use for all lambdas
+        vpcSubnets: config.app.openSearch.useProvisioned.enabled ||
+                    (config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas)? {subnets: subnets} : undefined,
+
         environment: {
             METADATA_STORAGE_TABLE_NAME: storageResources.dynamo.metadataStorageTable.tableName,
             ASSET_STORAGE_TABLE_NAME: storageResources.dynamo.assetStorageTable.tableName,

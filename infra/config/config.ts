@@ -63,6 +63,11 @@ export function getConfig(app: cdk.App): Config {
             config.app.govCloud.enabled ||
             false)
     );
+    config.env.loadContextIgnoreChecks = <boolean>(
+        (app.node.tryGetContext("loadContextIgnoreChecks") ||
+            config.env.loadContextIgnoreChecks ||
+            false)
+    );
 
     //If we are govCloud, we always use FIPS, Full use VPC, ALB deploy, use OpenSearch Provisioned (serverless not available in GovCloud), and disable location service (currently not supported in GovCloud 08-29-2023)
     if (config.app.govCloud.enabled) {
@@ -102,10 +107,24 @@ export function getConfig(app: cdk.App): Config {
         config.app.useGlobalVpc.enabled = true;
     }
 
+
+
     //Any configuration warnings/errors checks
+    if (config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.optionalExternalVpcId && !config.env.loadContextIgnoreChecks) {
+        console.warn(
+            "Configuration Notice: You have elected to import external VPCs/Subnets. If experiencing VPC/Subnet lookup errors, synethize your CDK first with the 'loadContextIgnoreChecks' flag first."
+        );
+    }
+
     if (config.app.useGlobalVpc.enabled && !config.app.useGlobalVpc.addVpcEndpoints) {
         console.warn(
             "Configuration Warning: This configuration has disabled Add VPC Endpoints. Please manually ensure the VPC used has all nessesary VPC Interface Endpoints to ensure proper VAMS operations."
+        );
+    }
+
+    if (config.app.useAlb.enabled && config.app.useAlb.usePublicSubnet) {
+        console.warn(
+            "Configuration Warning: YOU HAVE ENABLED ALB PUBLIC SUBNETS. THIS CAN EXPOSE YOUR STATIC WEBSITE SOLUTION TO THE PUBLIC INTERNET. PLEASE VERIFY THIS IS CORRECT."
         );
     }
 
@@ -117,6 +136,36 @@ export function getConfig(app: cdk.App): Config {
         throw new Error(
             "Configuration Error: Must define either a global VPC Cidr Range or an External VPC ID."
         );
+    }
+
+    if (
+        config.app.useGlobalVpc.enabled &&
+        (config.app.useGlobalVpc.optionalExternalVpcId != "UNDEFINED")
+    ) {
+        if (
+            config.app.useGlobalVpc.optionalExternalPrivateSubnetIds == "UNDEFINED" ||
+            config.app.useGlobalVpc.optionalExternalPrivateSubnetIds == ""
+        ) {
+            throw new Error(
+                "Configuration Error: Must define at least one private subnet ID when using an External VPC ID."
+            );
+        }
+    }
+
+    if (
+        config.app.useGlobalVpc.enabled &&
+        config.app.useAlb.enabled &&
+        config.app.useAlb.usePublicSubnet &&
+        (config.app.useGlobalVpc.optionalExternalVpcId != "UNDEFINED")
+    ) {
+        if (
+            config.app.useGlobalVpc.optionalExternalPublicSubnetIds == "UNDEFINED" ||
+            config.app.useGlobalVpc.optionalExternalPublicSubnetIds == ""
+        ) {
+            throw new Error(
+                "Configuration Error: Must define at least one public subnet ID when using an External VPC ID and Public ALB configuration."
+            );
+        }
     }
 
     if (
@@ -161,7 +210,8 @@ export interface ConfigPublic {
     env: {
         account: string;
         region: string;
-        coreStackName: string;
+        coreStackName: string; //Will get overwritten always when generated
+        loadContextIgnoreChecks: boolean;
     };
     //removalPolicy: RemovalPolicy;
     //autoDelete: boolean;
@@ -178,6 +228,8 @@ export interface ConfigPublic {
             useForAllLambdas: boolean;
             addVpcEndpoints: boolean;
             optionalExternalVpcId: string;
+            optionalExternalPrivateSubnetIds: string;
+            optionalExternalPublicSubnetIds: string;
             vpcCidrRange: string;
         };
         openSearch: {

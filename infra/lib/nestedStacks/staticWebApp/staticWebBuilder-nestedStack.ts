@@ -27,6 +27,8 @@ export interface StaticWebBuilderNestedStackProps extends cdk.StackProps {
     cognitoWebClientId: string;
     cognitoUserPoolId: string;
     vpc: ec2.IVpc;
+    subnetsPrivate: ec2.ISubnet[];
+    subnetsPublic: ec2.ISubnet[];
 }
 
 /**
@@ -105,6 +107,8 @@ export class StaticWebBuilderNestedStack extends NestedStack {
             const webAppDistroNetwork = new GatewayAlbDeployConstruct(this, "WebAppDistroNetwork", {
                 ...props,
                 vpc: props.vpc,
+                subnetsPrivate: props.subnetsPrivate,
+                subnetsPublic: props.subnetsPublic,
             });
 
             const website = new AlbS3WebsiteAlbDeployConstruct(this, "WebApp", {

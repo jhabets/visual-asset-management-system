@@ -24,6 +24,7 @@ export interface OpensearchProvisionedConstructProps {
     indexName: string;
     config: Config.Config;
     vpc: ec2.IVpc;
+    subnets: ec2.ISubnet[];
     dataNodeInstanceType?: string;
     dataNodesCount?: number;
     masterNodeInstanceType?: string;
@@ -87,12 +88,12 @@ export class OpensearchProvisionedConstruct extends Construct {
             }
         })();
 
-        //Loop through all private + isolated subnets and store subnets in an array up to the total number of data nodes specified
-        //Note: Make sure each subnet chosen is in a different availability zone. OS Domains are very sensitive about choosing the right subnets.
+        //Loop through all  subnets and store subnets in an array up to the total number of data nodes specified
+        //Note: Make sure each subnet chosen is in a different availability zone. OS Domains are very sensitive about choosing the right subnets, thus this additional filter.
         const subnets: ec2.ISubnet[] = [];
         const azUsed: string[] = [];
 
-        props.vpc.isolatedSubnets.forEach((element) => {
+        props.subnets.forEach((element) => {
             if (
                 azUsed.indexOf(element.availabilityZone) == -1 &&
                 subnets.length < props.dataNodesCount!
@@ -101,15 +102,7 @@ export class OpensearchProvisionedConstruct extends Construct {
                 subnets.push(element);
             }
         });
-        props.vpc.privateSubnets.forEach((element) => {
-            if (
-                azUsed.indexOf(element.availabilityZone) == -1 &&
-                subnets.length < props.dataNodesCount!
-            ) {
-                azUsed.push(element.availabilityZone);
-                subnets.push(element);
-            }
-        });
+
 
         const osDomain = new cdk.aws_opensearchservice.Domain(this, "OpenSearchDomain", {
             version: Config.OPENSEARCH_VERSION,
@@ -162,6 +155,7 @@ export class OpensearchProvisionedConstruct extends Construct {
                 },
                 runtime: LAMBDA_NODE_RUNTIME,
                 vpc: props.vpc,
+                vpcSubnets: {subnets: props.subnets},
                 //Note: This schema deploy resource must run in the VPC in order to communicate with the AOS provisioned running in the VPC.
             }
         );

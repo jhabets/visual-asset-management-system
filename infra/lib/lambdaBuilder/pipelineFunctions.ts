@@ -27,11 +27,12 @@ export function buildCreatePipelineFunction(
     assetBucket: s3.Bucket,
     enablePipelineFunction: lambda.Function,
     config: Config.Config,
-    vpc: ec2.IVpc
+    vpc: ec2.IVpc,
+    subnets: ec2.ISubnet[]
 ): lambda.Function {
     const name = "createPipeline";
     const newPipelineLambdaRole = createRoleToAttachToLambdaPipelines(scope, assetBucket);
-    const newPipelineSubnetIds = buildPipelineLambdaSubnetIds(scope, vpc, config);
+    const newPipelineSubnetIds = buildPipelineLambdaSubnetIds(scope, subnets, config);
     const newPipelineLambdaSecurityGroup = buildPipelineLambdaSecurityGroup(scope, vpc);
     const createPipelineFunction = new lambda.Function(scope, name, {
         code: lambda.Code.fromAsset(path.join(__dirname, `../../../backend/backend`)),
@@ -44,6 +45,7 @@ export function buildCreatePipelineFunction(
             config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
                 ? vpc
                 : undefined, //Use VPC when flagged to use for all lambdas
+        vpcSubnets: config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas? {subnets: subnets} : undefined,
         environment: {
             PIPELINE_STORAGE_TABLE_NAME: pipelineStorageTable.tableName,
             S3_BUCKET: artefactsBucket.bucketName,
@@ -184,7 +186,8 @@ export function buildPipelineService(
     lambdaCommonBaseLayer: LayerVersion,
     storageResources: storageResources,
     config: Config.Config,
-    vpc: ec2.IVpc
+    vpc: ec2.IVpc,
+    subnets: ec2.ISubnet[]
 ): lambda.Function {
     const name = "pipelineService";
     const pipelineService = new lambda.Function(scope, name, {
@@ -198,6 +201,7 @@ export function buildPipelineService(
             config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
                 ? vpc
                 : undefined, //Use VPC when flagged to use for all lambdas
+        vpcSubnets: config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas? {subnets: subnets} : undefined,
         environment: {
             PIPELINE_STORAGE_TABLE_NAME: storageResources.dynamo.pipelineStorageTable.tableName,
             ASSET_STORAGE_TABLE_NAME: storageResources.dynamo.assetStorageTable.tableName,
@@ -266,7 +270,8 @@ export function buildEnablePipelineFunction(
     lambdaCommonBaseLayer: LayerVersion,
     pipelineStorageTable: dynamodb.Table,
     config: Config.Config,
-    vpc: ec2.IVpc
+    vpc: ec2.IVpc,
+    subnets: ec2.ISubnet[]
 ) {
     const name = "enablePipeline";
     const enablePipelineFunction = new lambda.Function(scope, name, {
@@ -280,6 +285,7 @@ export function buildEnablePipelineFunction(
             config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
                 ? vpc
                 : undefined, //Use VPC when flagged to use for all lambdas
+        vpcSubnets: config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas? {subnets: subnets} : undefined,
         environment: {
             PIPELINE_STORAGE_TABLE_NAME: pipelineStorageTable.tableName,
         },
@@ -303,24 +309,15 @@ export function buildPipelineLambdaSecurityGroup(
 
 export function buildPipelineLambdaSubnetIds(
     scope: Construct,
-    vpc: ec2.IVpc,
+    subnets: ec2.ISubnet[],
     config: Config.Config
 ): string {
     if (config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas) {
         const subnetsArray: string[] = [];
 
-        vpc.privateSubnets.forEach((element) => {
+        subnets.forEach((element) => {
             subnetsArray.push(element.subnetId);
         });
-
-        vpc.isolatedSubnets.forEach((element) => {
-            subnetsArray.push(element.subnetId);
-        });
-
-        vpc.publicSubnets.forEach((element) => {
-            subnetsArray.push(element.subnetId);
-        });
-
         return subnetsArray.join(",");
     } else {
         return "";

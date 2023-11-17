@@ -30,11 +30,12 @@ export class SearchBuilderNestedStack extends NestedStack {
         api: apigwv2.HttpApi,
         storageResources: storageResources,
         lambdaCommonBaseLayer: LayerVersion,
-        vpc: ec2.IVpc
+        vpc: ec2.IVpc,
+        subnets: ec2.ISubnet[]
     ) {
         super(parent, name);
 
-        searchBuilder(this, config, api, storageResources, lambdaCommonBaseLayer, vpc);
+        searchBuilder(this, config, api, storageResources, lambdaCommonBaseLayer, vpc, subnets);
     }
 }
 
@@ -44,7 +45,8 @@ export function searchBuilder(
     api: apigwv2.HttpApi,
     storage: storageResources,
     lambdaCommonBaseLayer: LayerVersion,
-    vpc: ec2.IVpc
+    vpc: ec2.IVpc,
+    subnets: ec2.ISubnet[]
 ) {
     const indexName = "assets1236";
     const indexNameParam = "/" + [config.env.coreStackName, "indexName"].join("/");
@@ -56,6 +58,7 @@ export function searchBuilder(
             principalArn: [],
             indexName: indexName,
             vpc: vpc,
+            subnets: subnets,
         });
 
         const indexingFunction = buildMetadataIndexingFunction(
@@ -66,7 +69,8 @@ export function searchBuilder(
             indexNameParam,
             "m",
             config,
-            vpc
+            vpc,
+            subnets
         );
 
         const assetIndexingFunction = buildMetadataIndexingFunction(
@@ -77,7 +81,8 @@ export function searchBuilder(
             indexNameParam,
             "a",
             config,
-            vpc
+            vpc,
+            subnets
         );
 
         //Add subscriptions to kick-off lambda function for indexing
@@ -112,7 +117,8 @@ export function searchBuilder(
             indexNameParam,
             storage,
             config,
-            vpc
+            vpc,
+            subnets
         );
         aoss.grantCollectionAccess(searchFun);
         aoss.grantVPCeAccess(searchFun);
@@ -133,6 +139,7 @@ export function searchBuilder(
             indexName: indexName,
             config: config,
             vpc: vpc,
+            subnets: subnets,
         });
 
         const indexingFunction = buildMetadataIndexingFunction(
@@ -143,7 +150,8 @@ export function searchBuilder(
             indexNameParam,
             "m",
             config,
-            vpc
+            vpc,
+            subnets
         );
 
         const assetIndexingFunction = buildMetadataIndexingFunction(
@@ -154,7 +162,8 @@ export function searchBuilder(
             indexNameParam,
             "a",
             config,
-            vpc
+            vpc,
+            subnets
         );
 
         aos.grantOSDomainAccess(assetIndexingFunction);
@@ -187,7 +196,8 @@ export function searchBuilder(
             indexNameParam,
             storage,
             config,
-            vpc
+            vpc,
+            subnets
         );
 
         aos.grantOSDomainAccess(searchFun);

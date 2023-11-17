@@ -25,7 +25,8 @@ export function buildAssetService(
     assetStorageBucket: s3.Bucket,
     assetVisualizerStorageBucket: s3.Bucket,
     config: Config.Config,
-    vpc: ec2.IVpc
+    vpc: ec2.IVpc,
+    subnets: ec2.ISubnet[]
 ): lambda.Function {
     const name = "assetService";
     const assetService = new lambda.Function(scope, name, {
@@ -39,6 +40,8 @@ export function buildAssetService(
             config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
                 ? vpc
                 : undefined, //Use VPC when flagged to use for all lambdas
+        vpcSubnets: config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas? {subnets: subnets} : undefined,
+
         environment: {
             DATABASE_STORAGE_TABLE_NAME: databaseStorageTable.tableName,
             ASSET_STORAGE_TABLE_NAME: assetStorageTable.tableName,
@@ -62,7 +65,8 @@ export function buildAssetFiles(
     databaseStorageTable: dynamodb.Table,
     assetStorageBucket: s3.Bucket,
     config: Config.Config,
-    vpc: ec2.IVpc
+    vpc: ec2.IVpc,
+    subnets: ec2.ISubnet[]
 ): lambda.Function {
     const name = "assetFiles";
     const assetService = new lambda.Function(scope, name, {
@@ -76,6 +80,8 @@ export function buildAssetFiles(
             config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
                 ? vpc
                 : undefined, //Use VPC when flagged to use for all lambdas
+        vpcSubnets: config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas? {subnets: subnets} : undefined,
+
         environment: {
             ASSET_STORAGE_TABLE_NAME: assetStorageTable.tableName,
         },
@@ -96,7 +102,8 @@ export function buildUploadAssetFunction(
     databaseStorageTable: dynamodb.Table,
     assetStorageTable: dynamodb.Table,
     config: Config.Config,
-    vpc: ec2.IVpc
+    vpc: ec2.IVpc,
+    subnets: ec2.ISubnet[]
 ): lambda.Function {
     const name = "uploadAsset";
     const uploadAssetFunction = new lambda.Function(scope, name, {
@@ -110,6 +117,7 @@ export function buildUploadAssetFunction(
             config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
                 ? vpc
                 : undefined, //Use VPC when flagged to use for all lambdas
+        vpcSubnets: config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas? {subnets: subnets} : undefined,
         environment: {
             DATABASE_STORAGE_TABLE_NAME: databaseStorageTable.tableName,
             ASSET_STORAGE_TABLE_NAME: assetStorageTable.tableName,
@@ -131,7 +139,8 @@ export function buildUploadAllAssetsFunction(
     workflowExecutionTable: dynamodb.Table,
     uploadAssetLambdaFunction: lambda.Function,
     config: Config.Config,
-    vpc: ec2.IVpc
+    vpc: ec2.IVpc,
+    subnets: ec2.ISubnet[]
 ): lambda.Function {
     const name = "uploadAllAssets";
     const uploadAllAssetFunction = new lambda.Function(scope, name, {
@@ -145,6 +154,7 @@ export function buildUploadAllAssetsFunction(
             config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
                 ? vpc
                 : undefined, //Use VPC when flagged to use for all lambdas
+        vpcSubnets: config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas? {subnets: subnets} : undefined,
         environment: {
             DATABASE_STORAGE_TABLE_NAME: databaseStorageTable.tableName,
             ASSET_STORAGE_TABLE_NAME: assetStorageTable.tableName,
@@ -167,7 +177,8 @@ export function buildAssetMetadataFunction(
     assetStorageBucket: s3.Bucket,
     assetStorageTable: dynamodb.Table,
     config: Config.Config,
-    vpc: ec2.IVpc
+    vpc: ec2.IVpc,
+    subnets: ec2.ISubnet[]
 ) {
     const name = "metadata";
     const assetMetadataFunction = new lambda.Function(scope, name, {
@@ -181,6 +192,7 @@ export function buildAssetMetadataFunction(
             config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
                 ? vpc
                 : undefined, //Use VPC when flagged to use for all lambdas
+        vpcSubnets: config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas? {subnets: subnets} : undefined,
         environment: {
             ASSET_STORAGE_TABLE_NAME: assetStorageTable.tableName,
         },
@@ -198,7 +210,8 @@ export function buildAssetColumnsFunction(
     assetStorageBucket: s3.Bucket,
     assetStorageTable: dynamodb.Table,
     config: Config.Config,
-    vpc: ec2.IVpc
+    vpc: ec2.IVpc,
+    subnets: ec2.ISubnet[]
 ) {
     const name = "assetColumns";
     const assetColumnsFunction = new lambda.Function(scope, name, {
@@ -212,6 +225,7 @@ export function buildAssetColumnsFunction(
             config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
                 ? vpc
                 : undefined, //Use VPC when flagged to use for all lambdas
+        vpcSubnets: config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas? {subnets: subnets} : undefined,
         environment: {
             ASSET_STORAGE_TABLE_NAME: assetStorageTable.tableName,
         },
@@ -228,7 +242,8 @@ export function buildFetchVisualizerAssetFunction(
     lambdaCommonBaseLayer: LayerVersion,
     assetVisualizerStorageBucket: s3.Bucket,
     config: Config.Config,
-    vpc: ec2.IVpc
+    vpc: ec2.IVpc,
+    subnets: ec2.ISubnet[]
 ): lambda.Function {
     const name = "fetchVisualizerAsset";
     const fetchVisualizerAssetFunction = new lambda.Function(scope, name, {
@@ -242,6 +257,7 @@ export function buildFetchVisualizerAssetFunction(
             config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
                 ? vpc
                 : undefined, //Use VPC when flagged to use for all lambdas
+        vpcSubnets: config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas? {subnets: subnets} : undefined,
         environment: {
             ASSET_VISUALIZER_BUCKET_NAME: assetVisualizerStorageBucket.bucketName,
         },
@@ -257,7 +273,8 @@ export function buildDownloadAssetFunction(
     assetStorageBucket: s3.Bucket,
     assetStorageTable: dynamodb.Table,
     config: Config.Config,
-    vpc: ec2.IVpc
+    vpc: ec2.IVpc,
+    subnets: ec2.ISubnet[]
 ) {
     const name = "downloadAsset";
     const downloadAssetFunction = new lambda.Function(scope, name, {
@@ -271,6 +288,7 @@ export function buildDownloadAssetFunction(
             config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
                 ? vpc
                 : undefined, //Use VPC when flagged to use for all lambdas
+        vpcSubnets: config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas? {subnets: subnets} : undefined,
         environment: {
             ASSET_STORAGE_TABLE_NAME: assetStorageTable.tableName,
             S3_ENDPOINT: Service("S3").Endpoint,
@@ -290,7 +308,8 @@ export function buildRevertAssetFunction(
     databaseStorageTable: dynamodb.Table,
     assetStorageTable: dynamodb.Table,
     config: Config.Config,
-    vpc: ec2.IVpc
+    vpc: ec2.IVpc,
+    subnets: ec2.ISubnet[]
 ): lambda.Function {
     const name = "revertAsset";
     const revertAssetFunction = new lambda.Function(scope, name, {
@@ -304,6 +323,7 @@ export function buildRevertAssetFunction(
             config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
                 ? vpc
                 : undefined, //Use VPC when flagged to use for all lambdas
+        vpcSubnets: config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas? {subnets: subnets} : undefined,
         environment: {
             DATABASE_STORAGE_TABLE_NAME: databaseStorageTable.tableName,
             ASSET_STORAGE_TABLE_NAME: assetStorageTable.tableName,
@@ -321,7 +341,8 @@ export function buildUploadAssetWorkflowFunction(
     lambdaCommonBaseLayer: LayerVersion,
     uploadAssetWorkflowStateMachine: sfn.StateMachine,
     config: Config.Config,
-    vpc: ec2.IVpc
+    vpc: ec2.IVpc,
+    subnets: ec2.ISubnet[]
 ): lambda.Function {
     const name = "upload_asset_workflow";
 
@@ -338,6 +359,7 @@ export function buildUploadAssetWorkflowFunction(
             config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
                 ? vpc
                 : undefined, //Use VPC when flagged to use for all lambdas
+        vpcSubnets: config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas? {subnets: subnets} : undefined,
         environment: {
             UPLOAD_WORKFLOW_ARN: uploadAssetWorkflowStateMachine.stateMachineArn,
         },

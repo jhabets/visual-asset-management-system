@@ -17,6 +17,7 @@ export interface SecurityGroupGatewayVisualizerPipelineConstructProps extends cd
     config: Config.Config;
     vpc: ec2.IVpc;
     vpceSecurityGroup: ec2.ISecurityGroup;
+    subnets: ec2.ISubnet[];
 }
 
 const defaultProps: Partial<SecurityGroupGatewayVisualizerPipelineConstructProps> = {
@@ -36,8 +37,6 @@ export class SecurityGroupGatewayVisualizerPipelineConstruct extends Construct {
         pipeline: ec2.ISecurityGroup;
     };
 
-    private isSubnetIsolated = true;
-
     constructor(
         parent: Construct,
         name: string,
@@ -50,18 +49,10 @@ export class SecurityGroupGatewayVisualizerPipelineConstruct extends Construct {
         this.vpc = props.vpc;
 
         //For pipelines we are only deploying in 1 subnet/AZ, so just grab the top one from the isolated/private subnet list
-        //At this point we already know there is at least 1 private/isolate subnet with other checks previously done
-        if (this.vpc.isolatedSubnets.length > 0) {
-            this.subnets = {
-                pipeline: [this.vpc.isolatedSubnets[0]],
-            };
-            this.isSubnetIsolated = true;
-        } else {
-            this.subnets = {
-                pipeline: [this.vpc.privateSubnets[0]],
-            };
-            this.isSubnetIsolated = false;
-        }
+        //At this point we already know there is at least 1  subnet with other checks previously done
+        this.subnets = {
+            pipeline: [props.subnets[0]],
+        };
 
         this.securityGroups = {
             pipeline: props.vpceSecurityGroup,

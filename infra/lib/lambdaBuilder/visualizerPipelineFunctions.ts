@@ -22,7 +22,8 @@ export function buildExecuteVisualizerPCPipelineFunction(
     assetVisualizerBucket: s3.Bucket,
     pipelineSNSTopic: sns.Topic,
     config: Config.Config,
-    vpc: ec2.IVpc
+    vpc: ec2.IVpc,
+    subnets: ec2.ISubnet[]
 ): lambda.Function {
     const name = "executeVisualizerPCPipeline";
     const fun = new lambda.Function(scope, name, {
@@ -36,6 +37,7 @@ export function buildExecuteVisualizerPCPipelineFunction(
             config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
                 ? vpc
                 : undefined, //Use VPC when flagged to use for all lambdas
+        vpcSubnets: config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas? {subnets: subnets} : undefined,
         environment: {
             DEST_BUCKET_NAME: assetVisualizerBucket.bucketName,
             SNS_VISUALIZER_PIPELINE_PC_TOPICARN: pipelineSNSTopic.topicArn,
@@ -57,11 +59,11 @@ export function buildOpenPipelineFunction(
     pipelineStateMachine: sfn.StateMachine,
     allowedPipelineInputExtensions: string,
     vpc: ec2.IVpc,
-    pipelineSubnets: ec2.ISubnet[]
+    subnets: ec2.ISubnet[]
 ): lambda.Function {
     const name = "openPipeline";
     const vpcSubnets = vpc.selectSubnets({
-        subnets: pipelineSubnets,
+        subnets: subnets,
     });
 
     const fun = new lambda.Function(scope, name, {
@@ -92,12 +94,12 @@ export function buildConstructPipelineFunction(
     scope: Construct,
     lambdaCommonBaseLayer: LayerVersion,
     vpc: ec2.IVpc,
-    pipelineSubnets: ec2.ISubnet[],
+    subnets: ec2.ISubnet[],
     pipelineSecurityGroups: ec2.ISecurityGroup[]
 ): lambda.Function {
     const name = "constructPipeline";
     const vpcSubnets = vpc.selectSubnets({
-        subnets: pipelineSubnets,
+        subnets: subnets,
     });
 
     const fun = new lambda.Function(scope, name, {
@@ -108,8 +110,9 @@ export function buildConstructPipelineFunction(
         timeout: Duration.minutes(5),
         memorySize: 128,
         vpc: vpc, //construct pipeline always in VPC
-        securityGroups: pipelineSecurityGroups,
         vpcSubnets: vpcSubnets,
+        securityGroups: pipelineSecurityGroups,
+
     });
 
     return fun;
@@ -121,12 +124,12 @@ export function buildPipelineEndFunction(
     assetBucket: s3.Bucket,
     assetVisualizerBucket: s3.Bucket,
     vpc: ec2.IVpc,
-    pipelineSubnets: ec2.ISubnet[],
+    subnets: ec2.ISubnet[],
     pipelineSecurityGroups: ec2.ISecurityGroup[]
 ): lambda.Function {
     const name = "pipelineEnd";
     const vpcSubnets = vpc.selectSubnets({
-        subnets: pipelineSubnets,
+        subnets: subnets,
     });
 
     const fun = new lambda.Function(scope, name, {

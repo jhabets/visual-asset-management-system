@@ -103,7 +103,7 @@ export class CognitoWebNativeNestedStack extends NestedStack {
         const cfnUserPool = userPool.node.defaultChild as cognito.CfnUserPool;
 
         if (!props.config.app.govCloud.enabled) {
-            // Only enable advanced security where it's available
+            //Only enable advanced security where it's available
             const userPoolAddOnsProperty: cognito.CfnUserPool.UserPoolAddOnsProperty = {
                 advancedSecurityMode: "ENFORCED",
             };
@@ -218,7 +218,7 @@ export class CognitoWebNativeNestedStack extends NestedStack {
                     default: {
                         type: "Token",
                         ambiguousRoleResolution: "AuthenticatedRole",
-                        identityProvider: `${Service("COGNITO_IDP").Endpoint}/${
+                        identityProvider: `${Service("COGNITO_IDP", false).Endpoint}/${ //Don't use fips endpoints here due to RoleMapping ProviderName error
                             userPool.userPoolId
                         }:${userPoolWebClient.userPoolClientId}`,
                     },

@@ -149,7 +149,7 @@ export class CoreVAMSStack extends cdk.Stack {
         );
 
         //Ignore stacks if we are only loading context (mostly for Imported VPC)
-        if(!props.config.env.loadContextIgnoreChecks) {
+        if(!props.config.env.loadContextIgnoreVPCStacks) {
             // Deploy api gateway + amplify configuration endpoints (nested stack)
             const apiNestedStack = new ApiGatewayV2AmplifyNestedStack(this, "Api", {
                 ...props,
@@ -167,7 +167,7 @@ export class CoreVAMSStack extends cdk.Stack {
                 subnetsPrivate: this.subnetsPrivate,
                 subnetsPublic: this.subnetsPublic,
                 webAppBuildPath: this.webAppBuildPath,
-                apiUrl: apiNestedStack.apiUrl,
+                apiUrl: apiNestedStack.apiEndpoint,
                 storageResources: storageResourcesNestedStack.storageResources,
                 ssmWafArn: props.ssmWafArn,
                 cognitoWebClientId: cognitoResourcesNestedStack.webClientId,
@@ -236,9 +236,9 @@ export class CoreVAMSStack extends cdk.Stack {
                 });
             }
 
-            const gatewayURLParamsOutput = new cdk.CfnOutput(this, "APIGatewayURLOutput", {
-                value: apiNestedStack.apiUrl,
-                description: "API Gateway endpoint URL",
+            const gatewayURLParamsOutput = new cdk.CfnOutput(this, "APIGatewayEndpointOutput", {
+                value: `${apiNestedStack.apiEndpoint}`,
+                description: "API Gateway endpoint",
             });
 
             //Nag supressions

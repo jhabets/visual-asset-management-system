@@ -3,13 +3,13 @@
     "env": {
         "account": null,
         "region": "us-east-1",
-        "loadContextIgnoreChecks": false
+        "loadContextIgnoreVPCStacks": false
     },
     "app": {
         "baseStackName": "prod",
         "stagingBucketName": null,
         "adminEmailAddress": "scheurik@amazon.com",
-        "useFips": false,
+        "useFips": true,
         "govCloud": {
             "enabled": false
         },

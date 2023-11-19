@@ -82,9 +82,13 @@ export interface AmplifyConfigLambdaConstructProps extends cdk.StackProps {
      */
     identityPoolId: string;
     /**
-     * The ApiGatewayV2 HttpApi to attach the lambda
+     * The ApiGatewayV2 HttpApi to create route from
      */
     api: apigatewayv2.HttpApi;
+    /**
+     * The ApiGatewayV2 HttpApi URL to attach the lambda
+     */
+    apiUrl: string;
     /**
      * region
      */
@@ -119,7 +123,7 @@ export class AmplifyConfigLambdaConstruct extends Construct {
                     userPoolId: props.userPoolId,
                     appClientId: props.appClientId,
                     identityPoolId: props.identityPoolId,
-                    api: props.api.url || "us-east-1",
+                    api: props.apiUrl || "us-east-1",
                     federatedConfig: props.federatedConfig,
                     externalOathIdpURL: props.externalOathIdpURL || "undefined",
                     stackName: props.stackName!,

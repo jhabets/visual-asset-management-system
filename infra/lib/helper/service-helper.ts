@@ -10,7 +10,22 @@ import { SERVICE, SERVICE_LOOKUP, TYPE_SERVICE_LOOKUP } from "./const";
 let config: Config;
 
 class ServiceFormatter {
-    constructor(private name: SERVICE, private regionInfo: region_info.RegionInfo) {}
+    private useFips: boolean | undefined
+
+    constructor(private name: SERVICE, private regionInfo: region_info.RegionInfo, useFipsOverride: boolean | undefined = undefined) {
+
+        //Provide a way to override if we use FIPS for this defined service or not
+        if(useFipsOverride != undefined)
+            this.useFips = this.useFips;
+        else
+            this.useFips = config.app.useFips;
+
+        if (!SERVICE_LOOKUP[TYPE_SERVICE_LOOKUP[this.name]][this.regionInfo.partition || ""]) {
+            throw new Error(`Service ${this.name} not found in partition ${this.regionInfo.partition}`);
+        
+        }
+
+    }
 
     private get service() {
         return SERVICE_LOOKUP[TYPE_SERVICE_LOOKUP[this.name]][this.regionInfo.partition || ""];
@@ -34,7 +49,7 @@ class ServiceFormatter {
 
     //public URL() {}
     public get Endpoint() {
-        return config.app.useFips
+        return this.useFips
             ? this.replaceValues(this.service.fipsHostname)
             : this.replaceValues(this.service.hostname);
     }
@@ -47,8 +62,8 @@ class ServiceFormatter {
     }
 }
 
-export function Service(name: SERVICE): ServiceFormatter {
-    const ret = new ServiceFormatter(name, region_info.RegionInfo.get(config.env.region));
+export function Service(name: SERVICE, useFipsOverride: boolean | undefined = undefined): ServiceFormatter {
+    const ret = new ServiceFormatter(name, region_info.RegionInfo.get(config.env.region), useFipsOverride);
     //console.log(ret.Endpoint);
 
     return ret;

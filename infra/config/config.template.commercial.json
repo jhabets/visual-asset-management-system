@@ -3,7 +3,7 @@
     "env": {
         "account": null,
         "region": null,
-        "loadContextIgnoreChecks": false
+        "loadContextIgnoreVPCStacks": false
     },
     "app": {
         "baseStackName": "prod",

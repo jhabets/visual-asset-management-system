@@ -109,7 +109,7 @@ You can identify stable releases by their tag. Fetch the tags `git fetch --all -
 
 8. (FIPS Use Only) If deploying with FIPS, enable FIPS environment variables for AWS CLI `export AWS_USE_FIPS_ENDPOINT=true` and enable `app.useFips` in the `config.json` configuration file in `/infra/config`
 
-9. (External VPC Import Only) If importing an external VPC with subnets in the `config.json` configuration, run `cdk synth --all --require-approval never --context loadContextIgnoreChecks=true` to import the VPC ID/Subnets context before full deployment. Failing to run this with the context setting or configuration setting of `loadContextIgnoreChecks` will cause the deployment to fail.
+9. (External VPC Import Only) If importing an external VPC with subnets in the `config.json` configuration, run `cdk deploy --all --require-approval never --context loadContextIgnoreVPCStacks=true` to import the VPC ID/Subnets context and deploy all non-VPC dependant stacks first. Failing to run this with the context setting or configuration setting of `loadContextIgnoreVPCStacks` will cause the final deployment of all stacks step to fail.
 
 10. `npm run deploy.dev` - An account is created in an AWS Cognito User Pool using the email address specified in the infrastructure config file. Expect an email from no-reply@verificationemail.com with a temporary password.
 
@@ -157,7 +157,7 @@ Some configuration options can be overriden at time of deployment with either en
 
 -   `env.account` | default: NULL | #AWS Account to use for CDK deployment. If null, pulled from CDK environment.
 -   `env.region` | default: us-east-1 | #AWS Region to use for CDK deployment. If null, pulled from CDK environment.
--   `env.loadContextIgnoreChecks` | default: false | #XXX
+-   `env.loadContextIgnoreVPCStacks` | default: false | #Mode to ignore synth and deployments of any nested stack that needs a VPC in order to first load context through a first synth run.
 
 -   `app.baseStackName` | default: prod | #Base stack stage environment name to use when creating full CDK stack name.
 -   `app.stagingBucketName` | default: NULL | #Staging bucket for transfering assets between deployment. If null, no staging bucket will be created.

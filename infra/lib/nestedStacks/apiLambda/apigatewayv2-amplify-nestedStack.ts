@@ -54,7 +54,7 @@ export class ApiGatewayV2AmplifyNestedStack extends NestedStack {
      * Returns the ApiGatewayV2 instance to attach lambdas or other routes
      */
     public apiGatewayV2: apigw.HttpApi;
-    public apiUrl: string;
+    public apiEndpoint: string;
 
     constructor(parent: Construct, name: string, props: ApiGatewayV2AmplifyNestedStackProps) {
         super(parent, name);
@@ -104,13 +104,16 @@ export class ApiGatewayV2AmplifyNestedStack extends NestedStack {
             defaultAuthorizer: cognitoAuth,
         });
 
-        const apiUrl = `${api.httpApiId}.${Service("EXECUTE_API").Endpoint}`;
-        this.apiUrl = apiUrl;
+        //Always use non-FIPS URL in non-GovCloud. All endpoints in GovCloud are FIPS-compliant already
+        //https://docs.aws.amazon.com/govcloud-us/latest/UserGuide/govcloud-abp.html
+        const apiEndpoint = `${api.httpApiId}.${Service("EXECUTE_API", false).Endpoint}`; 
+        this.apiEndpoint = apiEndpoint;
 
         //Setup Initial Amplify Config
         const amplifyConfigProps: AmplifyConfigLambdaConstructProps = {
             ...props,
             api: api,
+            apiUrl: `https://${this.apiEndpoint}/`,
             appClientId: props.cognitoWebClientId,
             identityPoolId: props.cognitoIdentityPoolId,
             userPoolId: props.userPool.userPoolId,
@@ -136,7 +139,7 @@ export class ApiGatewayV2AmplifyNestedStack extends NestedStack {
 
         // export any cf outputs
         new cdk.CfnOutput(this, "GatewayUrl", {
-            value: `https://${apiUrl}`,
+            value: `https://${this.apiEndpoint}/`,
         });
 
         // assign public properties

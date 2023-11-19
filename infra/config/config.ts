@@ -63,9 +63,9 @@ export function getConfig(app: cdk.App): Config {
             config.app.govCloud.enabled ||
             false)
     );
-    config.env.loadContextIgnoreChecks = <boolean>(
-        (app.node.tryGetContext("loadContextIgnoreChecks") ||
-            config.env.loadContextIgnoreChecks ||
+    config.env.loadContextIgnoreVPCStacks = <boolean>(
+        (app.node.tryGetContext("loadContextIgnoreVPCStacks") ||
+            config.env.loadContextIgnoreVPCStacks ||
             false)
     );
 
@@ -110,7 +110,7 @@ export function getConfig(app: cdk.App): Config {
 
 
     //Any configuration warnings/errors checks
-    if (config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.optionalExternalVpcId && !config.env.loadContextIgnoreChecks) {
+    if (config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.optionalExternalVpcId && !config.env.loadContextIgnoreVPCStacks) {
         console.warn(
             "Configuration Notice: You have elected to import external VPCs/Subnets. If experiencing VPC/Subnet lookup errors, synethize your CDK first with the 'loadContextIgnoreChecks' flag first."
         );
@@ -219,7 +219,7 @@ export interface ConfigPublic {
         account: string;
         region: string;
         coreStackName: string; //Will get overwritten always when generated
-        loadContextIgnoreChecks: boolean;
+        loadContextIgnoreVPCStacks: boolean;
     };
     //removalPolicy: RemovalPolicy;
     //autoDelete: boolean;

@@ -66,8 +66,8 @@ export class VPCBuilderNestedStack extends NestedStack {
             const subnetPrivateIds = props.config.app.useGlobalVpc.optionalExternalPrivateSubnetIds.split(',')
             const subnetPublicIds = props.config.app.useGlobalVpc.optionalExternalPublicSubnetIds.split(',')
 
-            //Resolve Subnets and Check if exists (needs CDK context to be loaded)
-            if(!props.config.env.loadContextIgnoreChecks) {
+            //(Should run after CDK context is loaded) Resolve Subnets, Check if exists , and check for errors
+            if(!props.config.env.loadContextIgnoreVPCStacks) {
                 subnetPrivateIds.forEach((element) => {
                     let foundVPCSubnet = false
                     if(this.vpc.isolatedSubnets && this.vpc.isolatedSubnets.length > 0) {
@@ -112,14 +112,12 @@ export class VPCBuilderNestedStack extends NestedStack {
                     
                     }
                 });
-            }
 
-            //Error checks
-            //check to make sure we have at least X subnets in different AZs, X being the azCount
-            const azPrivateUsed: string[] = [];
-            const azPublicUsed: string[] = [];
+                //Error checks
+                //check to make sure we have at least X subnets in different AZs, X being the azCount
+                const azPrivateUsed: string[] = [];
+                const azPublicUsed: string[] = [];
 
-            if(!props.config.env.loadContextIgnoreChecks) {
                 this.privateSubnets.forEach((element) => {
                     if (azPrivateUsed.indexOf(element.availabilityZone) == -1) {
                         azPrivateUsed.push(element.availabilityZone);
@@ -133,9 +131,7 @@ export class VPCBuilderNestedStack extends NestedStack {
                         `Existing Private VPC Subnets must be spread across a minimum of ${this.azCount} availabilty zones based on the confiuguration options chosen, currently only representing ${azPrivateUsed.length}!`
                     );
                 }
-            }
 
-            if(!props.config.env.loadContextIgnoreChecks) {
                 this.publicSubnets.forEach((element) => {
                     if (azPublicUsed.indexOf(element.availabilityZone) == -1) {
                         azPublicUsed.push(element.availabilityZone);
@@ -149,35 +145,35 @@ export class VPCBuilderNestedStack extends NestedStack {
                         `Existing Public VPC Subnets must be spread across a minimum of ${this.azCount} availabilty zones based on the confiuguration options chosen, currently only representing ${azPublicUsed.length}!`
                     );
                 }
-            }
 
-            if (
-                this.privateSubnets.length == 0
-            ) {
-                throw new Error(
-                    "Existing VPC and provided subnets must have at least 1 private subnet provided!"
-                );
-            }
-
-            if (
-                props.config.app.openSearch.useProvisioned.enabled &&
-                this.privateSubnets.length < 3
-            ) {
-                throw new Error(
-                    "Existing VPC and provided subnets must have at least 3 private subnets in different AZs already setup when using OpenSearch provisioned!"
-                );
-            }
-
-            if (
-                props.config.app.useAlb.enabled &&
-                    ((!props.config.app.useAlb.usePublicSubnet && this.privateSubnets.length < 2) ||
-                    (props.config.app.useAlb.usePublicSubnet && this.publicSubnets.length < 2))
+                if (
+                    this.privateSubnets.length == 0
                 ) {
-                throw new Error(
-                    "Existing VPC and provided subnets must have at least 2 public or private subnets already setup when specifying the use of a ALB!"
-                );
-            }
+                    throw new Error(
+                        "Existing VPC and provided subnets must have at least 1 private subnet provided!"
+                    );
+                }
 
+                if (
+                    props.config.app.openSearch.useProvisioned.enabled &&
+                    this.privateSubnets.length < 3
+                ) {
+                    throw new Error(
+                        "Existing VPC and provided subnets must have at least 3 private subnets in different AZs already setup when using OpenSearch provisioned!"
+                    );
+                }
+
+                if (
+                    props.config.app.useAlb.enabled &&
+                        ((!props.config.app.useAlb.usePublicSubnet && this.privateSubnets.length < 2) ||
+                        (props.config.app.useAlb.usePublicSubnet && this.publicSubnets.length < 2))
+                    ) {
+                    throw new Error(
+                        "Existing VPC and provided subnets must have at least 2 public or private subnets already setup when specifying the use of a ALB!"
+                    );
+                }
+
+            }
 
         } else {
             /**
@@ -292,8 +288,10 @@ export class VPCBuilderNestedStack extends NestedStack {
         //Add VPC endpoints based on configuration options
         //Note: This is mostly to not duplicate endpoints if bringing in an external VPC that already has the needed endpoints for the services
         //Note: More switching is done to avoid creating endpoints when not needed (mostly for cost)
-        if (props.config.app.useGlobalVpc.addVpcEndpoints) {
+        //Note: Don't add any end points if we are just loading context
+        if (props.config.app.useGlobalVpc.addVpcEndpoints && !props.config.env.loadContextIgnoreVPCStacks) {
 
+            //Add Interface Endpoints
             //Visualizer Pipeline-Only Required Endpoints
             if (props.config.app.pipelines.usePointCloudVisualization.enabled) {
                 // Create VPC endpoint for Batch
@@ -392,11 +390,9 @@ export class VPCBuilderNestedStack extends NestedStack {
                     securityGroups: [vpceSecurityGroup],
                 });
             }
-        }
 
-        //Add Global Gateway Endpoints (no cost so we add for everything)
-        //Note due to outstanding bugs, won't be able to create Gateway Endpoints when importing a VPC (https://github.com/aws/aws-cdk/issues/22025, https://github.com/aws/aws-cdk/issues/3472)
-        if (props.config.app.useGlobalVpc.addVpcEndpoints) {
+            //Add Global Gateway Endpoints (no cost so we add for everything)
+            //Note due to outstanding bugs, won't be able to create Gateway Endpoints when importing a VPC (https://github.com/aws/aws-cdk/issues/22025, https://github.com/aws/aws-cdk/issues/3472)
             this.vpc.addGatewayEndpoint("S3Endpoint", {
                 service: ec2.GatewayVpcEndpointAwsService.S3,
                 subnets: [{ subnets: this.privateSubnets }],

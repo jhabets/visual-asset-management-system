@@ -103,7 +103,6 @@ export class OpensearchProvisionedConstruct extends Construct {
             }
         });
 
-
         const osDomain = new cdk.aws_opensearchservice.Domain(this, "OpenSearchDomain", {
             version: Config.OPENSEARCH_VERSION,
 
@@ -155,7 +154,7 @@ export class OpensearchProvisionedConstruct extends Construct {
                 },
                 runtime: LAMBDA_NODE_RUNTIME,
                 vpc: props.vpc,
-                vpcSubnets: {subnets: props.subnets},
+                vpcSubnets: { subnets: props.subnets },
                 //Note: This schema deploy resource must run in the VPC in order to communicate with the AOS provisioned running in the VPC.
             }
         );

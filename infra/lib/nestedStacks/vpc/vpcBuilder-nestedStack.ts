@@ -21,9 +21,7 @@ export interface VPCBuilderNestedStackProps extends cdk.StackProps {
 /**
  * Default input properties
  */
-const defaultProps: Partial<VPCBuilderNestedStackProps> = {
-
-};
+const defaultProps: Partial<VPCBuilderNestedStackProps> = {};
 
 export class VPCBuilderNestedStack extends NestedStack {
     public vpc: ec2.IVpc;
@@ -63,53 +61,57 @@ export class VPCBuilderNestedStack extends NestedStack {
             });
 
             //Get subnet IDs provided
-            const subnetPrivateIds = props.config.app.useGlobalVpc.optionalExternalPrivateSubnetIds.split(',')
-            const subnetPublicIds = props.config.app.useGlobalVpc.optionalExternalPublicSubnetIds.split(',')
+            const subnetPrivateIds =
+                props.config.app.useGlobalVpc.optionalExternalPrivateSubnetIds.split(",");
+            const subnetPublicIds =
+                props.config.app.useGlobalVpc.optionalExternalPublicSubnetIds.split(",");
 
             //(Should run after CDK context is loaded) Resolve Subnets, Check if exists , and check for errors
-            if(!props.config.env.loadContextIgnoreVPCStacks) {
+            if (!props.config.env.loadContextIgnoreVPCStacks) {
                 subnetPrivateIds.forEach((element) => {
-                    let foundVPCSubnet = false
-                    if(this.vpc.isolatedSubnets && this.vpc.isolatedSubnets.length > 0) {
+                    let foundVPCSubnet = false;
+                    if (this.vpc.isolatedSubnets && this.vpc.isolatedSubnets.length > 0) {
                         this.vpc.isolatedSubnets.forEach((vpcSubnet) => {
                             //console.log(element.subnetId, vpcSubnet.subnetId, "I")
-                            if(vpcSubnet.subnetId == element.trim()) {
-                                foundVPCSubnet = true
+                            if (vpcSubnet.subnetId == element.trim()) {
+                                foundVPCSubnet = true;
                                 this.privateSubnets.push(vpcSubnet);
                             }
-                        })
+                        });
                     }
-                    if(this.vpc.privateSubnets && this.vpc.privateSubnets.length > 0) {
+                    if (this.vpc.privateSubnets && this.vpc.privateSubnets.length > 0) {
                         this.vpc.privateSubnets.forEach((vpcSubnet) => {
                             //console.log(element.subnetId, vpcSubnet.subnetId, "Pr")
-                            if(vpcSubnet.subnetId == element.trim()) {
-                                foundVPCSubnet = true
+                            if (vpcSubnet.subnetId == element.trim()) {
+                                foundVPCSubnet = true;
                                 this.privateSubnets.push(vpcSubnet);
                             }
-                        })
+                        });
                     }
 
-                    if(!foundVPCSubnet) {
-                        throw new Error(`Existing Private Subnet ID ${element} provided does not exist in the provided VPC!`)
-                    
+                    if (!foundVPCSubnet) {
+                        throw new Error(
+                            `Existing Private Subnet ID ${element} provided does not exist in the provided VPC!`
+                        );
                     }
                 });
 
                 subnetPublicIds.forEach((element) => {
-                    let foundVPCSubnet = false
-                    if(this.vpc.publicSubnets && this.vpc.publicSubnets.length > 0) {
+                    let foundVPCSubnet = false;
+                    if (this.vpc.publicSubnets && this.vpc.publicSubnets.length > 0) {
                         this.vpc.publicSubnets.forEach((vpcSubnet) => {
                             //console.log(element.subnetId, vpcSubnet.subnetId, "Pu")
-                            if(vpcSubnet.subnetId == element) {
-                                foundVPCSubnet = true
+                            if (vpcSubnet.subnetId == element) {
+                                foundVPCSubnet = true;
                                 this.publicSubnets.push(vpcSubnet);
                             }
-                        })
+                        });
                     }
 
-                    if(!foundVPCSubnet) {
-                        throw new Error(`Existing Public Subnet ID ${element} provided does not exist in the provided VPC!`)
-                    
+                    if (!foundVPCSubnet) {
+                        throw new Error(
+                            `Existing Public Subnet ID ${element} provided does not exist in the provided VPC!`
+                        );
                     }
                 });
 
@@ -123,10 +125,8 @@ export class VPCBuilderNestedStack extends NestedStack {
                         azPrivateUsed.push(element.availabilityZone);
                     }
                 });
-                
-                if (
-                    azPrivateUsed.length < this.azCount
-                ) {
+
+                if (azPrivateUsed.length < this.azCount) {
                     throw new Error(
                         `Existing Private VPC Subnets must be spread across a minimum of ${this.azCount} availabilty zones based on the confiuguration options chosen, currently only representing ${azPrivateUsed.length}!`
                     );
@@ -137,18 +137,14 @@ export class VPCBuilderNestedStack extends NestedStack {
                         azPublicUsed.push(element.availabilityZone);
                     }
                 });
-                
-                if (
-                    azPublicUsed.length < this.azCount
-                ) {
+
+                if (azPublicUsed.length < this.azCount) {
                     throw new Error(
                         `Existing Public VPC Subnets must be spread across a minimum of ${this.azCount} availabilty zones based on the confiuguration options chosen, currently only representing ${azPublicUsed.length}!`
                     );
                 }
 
-                if (
-                    this.privateSubnets.length == 0
-                ) {
+                if (this.privateSubnets.length == 0) {
                     throw new Error(
                         "Existing VPC and provided subnets must have at least 1 private subnet provided!"
                     );
@@ -165,16 +161,14 @@ export class VPCBuilderNestedStack extends NestedStack {
 
                 if (
                     props.config.app.useAlb.enabled &&
-                        ((!props.config.app.useAlb.usePublicSubnet && this.privateSubnets.length < 2) ||
+                    ((!props.config.app.useAlb.usePublicSubnet && this.privateSubnets.length < 2) ||
                         (props.config.app.useAlb.usePublicSubnet && this.publicSubnets.length < 2))
-                    ) {
+                ) {
                     throw new Error(
                         "Existing VPC and provided subnets must have at least 2 public or private subnets already setup when specifying the use of a ALB!"
                     );
                 }
-
             }
-
         } else {
             /**
              * Subnets
@@ -214,7 +208,7 @@ export class VPCBuilderNestedStack extends NestedStack {
                 subnetConfiguration:
                     props.config.app.useAlb.enabled && props.config.app.useAlb.usePublicSubnet
                         ? [subnetPrivateConfig, subnetPublicConfig] //If the ALB is public, include the public subnets
-                        : [subnetPrivateConfig], 
+                        : [subnetPrivateConfig],
                 maxAzs: this.azCount,
                 enableDnsHostnames: true,
                 enableDnsSupport: true,
@@ -250,7 +244,6 @@ export class VPCBuilderNestedStack extends NestedStack {
                     this.publicSubnets.push(element);
                 }
             });
-
         }
 
         /**
@@ -289,8 +282,10 @@ export class VPCBuilderNestedStack extends NestedStack {
         //Note: This is mostly to not duplicate endpoints if bringing in an external VPC that already has the needed endpoints for the services
         //Note: More switching is done to avoid creating endpoints when not needed (mostly for cost)
         //Note: Don't add any end points if we are just loading context
-        if (props.config.app.useGlobalVpc.addVpcEndpoints && !props.config.env.loadContextIgnoreVPCStacks) {
-
+        if (
+            props.config.app.useGlobalVpc.addVpcEndpoints &&
+            !props.config.env.loadContextIgnoreVPCStacks
+        ) {
             //Add Interface Endpoints
             //Visualizer Pipeline-Only Required Endpoints
             if (props.config.app.pipelines.usePointCloudVisualization.enabled) {

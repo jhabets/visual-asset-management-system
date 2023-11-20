@@ -38,7 +38,10 @@ export function buildWorkflowService(
             config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
                 ? vpc
                 : undefined, //Use VPC when flagged to use for all lambdas
-        vpcSubnets: config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas? {subnets: subnets} : undefined,
+        vpcSubnets:
+            config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
+                ? { subnets: subnets }
+                : undefined,
         environment: {
             WORKFLOW_STORAGE_TABLE_NAME: storageResources.dynamo.workflowStorageTable.tableName,
             ASSET_STORAGE_TABLE_NAME: storageResources.dynamo.assetStorageTable.tableName,
@@ -80,7 +83,10 @@ export function buildRunProcessingJobFunction(
             config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
                 ? vpc
                 : undefined, //Use VPC when flagged to use for all lambdas
-        vpcSubnets: config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas? {subnets: subnets} : undefined,
+        vpcSubnets:
+            config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
+                ? { subnets: subnets }
+                : undefined,
         environment: {},
     });
     return runProcessingJobFunction;
@@ -106,7 +112,10 @@ export function buildListlWorkflowExecutionsFunction(
             config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
                 ? vpc
                 : undefined, //Use VPC when flagged to use for all lambdas
-        vpcSubnets: config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas? {subnets: subnets} : undefined,
+        vpcSubnets:
+            config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
+                ? { subnets: subnets }
+                : undefined,
         environment: {
             WORKFLOW_EXECUTION_STORAGE_TABLE_NAME: workflowExecutionStorageTable.tableName,
         },
@@ -146,7 +155,10 @@ export function buildCreateWorkflowFunction(
             config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
                 ? vpc
                 : undefined, //Use VPC when flagged to use for all lambdas
-        vpcSubnets: config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas? {subnets: subnets} : undefined,
+        vpcSubnets:
+            config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
+                ? { subnets: subnets }
+                : undefined,
         environment: {
             WORKFLOW_STORAGE_TABLE_NAME: workflowStorageTable.tableName,
             UPLOAD_ALL_LAMBDA_FUNCTION_NAME: uploadAllAssetFunction.functionName,
@@ -209,7 +221,10 @@ export function buildRunWorkflowFunction(
             config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
                 ? vpc
                 : undefined, //Use VPC when flagged to use for all lambdas
-        vpcSubnets: config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas? {subnets: subnets} : undefined,
+        vpcSubnets:
+            config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
+                ? { subnets: subnets }
+                : undefined,
         environment: {
             WORKFLOW_STORAGE_TABLE_NAME: workflowStorageTable.tableName,
             PIPELINE_STORAGE_TABLE_NAME: pipelineStorageTable.tableName,

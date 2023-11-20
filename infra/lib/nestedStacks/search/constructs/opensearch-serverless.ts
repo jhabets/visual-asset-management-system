@@ -53,8 +53,8 @@ export class OpensearchServerlessConstruct extends Construct {
             props.config.app.useGlobalVpc.enabled && props.config.app.useGlobalVpc.useForAllLambdas;
 
         const subNetIDsVPCe = props.vpc.selectSubnets({
-            subnets: props.subnets
-        }).subnetIds; 
+            subnets: props.subnets,
+        }).subnetIds;
 
         //Create Open Search VPC endpoint if we are using a VPC for all our lambda functions
         //Note: Ignoring addVpcEndpoint configuration on purpose as this is required to create to attach to a collection network security policy. must create at this juncture
@@ -71,7 +71,6 @@ export class OpensearchServerlessConstruct extends Construct {
                 ec2.Port.tcp(443)
             );
             this.vpcEndpointAOSSSecurityGroup = aossVPCESecurityGroup;
-
 
             //Add VPC Endpoint here instead of global VPC as it's directly needed to configure AOSS
             //(https://docs.aws.amazon.com/opensearch-service/latest/developerguide/serverless-network.html, https://docs.aws.amazon.com/opensearch-service/latest/developerguide/serverless-vpc.html, https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_opensearchserverless.CfnVpcEndpoint.html)
@@ -107,8 +106,8 @@ export class OpensearchServerlessConstruct extends Construct {
                     externalModules: ["aws-sdk"],
                 },
                 runtime: LAMBDA_NODE_RUNTIME,
-                vpc: this.useVPCEndpoint? props.vpc : undefined,
-                vpcSubnets: this.useVPCEndpoint? {subnets: props.subnets} : undefined,
+                vpc: this.useVPCEndpoint ? props.vpc : undefined,
+                vpcSubnets: this.useVPCEndpoint ? { subnets: props.subnets } : undefined,
                 //Note: This schema deploy resource must run in the VPC in order to communicate with the AOSS and associated VPC Endpoint.
             }
         );

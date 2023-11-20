@@ -107,10 +107,12 @@ export function getConfig(app: cdk.App): Config {
         config.app.useGlobalVpc.enabled = true;
     }
 
-
-
     //Any configuration warnings/errors checks
-    if (config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.optionalExternalVpcId && !config.env.loadContextIgnoreVPCStacks) {
+    if (
+        config.app.useGlobalVpc.enabled &&
+        config.app.useGlobalVpc.optionalExternalVpcId &&
+        !config.env.loadContextIgnoreVPCStacks
+    ) {
         console.warn(
             "Configuration Notice: You have elected to import external VPCs/Subnets. If experiencing VPC/Subnet lookup errors, synethize your CDK first with the 'loadContextIgnoreChecks' flag first."
         );
@@ -131,9 +133,9 @@ export function getConfig(app: cdk.App): Config {
     if (
         config.app.useGlobalVpc.enabled &&
         (config.app.useGlobalVpc.vpcCidrRange == "UNDEFINED" ||
-        config.app.useGlobalVpc.vpcCidrRange == "") &&
+            config.app.useGlobalVpc.vpcCidrRange == "") &&
         (config.app.useGlobalVpc.optionalExternalVpcId == "UNDEFINED" ||
-        config.app.useGlobalVpc.optionalExternalVpcId == "")
+            config.app.useGlobalVpc.optionalExternalVpcId == "")
     ) {
         throw new Error(
             "Configuration Error: Must define either a global VPC Cidr Range or an External VPC ID."
@@ -142,8 +144,8 @@ export function getConfig(app: cdk.App): Config {
 
     if (
         config.app.useGlobalVpc.enabled &&
-        (config.app.useGlobalVpc.optionalExternalVpcId != "UNDEFINED" &&
-        config.app.useGlobalVpc.optionalExternalPrivateSubnetIds != "")
+        config.app.useGlobalVpc.optionalExternalVpcId != "UNDEFINED" &&
+        config.app.useGlobalVpc.optionalExternalPrivateSubnetIds != ""
     ) {
         if (
             config.app.useGlobalVpc.optionalExternalPrivateSubnetIds == "UNDEFINED" ||
@@ -159,8 +161,8 @@ export function getConfig(app: cdk.App): Config {
         config.app.useGlobalVpc.enabled &&
         config.app.useAlb.enabled &&
         config.app.useAlb.usePublicSubnet &&
-        (config.app.useGlobalVpc.optionalExternalVpcId != "UNDEFINED" &&
-        config.app.useGlobalVpc.optionalExternalVpcId != "")
+        config.app.useGlobalVpc.optionalExternalVpcId != "UNDEFINED" &&
+        config.app.useGlobalVpc.optionalExternalVpcId != ""
     ) {
         if (
             config.app.useGlobalVpc.optionalExternalPublicSubnetIds == "UNDEFINED" ||
@@ -175,10 +177,9 @@ export function getConfig(app: cdk.App): Config {
     if (
         config.app.useAlb.enabled &&
         (config.app.useAlb.certificateArn == "UNDEFINED" ||
-        config.app.useAlb.certificateArn == "" ||
-        config.app.useAlb.domainHost == "UNDEFINED" ||
-        config.app.useAlb.domainHost == ""
-        )
+            config.app.useAlb.certificateArn == "" ||
+            config.app.useAlb.domainHost == "UNDEFINED" ||
+            config.app.useAlb.domainHost == "")
     ) {
         throw new Error(
             "Configuration Error: Cannot use ALB deployment without specifying a valid domain hostname and a ACM Certificate ARN to use for SSL/TLS security!"
@@ -202,7 +203,7 @@ export function getConfig(app: cdk.App): Config {
     if (
         config.app.authProvider.useExternalOathIdp.enabled &&
         (config.app.authProvider.useExternalOathIdp.idpAuthProviderUrl == "UNDEFINED" ||
-        config.app.authProvider.useExternalOathIdp.idpAuthProviderUrl == "")
+            config.app.authProvider.useExternalOathIdp.idpAuthProviderUrl == "")
     ) {
         throw new Error(
             "Configuration Error: Must specify a external IDP auth URL when using an external OATH provider!"

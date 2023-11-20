@@ -103,7 +103,10 @@ export function buildAuthFunction(
             config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
                 ? vpc
                 : undefined, //Use VPC when flagged to use for all lambdas
-        vpcSubnets: config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas? {subnets: subnets} : undefined,
+        vpcSubnets:
+            config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
+                ? { subnets: subnets }
+                : undefined,
         environment: {
             TABLE_NAME: storageResources.dynamo.authEntitiesStorageTable.tableName,
             ASSET_STORAGE_TABLE_NAME: storageResources.dynamo.assetStorageTable.tableName,

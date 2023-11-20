@@ -40,7 +40,10 @@ export function buildAssetService(
             config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
                 ? vpc
                 : undefined, //Use VPC when flagged to use for all lambdas
-        vpcSubnets: config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas? {subnets: subnets} : undefined,
+        vpcSubnets:
+            config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
+                ? { subnets: subnets }
+                : undefined,
 
         environment: {
             DATABASE_STORAGE_TABLE_NAME: databaseStorageTable.tableName,
@@ -80,7 +83,10 @@ export function buildAssetFiles(
             config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
                 ? vpc
                 : undefined, //Use VPC when flagged to use for all lambdas
-        vpcSubnets: config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas? {subnets: subnets} : undefined,
+        vpcSubnets:
+            config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
+                ? { subnets: subnets }
+                : undefined,
 
         environment: {
             ASSET_STORAGE_TABLE_NAME: assetStorageTable.tableName,
@@ -117,7 +123,10 @@ export function buildUploadAssetFunction(
             config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
                 ? vpc
                 : undefined, //Use VPC when flagged to use for all lambdas
-        vpcSubnets: config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas? {subnets: subnets} : undefined,
+        vpcSubnets:
+            config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
+                ? { subnets: subnets }
+                : undefined,
         environment: {
             DATABASE_STORAGE_TABLE_NAME: databaseStorageTable.tableName,
             ASSET_STORAGE_TABLE_NAME: assetStorageTable.tableName,
@@ -154,7 +163,10 @@ export function buildUploadAllAssetsFunction(
             config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
                 ? vpc
                 : undefined, //Use VPC when flagged to use for all lambdas
-        vpcSubnets: config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas? {subnets: subnets} : undefined,
+        vpcSubnets:
+            config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
+                ? { subnets: subnets }
+                : undefined,
         environment: {
             DATABASE_STORAGE_TABLE_NAME: databaseStorageTable.tableName,
             ASSET_STORAGE_TABLE_NAME: assetStorageTable.tableName,
@@ -192,7 +204,10 @@ export function buildAssetMetadataFunction(
             config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
                 ? vpc
                 : undefined, //Use VPC when flagged to use for all lambdas
-        vpcSubnets: config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas? {subnets: subnets} : undefined,
+        vpcSubnets:
+            config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
+                ? { subnets: subnets }
+                : undefined,
         environment: {
             ASSET_STORAGE_TABLE_NAME: assetStorageTable.tableName,
         },
@@ -225,7 +240,10 @@ export function buildAssetColumnsFunction(
             config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
                 ? vpc
                 : undefined, //Use VPC when flagged to use for all lambdas
-        vpcSubnets: config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas? {subnets: subnets} : undefined,
+        vpcSubnets:
+            config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
+                ? { subnets: subnets }
+                : undefined,
         environment: {
             ASSET_STORAGE_TABLE_NAME: assetStorageTable.tableName,
         },
@@ -257,7 +275,10 @@ export function buildFetchVisualizerAssetFunction(
             config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
                 ? vpc
                 : undefined, //Use VPC when flagged to use for all lambdas
-        vpcSubnets: config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas? {subnets: subnets} : undefined,
+        vpcSubnets:
+            config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
+                ? { subnets: subnets }
+                : undefined,
         environment: {
             ASSET_VISUALIZER_BUCKET_NAME: assetVisualizerStorageBucket.bucketName,
         },
@@ -288,7 +309,10 @@ export function buildDownloadAssetFunction(
             config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
                 ? vpc
                 : undefined, //Use VPC when flagged to use for all lambdas
-        vpcSubnets: config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas? {subnets: subnets} : undefined,
+        vpcSubnets:
+            config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
+                ? { subnets: subnets }
+                : undefined,
         environment: {
             ASSET_STORAGE_TABLE_NAME: assetStorageTable.tableName,
             S3_ENDPOINT: Service("S3").Endpoint,
@@ -323,7 +347,10 @@ export function buildRevertAssetFunction(
             config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
                 ? vpc
                 : undefined, //Use VPC when flagged to use for all lambdas
-        vpcSubnets: config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas? {subnets: subnets} : undefined,
+        vpcSubnets:
+            config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
+                ? { subnets: subnets }
+                : undefined,
         environment: {
             DATABASE_STORAGE_TABLE_NAME: databaseStorageTable.tableName,
             ASSET_STORAGE_TABLE_NAME: assetStorageTable.tableName,
@@ -359,7 +386,10 @@ export function buildUploadAssetWorkflowFunction(
             config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
                 ? vpc
                 : undefined, //Use VPC when flagged to use for all lambdas
-        vpcSubnets: config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas? {subnets: subnets} : undefined,
+        vpcSubnets:
+            config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
+                ? { subnets: subnets }
+                : undefined,
         environment: {
             UPLOAD_WORKFLOW_ARN: uploadAssetWorkflowStateMachine.stateMachineArn,
         },

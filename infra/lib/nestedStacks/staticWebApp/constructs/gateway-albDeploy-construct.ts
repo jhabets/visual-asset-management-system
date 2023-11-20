@@ -50,9 +50,10 @@ export class GatewayAlbDeployConstruct extends Construct {
 
         //At this point we already know there is at least 2 public or private/isolate subnets with other checks previously done
         this.subnets = {
-            webApp: props.config.app.useAlb.usePublicSubnet? props.subnetsPublic : props.subnetsPrivate,
+            webApp: props.config.app.useAlb.usePublicSubnet
+                ? props.subnetsPublic
+                : props.subnetsPrivate,
         };
-
 
         //Create ALB security group and open to any IP on port 443/80
         const webAppALBSecurityGroup = new ec2.SecurityGroup(this, "WepAppDistroALBSecurityGroup", {

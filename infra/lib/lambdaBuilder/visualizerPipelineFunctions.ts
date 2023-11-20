@@ -37,7 +37,10 @@ export function buildExecuteVisualizerPCPipelineFunction(
             config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
                 ? vpc
                 : undefined, //Use VPC when flagged to use for all lambdas
-        vpcSubnets: config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas? {subnets: subnets} : undefined,
+        vpcSubnets:
+            config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
+                ? { subnets: subnets }
+                : undefined,
         environment: {
             DEST_BUCKET_NAME: assetVisualizerBucket.bucketName,
             SNS_VISUALIZER_PIPELINE_PC_TOPICARN: pipelineSNSTopic.topicArn,
@@ -112,7 +115,6 @@ export function buildConstructPipelineFunction(
         vpc: vpc, //construct pipeline always in VPC
         vpcSubnets: vpcSubnets,
         securityGroups: pipelineSecurityGroups,
-
     });
 
     return fun;

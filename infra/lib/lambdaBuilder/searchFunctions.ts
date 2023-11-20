@@ -38,8 +38,11 @@ export function buildSearchFunction(
             (config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas)
                 ? vpc
                 : undefined, //Use VPC when provisioned OS or flag to use for all lambdas
-        vpcSubnets: config.app.openSearch.useProvisioned.enabled ||
-            (config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas)? {subnets: subnets} : undefined,
+        vpcSubnets:
+            config.app.openSearch.useProvisioned.enabled ||
+            (config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas)
+                ? { subnets: subnets }
+                : undefined,
 
         environment: {
             AOS_ENDPOINT_PARAM: aosEndpoint,

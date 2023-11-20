@@ -218,7 +218,8 @@ export class CognitoWebNativeNestedStack extends NestedStack {
                     default: {
                         type: "Token",
                         ambiguousRoleResolution: "AuthenticatedRole",
-                        identityProvider: `${Service("COGNITO_IDP", false).Endpoint}/${ //Don't use fips endpoints here due to RoleMapping ProviderName error
+                        identityProvider: `${Service("COGNITO_IDP", false).Endpoint}/${
+                            //Don't use fips endpoints here due to RoleMapping ProviderName error
                             userPool.userPoolId
                         }:${userPoolWebClient.userPoolClientId}`,
                     },

@@ -29,7 +29,10 @@ export function buildAddCommentLambdaFunction(
             config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
                 ? vpc
                 : undefined, //Use VPC when flagged to use for all lambdas
-        vpcSubnets: config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas? {subnets: subnets} : undefined,
+        vpcSubnets:
+            config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
+                ? { subnets: subnets }
+                : undefined,
         environment: {
             COMMENT_STORAGE_TABLE_NAME: commentStorageTable.tableName,
         },
@@ -58,7 +61,10 @@ export function buildEditCommentLambdaFunction(
             config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
                 ? vpc
                 : undefined, //Use VPC when flagged to use for all lambdas
-        vpcSubnets: config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas? {subnets: subnets} : undefined,
+        vpcSubnets:
+            config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
+                ? { subnets: subnets }
+                : undefined,
         environment: {
             COMMENT_STORAGE_TABLE_NAME: commentStorageTable.tableName,
         },
@@ -88,7 +94,10 @@ export function buildCommentService(
             config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
                 ? vpc
                 : undefined, //Use VPC when flagged to use for all lambdas
-        vpcSubnets: config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas? {subnets: subnets} : undefined,
+        vpcSubnets:
+            config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
+                ? { subnets: subnets }
+                : undefined,
         environment: {
             COMMENT_STORAGE_TABLE_NAME: commentStorageTable.tableName,
             ASSET_STORAGE_TABLE_NAME: assetStorageTable.tableName,

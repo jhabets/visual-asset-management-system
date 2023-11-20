@@ -11,7 +11,7 @@
         "adminEmailAddress": "scheurik@amazon.com",
         "useFips": true,
         "govCloud": {
-            "enabled": false
+            "enabled": true
         },
         "useGlobalVpc": {
             "enabled": true,

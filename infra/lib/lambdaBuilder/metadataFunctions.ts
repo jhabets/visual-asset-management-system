@@ -24,7 +24,15 @@ export function buildMetadataFunctions(
     subnets: ec2.ISubnet[]
 ): lambda.Function[] {
     return ["create", "read", "update", "delete"].map((f) =>
-        buildMetadataFunction(scope, lambdaCommonBaseLayer, storageResources, config, vpc, subnets, f)
+        buildMetadataFunction(
+            scope,
+            lambdaCommonBaseLayer,
+            storageResources,
+            config,
+            vpc,
+            subnets,
+            f
+        )
     );
 }
 
@@ -48,7 +56,10 @@ export function buildMetadataFunction(
             config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
                 ? vpc
                 : undefined, //Use VPC when flagged to use for all lambdas
-        vpcSubnets: config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas? {subnets: subnets} : undefined,
+        vpcSubnets:
+            config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
+                ? { subnets: subnets }
+                : undefined,
         environment: {
             METADATA_STORAGE_TABLE_NAME: storageResources.dynamo.metadataStorageTable.tableName,
             ASSET_STORAGE_TABLE_NAME: storageResources.dynamo.assetStorageTable.tableName,
@@ -84,8 +95,11 @@ export function buildMetadataIndexingFunction(
             (config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas)
                 ? vpc
                 : undefined, //Use VPC when provisioned OS or flag to use for all lambdas
-        vpcSubnets: config.app.openSearch.useProvisioned.enabled ||
-                    (config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas)? {subnets: subnets} : undefined,
+        vpcSubnets:
+            config.app.openSearch.useProvisioned.enabled ||
+            (config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas)
+                ? { subnets: subnets }
+                : undefined,
 
         environment: {
             METADATA_STORAGE_TABLE_NAME: storageResources.dynamo.metadataStorageTable.tableName,

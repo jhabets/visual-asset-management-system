@@ -106,7 +106,7 @@ export class ApiGatewayV2AmplifyNestedStack extends NestedStack {
 
         //Always use non-FIPS URL in non-GovCloud. All endpoints in GovCloud are FIPS-compliant already
         //https://docs.aws.amazon.com/govcloud-us/latest/UserGuide/govcloud-abp.html
-        const apiEndpoint = `${api.httpApiId}.${Service("EXECUTE_API", false).Endpoint}`; 
+        const apiEndpoint = `${api.httpApiId}.${Service("EXECUTE_API", false).Endpoint}`;
         this.apiEndpoint = apiEndpoint;
 
         //Setup Initial Amplify Config

@@ -35,7 +35,10 @@ export function buildConfigService(
             config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
                 ? vpc
                 : undefined, //Use VPC when flagged to use for all lambdas
-        vpcSubnets: config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas? {subnets: subnets} : undefined,
+        vpcSubnets:
+            config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
+                ? { subnets: subnets }
+                : undefined,
         environment: {
             ASSET_STORAGE_BUCKET: assetStorageBucket.bucketName,
             APPFEATUREENABLED_STORAGE_TABLE_NAME: appFeatureEnabledStorageTable.tableName,

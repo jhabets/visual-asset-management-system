@@ -149,7 +149,7 @@ export class CoreVAMSStack extends cdk.Stack {
         );
 
         //Ignore stacks if we are only loading context (mostly for Imported VPC)
-        if(!props.config.env.loadContextIgnoreVPCStacks) {
+        if (!props.config.env.loadContextIgnoreVPCStacks) {
             // Deploy api gateway + amplify configuration endpoints (nested stack)
             const apiNestedStack = new ApiGatewayV2AmplifyNestedStack(this, "Api", {
                 ...props,
@@ -202,19 +202,16 @@ export class CoreVAMSStack extends cdk.Stack {
 
             ///Optional Pipelines (Nested Stack)
             if (props.config.app.pipelines.usePointCloudVisualization.enabled) {
-                const visualizerPipelineNetworkNestedStack = new VisualizerPipelineBuilderNestedStack(
-                    this,
-                    "VisualizerPipelineBuilder",
-                    {
+                const visualizerPipelineNetworkNestedStack =
+                    new VisualizerPipelineBuilderNestedStack(this, "VisualizerPipelineBuilder", {
                         ...props,
                         config: props.config,
                         storageResources: storageResourcesNestedStack.storageResources,
                         lambdaCommonBaseLayer: lambdaLayers.lambdaCommonBaseLayer,
                         vpc: this.vpc,
                         vpceSecurityGroup: this.vpceSecurityGroup,
-                        subnets: this.subnetsPrivate
-                    }
-                );
+                        subnets: this.subnetsPrivate,
+                    });
             }
 
             //Write final output configurations (pulling forward from nested stacks)
@@ -223,10 +220,14 @@ export class CoreVAMSStack extends cdk.Stack {
                 description: "Website endpoint URL",
             });
 
-            const webAppS3BucketNameParamsOutput = new cdk.CfnOutput(this, "WebAppS3BucketNameOutput", {
-                value: staticWebBuilderNestedStack.webAppS3BucketName,
-                description: "S3 Bucket for static web app files",
-            });
+            const webAppS3BucketNameParamsOutput = new cdk.CfnOutput(
+                this,
+                "WebAppS3BucketNameOutput",
+                {
+                    value: staticWebBuilderNestedStack.webAppS3BucketName,
+                    description: "S3 Bucket for static web app files",
+                }
+            );
 
             if (props.config.app.useAlb.enabled) {
                 const albEndpointOutput = new cdk.CfnOutput(this, "AlbEndpointOutput", {
@@ -246,7 +247,7 @@ export class CoreVAMSStack extends cdk.Stack {
                 `/${props.stackName}/ApiBuilder/VAMSWorkflowIAMRole/Resource`,
                 `/${props.stackName}/ApiBuilder/storageBucketRole/DefaultPolicy/Resource`,
             ];
-    
+
             for (const path of refactorPaths) {
                 const reason = `Intention is to refactor this model away moving forward 
                 so that this type of access is not required within the stack.
@@ -281,7 +282,6 @@ export class CoreVAMSStack extends cdk.Stack {
             );
             this.enabledFeatures.push(VAMS_APP_FEATURES.LOCATIONSERVICES);
         }
-
 
         //Deploy Enabled Feature Tracking (Nested Stack)
         const customFeatureEnabledConfigNestedStack = new CustomFeatureEnabledConfigNestedStack(
@@ -343,8 +343,6 @@ export class CoreVAMSStack extends cdk.Stack {
             value: this.vpc.vpcId,
             description: "VPC ID created or used by VAMS deployment",
         });
-
-
 
         //Add tags to stack
         cdk.Tags.of(this).add("vams:stackname", props.stackName);

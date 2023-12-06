@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import React, { Dispatch, ReducerAction, useEffect, useReducer, useState } from "react";
+import { Cache } from "aws-amplify";
 import SearchPropertyFilter, { changeFilter, search } from "./SearchPropertyFilter";
 import Container from "@cloudscape-design/components/container";
 import {
@@ -20,6 +21,7 @@ import {
     TextContent,
 } from "@cloudscape-design/components";
 import Synonyms from "../../synonyms";
+import Constants from "../../constants";
 import SearchPageSegmentedControl from "./SearchPageSegmentedControl";
 import SearchPageMapView from "./SearchPageMapView";
 import SearchPageListView from "./SearchPageListView";
@@ -294,7 +296,8 @@ export const INITIAL_STATE = {
 };
 
 function SearchPage(props: SearchPageProps) {
-    const [useMapView] = useState(true);
+    const config = Cache.getItem("config");
+    const [useMapView] = useState(config.featuresEnabled?.includes(Constants.LOCATIONSERVICES));
     const { databaseId } = useParams();
     const [state, dispatch] = useReducer(searchReducer, { ...INITIAL_STATE, databaseId });
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2023 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 import React, { Dispatch, ReducerAction, useEffect, useReducer, useState } from "react";
@@ -21,7 +21,9 @@ import {
     TextContent,
 } from "@cloudscape-design/components";
 import Synonyms from "../../synonyms";
-import Constants from "../../constants";
+import {
+    featuresEnabled
+} from "../../common/constants/featuresEnabled";
 import SearchPageSegmentedControl from "./SearchPageSegmentedControl";
 import SearchPageMapView from "./SearchPageMapView";
 import SearchPageListView from "./SearchPageListView";
@@ -297,7 +299,7 @@ export const INITIAL_STATE = {
 
 function SearchPage(props: SearchPageProps) {
     const config = Cache.getItem("config");
-    const [useMapView] = useState(config.featuresEnabled?.includes(Constants.LOCATIONSERVICES));
+    const [useMapView] = useState(config.featuresEnabled?.includes(featuresEnabled.LOCATIONSERVICES));
     const { databaseId } = useParams();
     const [state, dispatch] = useReducer(searchReducer, { ...INITIAL_STATE, databaseId });
 

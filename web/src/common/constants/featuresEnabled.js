@@ -3,8 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-const Constants = {
+export const featuresEnabled = {
     LOCATIONSERVICES: "LOCATIONSERVICES"
 };
-
-export default Constants;

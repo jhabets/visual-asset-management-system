@@ -227,7 +227,9 @@ const FedLoginBox: React.FC<LoginProps> = ({ onLogin, onLocal }) => {
     );
 };
 
-type AuthProps = {};
+type AuthProps = {
+
+};
 
 const VAMSAuth: React.FC<AuthProps> = (props) => {
     const [state, setState] = useState<any>({
@@ -239,8 +241,8 @@ const VAMSAuth: React.FC<AuthProps> = (props) => {
     const [user, setUser] = useState(null);
     const [useLocal, setUseLocal] = useState(false);
     const [userWantsLocal, setUserWantsLocal] = useState(false);
+    const [config, setConfig] = useState(Cache.getItem("config"));
 
-    const [config, setConfig] = useState<any>(Cache.getItem("config"));
     const [ampInit, setAmpInit] = useState(false);
 
     console.log("useLocal", useLocal);

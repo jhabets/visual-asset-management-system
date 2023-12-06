@@ -17,7 +17,7 @@ export default function Workflows(props) {
 
     const createNewWorkflow = () => {
         if (databaseId) {
-            navigate(`#/databases/${databaseId}/workflows/create`);
+            navigate(`/databases/${databaseId}/workflows/create`);
         } else {
             setOpenModal(true);
         }
@@ -25,7 +25,7 @@ export default function Workflows(props) {
 
     const handleSelectWorkflowDatabase = (event) => {
         const newDatabaseId = event?.detail?.selectedOption?.value;
-        navigate(`#/databases/${newDatabaseId}/workflows/create`);
+        navigate(`/databases/${newDatabaseId}/workflows/create`);
     };
 
     return (

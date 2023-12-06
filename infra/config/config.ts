@@ -69,10 +69,10 @@ export function getConfig(app: cdk.App): Config {
             false)
     );
 
-    //If we are govCloud, we always use FIPS, Full use VPC, ALB deploy, use OpenSearch Provisioned (serverless not available in GovCloud), and disable location service (currently not supported in GovCloud 08-29-2023)
+    //If we are govCloud, we always use Full VPC, ALB deploy, use OpenSearch Provisioned (serverless not available in GovCloud), and disable location service (currently not supported in GovCloud 08-29-2023)
     if (config.app.govCloud.enabled) {
         if (
-            !config.app.useFips ||
+            //!config.app.useFips ||
             !config.app.useGlobalVpc.enabled ||
             !config.app.useGlobalVpc.useForAllLambdas ||
             !config.app.useAlb.enabled ||
@@ -80,11 +80,11 @@ export function getConfig(app: cdk.App): Config {
             config.app.useLocationService.enabled
         ) {
             console.warn(
-                "Configuration Warning: Due to GovCloud being enabled, auto-enabling Use Global VPC, use VPC For All Lambdas, Use ALB, and Use OpenSearch Provisioned flag and disabling Use Location Services flag"
+                "Configuration Warning: Due to GovCloud being enabled, auto-enabling Use Global VPC, use VPC For All Lambdas, Use ALB, Use OpenSearch Provisioned, and disable Use Location Services"
             );
         }
 
-        config.app.useFips = true;
+        //config.app.useFips = true; //not required for use in GovCloud. Some GovCloud endpoints are FIPS compliant regardless of this flag or using the specific FIPS endpoints. 
         config.app.useGlobalVpc.enabled = true;
         config.app.useGlobalVpc.useForAllLambdas = true; //FedRAMP best practices require all Lambdas/OpenSearch behind VPC
         config.app.useAlb.enabled = true;
@@ -114,7 +114,7 @@ export function getConfig(app: cdk.App): Config {
         !config.env.loadContextIgnoreVPCStacks
     ) {
         console.warn(
-            "Configuration Notice: You have elected to import external VPCs/Subnets. If experiencing VPC/Subnet lookup errors, synethize your CDK first with the 'loadContextIgnoreChecks' flag first."
+            "Configuration Notice: You have elected to import external VPCs/Subnets. If experiencing VPC/Subnet lookup errors, synethize your CDK first with the 'loadContextIgnoreVPCStacks' flag first."
         );
     }
 

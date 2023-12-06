@@ -162,6 +162,8 @@ export const AppRoutes = ({ navigationOpen, setNavigationOpen, user }: AppRoutes
     const location = useLocation();
     const navigate = useNavigate();
 
+    //Used to detect duplicate/stacked hash route pathing and correct
+    //Note: This will null out any state passing for the naviagation and may break a a state passing page if triggered
     useEffect(() => {
         console.log("Location changed: ", window.location.href);
 
@@ -189,11 +191,6 @@ export const AppRoutes = ({ navigationOpen, setNavigationOpen, user }: AppRoutes
 
             window.location.href = url.toString();
 
-            // //Navigate while preserving state
-            // navigate(url.href, {
-            //     state: state,
-            //     relative: "path"
-            // });
         }
     }, [location, navigate]);
 

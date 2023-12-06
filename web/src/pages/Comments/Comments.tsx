@@ -59,9 +59,9 @@ export default function Assets() {
                     pluralNameTitleCase={Synonyms.Assets}
                     onCreateCallback={() => {
                         if (urlParams.databaseId) {
-                            navigate(`#/upload/${urlParams.databaseId}`);
+                            navigate(`/upload/${urlParams.databaseId}`);
                         } else {
-                            navigate("#/upload");
+                            navigate("/upload");
                         }
                     }}
                     onSelection={setSelectedItems}

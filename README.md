@@ -162,9 +162,9 @@ Some configuration options can be overriden at time of deployment with either en
 -   `app.baseStackName` | default: prod | #Base stack stage environment name to use when creating full CDK stack name.
 -   `app.stagingBucketName` | default: NULL | #Staging bucket for transfering assets between deployment. If null, no staging bucket will be created.
 -   `app.adminEmailAddress` | default: adminEmail@example.com | #Administrator email address to use for the initial super admin account.
--   `app.useFips` | default: false | #Feature to deploy to a FIPS compliant AWS environment. Must combine with AWS CLI FIPS Environment variable `AWS_USE_FIPS_ENDPOINT`.
+-   `app.useFips` | default: false | #Feature to use FIPS compliant AWS partition endpoints. Must combine with AWS CLI FIPS Environment variable `AWS_USE_FIPS_ENDPOINT`.
 
--   `app.govCloud.enabled` | default: false | #Feature to deploy to the AWS GovCloud partition. Will automatically turn VAMS features on/off based on service support.
+-   `app.govCloud.enabled` | default: false | #Feature to deploy to the AWS GovCloud partition. Will automatically turn VAMS features on/off based on service support (see below on additional configuration notes).
 
 -   `app.useGlobalVpc.enabled` | default: false | #Will create a global VPC to use for various configuration feature options. Using an ALB, OpenSearch Provisioned, or the Point Cloud Visualization Pipeline will force this setting to true. All options under this section only apply if this setting is set/force to 'true'.
 -   `app.useGlobalVpc.useForAllLambdas` | default: false | #Feature will deploy all lambdas created behind the VPC and create needed interface endpoints to support communications. Reccomended only for select deployments based on security (FedRamp) or external component VPC-only access (e.g. RDS).
@@ -191,11 +191,26 @@ Some configuration options can be overriden at time of deployment with either en
 -   `app.authProvider.useExternalOathIdp.enabled` | default: false | #UNUSED. Reserved for future use
 -   `app.authProvider.useExternalOathIdp.idpAuthProviderUrl` | default: NULL | #UNUSED. Reserved for future use
 
-Additional configuration notes
+# Additional configuration notes
 
--   Gov Cloud - TBD
--   Global VPC - TBD
--   OpenSearch Provisioned - This service is very sensitive to VPC Subnet Availabilty Zone selection. If using an external VPC, make sure the provided private subnets are a minimum of 3 and are each in their own availability zone.
+-   `Gov Cloud` - This will auto-enable Use Global VPC, use VPC For All Lambdas, Use ALB, Use OpenSearch Provisioned, and will disable Use Location Services
+-   `OpenSearch Provisioned` - This service is very sensitive to VPC Subnet Availabilty Zone selection. If using an external VPC, make sure the provided private subnets are a minimum of 3 and are each in their own availability zone.
+-   `Global VPC` - Will auto be enabled if ALB, OpenSearch Provisioned, or Point Cloud Visualizer Pipeline is enabled. OpenSearch Serverless endpoints and associated lambdas will also be put behind the VPC if toggling on the VPC and using for all lambdas.
+-   `Global VPC Subnets` - Each Subnet to subnet-type (relevent to public or private) used should reside in it's own AZ within the region. CDK will probably deploy/create to the amount of AZs and related subnets. When importing an existing VPC/subnets, make sure each subnet provided is located within its own AZ (otherwise errors may occur). The minimum amount of AZs/Subnets needed are (use the higher number): 3 - when using Open Search Provisioned, 2 - when using ALB, 1 - for all other configurations.
+-   `Global VPC Endpoints` - When using a Global VPC, interface/gateway endpoints are needed. The following is the below chart of VPC Endpoints created (when using addVpcEndpoints config option) or are needed otherwise. Some endpoints have special creation conditions that are noted below.
+    -- (Interface) ECR - Deployed/used with "Use with All Lambda" and Visualizer Point Cloud Pipeline Features
+    -- (Interface) ECR Docker - Deployed/used with "Use with All Lambda" and Visualizer Point Cloud Pipeline Features
+    -- (Interface) CloudWatch Logs - Deployed/used with "Use with All Lambda" and Visualizer Point Cloud Pipeline Features
+    -- (Interface) SNS - Deployed/used with "Use with All Lambda" and Visualizer Point Cloud Pipeline Features
+    -- (Interface) SFN - Deployed/used with "Use with All Lambda" and Visualizer Point Cloud Pipeline Features
+    -- (Interface) SSM - Deployed/used with "Use with All Lambda" and Open Search Provisioned Features
+    -- (Interface) Lambda - Deployed/used with "Use with All Lambda" Feature
+    -- (Interface) STS - Deployed/used with "Use with All Lambda" Feature
+    -- (Interface) Batch - Deployed/used with Visualizer Point Cloud Pipeline Feature
+    -- (Interface) OpenSearch Serverless - Deployed/used with OpenSearch Serverless Feature
+    -- (Interface) S3 (ALB-Special) - Always created on VPC when using ALB as it's specially setup with the ALB IPs and targets
+    -- (Gateway) S3 - Due to no pricing implications, deployed/used across all features that require VPC
+    -- (Gateway) DynamoDB - Due to no pricing implications, deployed/used across all features that require VPC
 
 ### Architecture components
 
@@ -272,27 +287,41 @@ The costs of this solution can be understood as fixed storage costs and variable
 
 You are responsible for the cost of the AWS services used while running this solution. Ensure that you have [billing alarms](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/monitor_estimated_charges_with_cloudwatch.html) set within the constraints of your budget.
 
-An approximate cost breakdown is below (excluding free tiers):
+Configuration Options:
 
-| Service                           | Quantity                                                 | Cost   |
-| :-------------------------------- | :------------------------------------------------------- | :----- |
-| Amazon API Gateway                | 150000 requests                                          | $0.16  |
-| Amazon DynamoDB                   | 750000 writes, 146250 reads, 0.30 GB storage             | $1.18  |
-| AWS Lambda                        | 12000 invocations, 2-minute avg. duration, 256 MB memory | $6     |
-| AWS Step Functions                | 92400 state transitions                                  | $2.21  |
-| Amazon S3                         | 10 GB storage, 4000 PUT requests, 4000 GET requests      | $0.26  |
-| Amazon Rekognition                | 9000 Image analysis, 3 Custom Label inference units      | $22.32 |
-| Amazon SageMaker                  | 2 inference endpoints                                    | $5.13  |
-| Amazon Elastic Container Registry | ECR (In region)40GB                                      | $4     |
+0. C-0: Deploy VPC with variable endpoints based on below configuration needs (Optional). Option to import existing VPC/Subnets w/ Endpoints.
+1. C-1: Deploy Static Webpage with Cloudfront (Default) or ALB. ALB requires VPC with 2 AZ
+2. C-2: Deploy OpenSearch with Serverless (Default) or Provisioned. Provisioned requires VPC with 3 AZ
+3. C-3: Deploy all Lambdas in VPC (Optional). Requires VPC with 1 AZ
+4. C-4: Deploy with location services (Default).
+5. C-5: Deploy visualizer point cloud pipeline (Optional). Requires VPC with 1 AZ.
 
-Below are the additional costs for including the point cloud visualizer pipeline feature in your deployment:
+An approximate monthly cost breakdown is below (excluding some free tier inclusions):
 
-| Service           | Quantity                                                 | Cost   |
-| :---------------- | :------------------------------------------------------- | :----- |
-| VPC               | 7 VPC endpoints per AZ (1 AZ configuration){Static Cost} | $51.11 |
-| Batch Fargate     | 10 hours of processing                                   | $3.56  |
-| Amazon S3         | 300 GB storage, 30GB transfer out                        | $9.60  |
-| Amazon Cloudwatch | 1GB logs - VPC Flowlogs/API Gateway/Pipeline             | $3.28  |
+| Service                                       | Quantity                                                      | Cost     |
+| :-------------------------------------------- | :------------------------------------------------------------ | :------- |
+| VPC (C-0 + C-1/C-2/C-3/C-5,Optional)          | 1-11x Endpoints per AZ (up to 3 AZ) - based on config options | $<240.91 |
+| Amazon Cloudfront (C-1,Default)               | First 1TB - Included in free tier                             | $0.00    |
+| Amazon ALB (C-1,Optional)                     | 1 ALB, 1TB Processed                                          | $24.43   |
+| Amazon API Gateway                            | 150000 requests                                               | $0.16    |
+| Amazon DynamoDB                               | 750000 writes, 146250 reads, 0.30 GB storage                  | $1.18    |
+| AWS Lambda                                    | 12000 invocations, 2-minute avg. duration, 256 MB memory      | $6       |
+| AWS Step Functions                            | 92400 state transitions                                       | $2.21    |
+| Amazon S3                                     | 10 GB storage, 4000 PUT requests, 4000 GET requests           | $0.26    |
+| Amazon Rekognition                            | 9000 Image analysis, 3 Custom Label inference units           | $22.32   |
+| Amazon SageMaker                              | 2 inference endpoints                                         | $5.13    |
+| Amazon Elastic Container Registry             | ECR (In region)40GB                                           | $4       |
+| Amazon Open Search Serverless (C-2,Default)   | 2x Index OCU, 2x Search OCU, 100GB Data                       | $703.20  |
+| Amazon Open Search Provisioned (C-2,Optional) | 3x Data (r6g.large.search),3x Master (r6gd.large.search)      | $743.66  |
+| Amazon Location Service (C-4,Default)         | 1000 Map tiles Retrieved                                      | $40.00   |
+
+Below are the additional costs for including the point cloud visualizer pipeline feature in your deployment (C-5, Optional):
+
+| Service           | Quantity                                     | Cost  |
+| :---------------- | :------------------------------------------- | :---- |
+| Batch Fargate     | 10 hours of processing                       | $3.56 |
+| Amazon S3         | 300 GB storage, 30GB transfer out            | $9.60 |
+| Amazon Cloudwatch | 1GB logs - VPC Flowlogs/API Gateway/Pipeline | $3.28 |
 
 ## License
 

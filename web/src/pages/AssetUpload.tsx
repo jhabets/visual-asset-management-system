@@ -279,7 +279,7 @@ const CancelButtonModal = ({
                         <Button variant="link" onClick={() => onDismiss(false)}>
                             Cancel
                         </Button>
-                        <Button variant="primary" onClick={() => navigate("#/assets")}>
+                        <Button variant="primary" onClick={() => navigate("/assets")}>
                             Ok
                         </Button>
                     </SpaceBetween>

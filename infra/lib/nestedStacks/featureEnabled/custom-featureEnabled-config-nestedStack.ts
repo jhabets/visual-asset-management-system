@@ -29,7 +29,6 @@ interface DynamoInsert {
 }
 
 interface IAppFeatureEnabled {
-    enabled: { S: string };
     featureName: { S: string };
 }
 
@@ -59,7 +58,6 @@ export class CustomFeatureEnabledConfigNestedStack extends NestedStack {
         const appFeatureItems: any[] = [];
         props.featuresEnabled.forEach((feature) =>
             appFeatureItems.push({
-                //enabled: {S:"true"},
                 featureName: { S: feature },
             })
         );

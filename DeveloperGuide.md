@@ -7,9 +7,10 @@
 -   Python 3.10
 -   Poetry (for managing python dependencies in the VAMS backend)
 -   Docker
--   Node >=18.x
+-   Node >=18.7
 -   Yarn >=1.22.19
 -   Node Version Manager (nvm)
+-   AWS cli
 -   AWS CDK cli
 -   Programatic access to AWS account at minimum access levels outlined above.
 
@@ -19,7 +20,7 @@
 
 VAMS Codebase is changing frequently and we recommend you checkout the stable released version from github.
 
-You can identify stable releases by their tag. Fetch the tags git fetch --all --tags and then git checkout tags/v1.0.1 or git checkout -b v1.0.1 tags/v1.0.1.
+You can identify stable releases by their tag. Fetch the tags `git fetch --all --tags` and then `git checkout tags/TAG` or `git checkout -b TAG tags/TAG` where TAG is the actual desired tag. A list of tags is found by running `git tag --list` or on the [releases page](https://github.com/awslabs/visual-asset-management-system/releases).
 
 1. `cd ./web && nvm use` - make sure you're node version matches the project. Make sure Docker daemon is running.
 
@@ -29,21 +30,29 @@ You can identify stable releases by their tag. Fetch the tags git fetch --all --
 
 4. `cd ../infra && npm install` - installs dependencies defined in package.json.
 
-5. If you haven't already bootstrapped your aws account with CDK. `cdk bootstrap aws://101010101010/us-east-1` - replace with your account and region.
+5. If you haven't already bootstrapped your aws account with CDK. `cdk bootstrap aws://101010101010/us-east-1` - replace with your account and region. If you are boostrapping a GovCloud account, run `export AWS_REGION=[gov-cloud-region]` as the AWS SDK needs to be informed to use GovCloud endpoints.
 
-6. Set the CDK stack name and the region for deployment with environment variables `export AWS_REGION=us-east-1 && export STACK_NAME=dev` - replace with the region you would like to deploy to and the name you want to associate with the cloudformation stack that the CDK will deploy.
+6. Modify the `config.json` in `/infra/config` to set the VAMS deployment parameters and features you would like to deploy. Recommended minimum fields to update are `region`, `adminEmailAddress`, and `baseStackName` when using the default provided template. More information about the configuration options can be found in the Configuration Options section below.
 
-7. `npm run deploy.dev adminEmailAddress=myuser@example.com` - replace with your email address to deploy. An account is created in an AWS Cognito User Pool using this email address. Expect an email from no-reply@verificationemail.com with a temporary password.
+7. (Optional) Override the the CDK stack name and region for deployment with environment variables `export AWS_REGION=us-east-1 && export STACK_NAME=dev` - replace with the region you would like to deploy to and the name you want to associate with the cloudformation stack that the CDK will deploy.
+
+8. (FIPS Use Only) If deploying with FIPS, enable FIPS environment variables for AWS CLI `export AWS_USE_FIPS_ENDPOINT=true` and enable `app.useFips` in the `config.json` configuration file in `/infra/config`
+
+9. (External VPC Import Only) If importing an external VPC with subnets in the `config.json` configuration, run `cdk deploy --all --require-approval never --context loadContextIgnoreVPCStacks=true` to import the VPC ID/Subnets context and deploy all non-VPC dependant stacks first. Failing to run this with the context setting or configuration setting of `loadContextIgnoreVPCStacks` will cause the final deployment of all stacks step to fail.
+
+10. `npm run deploy.dev` - An account is created in an AWS Cognito User Pool using the email address specified in the infrastructure config file. Expect an email from no-reply@verificationemail.com with a temporary password.
+
+    10a. Ensure that docker is running before deploying as a container will need to be built
 
 #### Deployment Success
 
-1. Navigate to URL provided in `{stackName].WebAppCloudFrontDistributionDomainName{uuid}` from `cdk deploy` output.
+1. Navigate to URL provided in `{stackName].WebAppCloudFrontDistributionDomainNameOutput` (Cloudfront) or `{stackName].WebsiteEndpointURLOutput` (ALB) from `cdk deploy` output.
 
 2. Check email for temporary account password to log in with the email address you provided.
 
 ### Multiple Deployments With Different or Same Region in Single Account
 
-You can change the region and deploy a new instance of VAMS my setting the environment variables to new values (`export AWS_REGION=us-east-1 && export STACK_NAME=dev`) and then running `npm run deploy.dev adminEmailAddress=myuser@example.com` again.
+You can change the region and deploy a new instance of VAMS my setting the environment variables to new values (`export AWS_REGION=us-east-1 && export STACK_NAME=dev`) and then running `npm run deploy.dev` again.
 
 ### Deploy VAMS Updates
 
@@ -186,7 +195,17 @@ def determine_vams_roles(event):
 
 This new `determine_vams_roles` can replace the existing function in `pretokengen.py`. Once the file is saved, you can update the stack by running `cdk deploy` to deploy the new version of the function.
 
-# Implementing pipelines outside of Lambda or Sagemeker
+#### Web Development
+
+The web front-end runs on NodeJS React with a supporting library of amplify-js SDK. The React web page is setup as a single page app using React routes with a hash (#) router.
+
+Infrastructure Note (Hash Router): The hash router was chosen in order so support both cloudfront and application load balancer (ALB) deployment options. As of today, ALBs do not support URL re-writing (without a EC2 reverse proxy), something needed to support normal (non-hash) web routing in React. It was chosen to go this route to ensure that the static web page serving is a AWS serverless process at the expense of SEO degredation, something generally not critical in internal enterprise deployments.
+
+(Important!) Development Note (Hash Router): When using `<Link>`, ensure that the route paths have a `#` in front of them as Link uses the cloudscape library which doesn't tie into the React router. When using `<navigate>`, part of the native React library and thus looking at the route manager, exclude the `#` from the beginning of the route path. Not following this will cause links to return either additional appended hash routes in the path or not use hashes at all.
+
+The front end when loading the page receives a configuration from the AWS backend to include amplify storage bucket, API Gateway/Cloudfront endpoints, authentication endpoints, and features enabled. Some of these are retrieved on load pre-authentication while others are received post-authentication. Features enabled is a comma-deliminated list of infrastructure features that were enabled/disabled on CDK deployment through the `config.json` file and toggle different front-end features to view.
+
+#### Implementing pipelines outside of Lambda or Sagemeker
 
 To process an asset through VAMS using an external system or when a job can take longer than the Lambda timeout of 15 minutes, it is recommended that you use the _Wait for a Callback with the Task Token_ feature so that the Pipeline Lambda can initiate your job and then exit instead of waiting for the work to complete before it also finishes. This reduces your Lambda costs and helps you avoid failed jobs that fail simply because they take longer than the timeout to complete.
 
@@ -215,7 +234,7 @@ Two additional settings enable your job to end with a timeout error by defining 
 
 If you would like your job check in to show that it is still running and fail the step if it does not check in within some amount of time less than the task timeout, define the Task Heartbeat Timeout on the create pipeline screen also. If more time than the specified seconds elapses between heartbeats from the task, this state fails with a States.Timeout error name.
 
-# Uninstalling
+#### Uninstalling
 
 1. Run `cdk destroy` from infra folder
 2. Some resources may not be deleted by CDK (e.g S3 buckets and DynamoDB table) and you will have to delete them via aws cli or using aws console
@@ -224,7 +243,7 @@ Note:
 
 After running CDK destroy there might still some resources be running in AWS that will have to be cleaned up manually as CDK does not delete some resources.
 
-# Deployment Overview
+#### Deployment Overview
 
 The CDK deployment deploys the VAMS stack into your account. The components that are created by this app are:
 
@@ -247,6 +266,7 @@ Please see [Swagger Spec](https://github.com/awslabs/visual-asset-management-sys
 
 | Table                         | Partition Key | Sort Key   | Attributes                                                                                                                        |
 | ----------------------------- | ------------- | ---------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| AppFeatureEnabledStorageTable | featureName   | n/a        |                                                                                                                                   |
 | AssetStorageTable             | databaseId    | assetId    | assetLocation, assetName, assetType, currentVersion, description, generated_artifacts, isDistributable, previewLocation, versions |
 | JobStorageTable               | jobId         | databaseId |                                                                                                                                   |
 | PipelineStorageTable          | databaseId    | pipelineId | assetType, dateCreated, description, enabled, outputType, pipelineType                                                            |
@@ -306,8 +326,6 @@ Please see [Swagger Spec](https://github.com/awslabs/visual-asset-management-sys
 | workflow_arn  | String    | State machine ARN                                                               |
 | workflow_id   | String    | Workflow identifier                                                             |
 | assets        | List, Map | List of Maps of asset objects (see AssetStorageTable for attribute definitions) |
-
-k
 
 ## MetadataStorageTable
 

@@ -29,7 +29,7 @@ export default function FolderActionViewer({
     }
 
     function navigateToAssetFilePage() {
-        navigate(`#/databases/${databaseId}/assets/${assetId}/file`, {
+        navigate(`/databases/${databaseId}/assets/${assetId}/file`, {
             state: { filename: name, key: urlKey, isDirectory: props.isDirectory },
         });
     }

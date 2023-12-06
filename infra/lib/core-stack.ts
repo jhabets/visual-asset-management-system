@@ -276,10 +276,11 @@ export class CoreVAMSStack extends cdk.Stack {
             const locationServiceNestedStack = new LocationServiceNestedStack(
                 this,
                 "LocationService",
-                {
-                    role: cognitoResourcesNestedStack.authenticatedRole,
-                }
+                {}
             );
+
+            locationServiceNestedStack.addMapPermissionsToRole(cognitoResourcesNestedStack.authenticatedRole);
+            locationServiceNestedStack.addMapPermissionsToRole(cognitoResourcesNestedStack.superAdminRole);
             this.enabledFeatures.push(VAMS_APP_FEATURES.LOCATIONSERVICES);
         }
 

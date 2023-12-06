@@ -8,13 +8,13 @@ import { aws_location, Stack, NestedStack } from "aws-cdk-lib";
 import { Construct } from "constructs";
 
 interface LocatioServiceConstructProps {
-    role: iam.Role;
 }
 
 export class LocationServiceNestedStack extends NestedStack {
     map: aws_location.CfnMap;
+    mapStreets: aws_location.CfnMap;
 
-    constructor(scope: Construct, id: string, { role }: LocatioServiceConstructProps) {
+    constructor(scope: Construct, id: string, props: LocatioServiceConstructProps) {
         super(scope, id);
 
         // const ssmLocationServiceArn = new ssm.StringParameter(this, "ssmLocationServiceArn", {
@@ -45,19 +45,6 @@ export class LocationServiceNestedStack extends NestedStack {
             },
             mapName: `vams-map-streets-${Stack.of(scope).region}-${Stack.of(scope).stackName}`,
         });
-
-        role.addToPolicy(
-            new iam.PolicyStatement({
-                effect: iam.Effect.ALLOW,
-                actions: [
-                    "geo:GetMapTile",
-                    "geo:GetMapSprites",
-                    "geo:GetMapGlyphs",
-                    "geo:GetMapStyleDescriptor",
-                ],
-                resources: [cfnMap.attrArn, cfnMap_streets.attrArn],
-            })
-        );
 
         // const cfnIndex = new aws_location.CfnPlaceIndex(scope, "MyCfnPlaceIndex", {
         //     dataSource: "Esri",
@@ -101,6 +88,22 @@ export class LocationServiceNestedStack extends NestedStack {
         // });
 
         this.map = cfnMap;
+        this.mapStreets = cfnMap_streets;
         // this.location = location;
+    }
+
+    public addMapPermissionsToRole(role: iam.Role): void {
+        role.addToPolicy(
+            new iam.PolicyStatement({
+                effect: iam.Effect.ALLOW,
+                actions: [
+                    "geo:GetMapTile",
+                    "geo:GetMapSprites",
+                    "geo:GetMapGlyphs",
+                    "geo:GetMapStyleDescriptor",
+                ],
+                resources: [this.map.attrArn, this.mapStreets.attrArn],
+            })
+        );
     }
 }

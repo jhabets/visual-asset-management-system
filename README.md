@@ -191,28 +191,28 @@ Some configuration options can be overriden at time of deployment with either en
 -   `app.authProvider.useExternalOathIdp.enabled` | default: false | #UNUSED. Reserved for future use
 -   `app.authProvider.useExternalOathIdp.idpAuthProviderUrl` | default: NULL | #UNUSED. Reserved for future use
 
-# Additional configuration notes
+#### Additional configuration notes
 
 -   `Gov Cloud` - This will auto-enable Use Global VPC, use VPC For All Lambdas, Use ALB, Use OpenSearch Provisioned, and will disable Use Location Services
 -   `OpenSearch Provisioned` - This service is very sensitive to VPC Subnet Availabilty Zone selection. If using an external VPC, make sure the provided private subnets are a minimum of 3 and are each in their own availability zone.
 -   `Global VPC` - Will auto be enabled if ALB, OpenSearch Provisioned, or Point Cloud Visualizer Pipeline is enabled. OpenSearch Serverless endpoints and associated lambdas will also be put behind the VPC if toggling on the VPC and using for all lambdas.
 -   `Global VPC Subnets` - Each Subnet to subnet-type (relevent to public or private) used should reside in it's own AZ within the region. CDK will probably deploy/create to the amount of AZs and related subnets. When importing an existing VPC/subnets, make sure each subnet provided is located within its own AZ (otherwise errors may occur). The minimum amount of AZs/Subnets needed are (use the higher number): 3 - when using Open Search Provisioned, 2 - when using ALB, 1 - for all other configurations.
 -   `Global VPC Endpoints` - When using a Global VPC, interface/gateway endpoints are needed. The following is the below chart of VPC Endpoints created (when using addVpcEndpoints config option) or are needed otherwise. Some endpoints have special creation conditions that are noted below.
-    -- (Interface) ECR - Deployed/used with "Use with All Lambda" and Visualizer Point Cloud Pipeline Features
-    -- (Interface) ECR Docker - Deployed/used with "Use with All Lambda" and Visualizer Point Cloud Pipeline Features
-    -- (Interface) CloudWatch Logs - Deployed/used with "Use with All Lambda" and Visualizer Point Cloud Pipeline Features
-    -- (Interface) SNS - Deployed/used with "Use with All Lambda" and Visualizer Point Cloud Pipeline Features
-    -- (Interface) SFN - Deployed/used with "Use with All Lambda" and Visualizer Point Cloud Pipeline Features
-    -- (Interface) SSM - Deployed/used with "Use with All Lambda" and Open Search Provisioned Features
-    -- (Interface) Lambda - Deployed/used with "Use with All Lambda" Feature
-    -- (Interface) STS - Deployed/used with "Use with All Lambda" Feature
-    -- (Interface) Batch - Deployed/used with Visualizer Point Cloud Pipeline Feature
-    -- (Interface) OpenSearch Serverless - Deployed/used with OpenSearch Serverless Feature
-    -- (Interface) S3 (ALB-Special) - Always created on VPC when using ALB as it's specially setup with the ALB IPs and targets
-    -- (Gateway) S3 - Due to no pricing implications, deployed/used across all features that require VPC
-    -- (Gateway) DynamoDB - Due to no pricing implications, deployed/used across all features that require VPC
+-   -   (Interface) ECR - Deployed/used with "Use with All Lambda" and Visualizer Point Cloud Pipeline Features
+-   -   (Interface) ECR Docker - Deployed/used with "Use with All Lambda" and Visualizer Point Cloud Pipeline Features
+-   -   (Interface) CloudWatch Logs - Deployed/used with "Use with All Lambda" and Visualizer Point Cloud Pipeline Features
+-   -   (Interface) SNS - Deployed/used with "Use with All Lambda" and Visualizer Point Cloud Pipeline Features
+-   -   (Interface) SFN - Deployed/used with "Use with All Lambda" and Visualizer Point Cloud Pipeline Features
+-   -   (Interface) SSM - Deployed/used with "Use with All Lambda" and Open Search Provisioned Features
+-   -   (Interface) Lambda - Deployed/used with "Use with All Lambda" Feature
+-   -   (Interface) STS - Deployed/used with "Use with All Lambda" Feature
+-   -   (Interface) Batch - Deployed/used with Visualizer Point Cloud Pipeline Feature
+-   -   (Interface) OpenSearch Serverless - Deployed/used with OpenSearch Serverless Feature
+-   -   (Interface) S3 (ALB-Special) - Always created on VPC when using ALB as it's specially setup with the ALB IPs and targets
+-   -   (Gateway) S3 - Due to no pricing implications, deployed/used across all features that require VPC
+-   -   (Gateway) DynamoDB - Due to no pricing implications, deployed/used across all features that require VPC
 
-### Architecture components
+## Architecture components
 
 ### Backend
 
@@ -261,7 +261,7 @@ Checkout the [VAMS workshop](https://catalog.us-east-1.prod.workshops.aws/worksh
 
 To know more about how VAMS works and for instructions on configuring pipeline & workflow, refer to the Developer Guide [developer guide](./DeveloperGuide.md).
 
-# Writing your own VAMS pipelines
+## Writing your own VAMS pipelines
 
 Refer to the ![Writing your own pipelines section in the Developer Guide](./DeveloperGuide.md/#adding-your-own-pipelines).
 

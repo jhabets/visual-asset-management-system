@@ -2,41 +2,41 @@
     "name": "vams",
     "env": {
         "account": null,
-        "region": "us-east-1",
+        "region": null,
         "loadContextIgnoreVPCStacks": false
     },
     "app": {
         "baseStackName": "prod",
         "stagingBucketName": null,
-        "adminEmailAddress": "scheurik@amazon.com",
-        "useFips": true,
+        "adminEmailAddress": "adminEmail@example.com",
+        "useFips": false,
         "useWaf": true,
         "govCloud": {
-            "enabled": true
+            "enabled": false
         },
         "useGlobalVpc": {
-            "enabled": true,
-            "useForAllLambdas": true,
+            "enabled": false,
+            "useForAllLambdas": false,
             "addVpcEndpoints": true,
-            "optionalExternalVpcId": "vpc-0e6de2c86aeb20727",
-            "optionalExternalPrivateSubnetIds": "subnet-0353d9074b7371f21,subnet-002b3cfdd4e531c42,subnet-09f1748a48719d91e",
-            "optionalExternalPublicSubnetIds": "subnet-071358a4006030673,subnet-09510ac1b5801fd44,subnet-0374e23185c5e40e4",
+            "optionalExternalVpcId": null,
+            "optionalExternalPrivateSubnetIds": null,
+            "optionalExternalPublicSubnetIds": null,
             "vpcCidrRange": "10.1.0.0/16"
         },
         "openSearch": {
             "useProvisioned": {
-                "enabled": true
+                "enabled": false
             }
         },
         "useLocationService": {
-            "enabled": false
+            "enabled": true
         },
         "useAlb": {
-            "enabled": true,
-            "usePublicSubnet": true,
-            "domainHost": "vams2.scheurik.people.aws.dev",
-            "certificateArn": "arn:aws:acm:us-east-1:519113086097:certificate/89b0b144-eef4-4370-b25b-20195c4f8f24",
-            "optionalHostedZoneId": ""
+            "enabled": false,
+            "usePublicSubnet": false,
+            "domainHost": "vams1.example.com",
+            "certificateArn": "arn:aws-us-gov:acm:<REGION>:<ACCOUNTID>:certificate/<CERTIFICATEID>",
+            "optionalHostedZoneId": null
         },
         "pipelines": {
             "usePointCloudVisualization": {

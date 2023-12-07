@@ -32,8 +32,6 @@ import * as ec2 from "aws-cdk-lib/aws-ec2";
 export interface EnvProps {
     env: cdk.Environment;
     stackName: string;
-    ssmWafArnParameterName: string;
-    ssmWafArnParameterRegion: string;
     ssmWafArn: string;
     config: Config.Config;
 }
@@ -279,8 +277,12 @@ export class CoreVAMSStack extends cdk.Stack {
                 {}
             );
 
-            locationServiceNestedStack.addMapPermissionsToRole(cognitoResourcesNestedStack.authenticatedRole);
-            locationServiceNestedStack.addMapPermissionsToRole(cognitoResourcesNestedStack.superAdminRole);
+            locationServiceNestedStack.addMapPermissionsToRole(
+                cognitoResourcesNestedStack.authenticatedRole
+            );
+            locationServiceNestedStack.addMapPermissionsToRole(
+                cognitoResourcesNestedStack.superAdminRole
+            );
             this.enabledFeatures.push(VAMS_APP_FEATURES.LOCATIONSERVICES);
         }
 

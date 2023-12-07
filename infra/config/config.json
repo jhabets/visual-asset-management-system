@@ -10,6 +10,7 @@
         "stagingBucketName": null,
         "adminEmailAddress": "scheurik@amazon.com",
         "useFips": true,
+        "useWaf": true,
         "govCloud": {
             "enabled": true
         },

@@ -190,7 +190,6 @@ export const AppRoutes = ({ navigationOpen, setNavigationOpen, user }: AppRoutes
             console.log("Full URL Redirect:", url.href);
 
             window.location.href = url.toString();
-
         }
     }, [location, navigate]);
 

@@ -59,9 +59,12 @@ export function getConfig(app: cdk.App): Config {
     );
     config.app.useFips = <boolean>(
         (app.node.tryGetContext("useFips") ||
+            config.app.useFips ||
             process.env.AWS_USE_FIPS_ENDPOINT ||
-            config.app.govCloud.enabled ||
             false)
+    );
+    config.app.useWaf = <boolean>(
+        (app.node.tryGetContext("useWaf") || config.app.useWaf || process.env.AWS_USE_WAF || false)
     );
     config.env.loadContextIgnoreVPCStacks = <boolean>(
         (app.node.tryGetContext("loadContextIgnoreVPCStacks") ||
@@ -84,7 +87,7 @@ export function getConfig(app: cdk.App): Config {
             );
         }
 
-        //config.app.useFips = true; //not required for use in GovCloud. Some GovCloud endpoints are FIPS compliant regardless of this flag or using the specific FIPS endpoints. 
+        //config.app.useFips = true; //not required for use in GovCloud. Some GovCloud endpoints are natively FIPS compliant regardless of this flag to use specific FIPS endpoints.
         config.app.useGlobalVpc.enabled = true;
         config.app.useGlobalVpc.useForAllLambdas = true; //FedRAMP best practices require all Lambdas/OpenSearch behind VPC
         config.app.useAlb.enabled = true;
@@ -127,6 +130,12 @@ export function getConfig(app: cdk.App): Config {
     if (config.app.useAlb.enabled && config.app.useAlb.usePublicSubnet) {
         console.warn(
             "Configuration Warning: YOU HAVE ENABLED ALB PUBLIC SUBNETS. THIS CAN EXPOSE YOUR STATIC WEBSITE SOLUTION TO THE PUBLIC INTERNET. PLEASE VERIFY THIS IS CORRECT."
+        );
+    }
+
+    if (!config.app.useWaf) {
+        console.warn(
+            "Configuration Warning: YOU HAVE DISABLED USING WEB APPLICATION FIREWALL (WAF). ENSURE YOU HAVE OTHER FIREWALL MEASURES IN PLACE TO PREVENT ILLICIT NETWORK ACCESS. PLEASE VERIFY THIS IS CORRECT."
         );
     }
 
@@ -229,6 +238,7 @@ export interface ConfigPublic {
         stagingBucketName: string;
         adminEmailAddress: string;
         useFips: boolean;
+        useWaf: boolean;
         govCloud: {
             enabled: boolean;
         };

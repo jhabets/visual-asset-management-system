@@ -316,10 +316,16 @@ export class AlbS3WebsiteAlbDeployConstruct extends Construct {
         }
 
         //Associate WAF to ALB
-        const cfnWebACLAssociation = new wafv2.CfnWebACLAssociation(this, "WebAppWAFAssociation", {
-            resourceArn: alb.loadBalancerArn,
-            webAclArn: props.webAcl,
-        });
+        if (props.webAcl != "") {
+            const cfnWebACLAssociation = new wafv2.CfnWebACLAssociation(
+                this,
+                "WebAppWAFAssociation",
+                {
+                    resourceArn: alb.loadBalancerArn,
+                    webAclArn: props.webAcl,
+                }
+            );
+        }
 
         //Deploy website to Bucket
         new s3deployment.BucketDeployment(this, "DeployWithInvalidation", {

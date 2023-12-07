@@ -10,6 +10,7 @@
         "stagingBucketName": null,
         "adminEmailAddress": "adminEmail@example.com",
         "useFips": false,
+        "useWaf": true,
         "govCloud": {
             "enabled": false
         },

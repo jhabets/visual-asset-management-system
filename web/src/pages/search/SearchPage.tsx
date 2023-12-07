@@ -21,9 +21,7 @@ import {
     TextContent,
 } from "@cloudscape-design/components";
 import Synonyms from "../../synonyms";
-import {
-    featuresEnabled
-} from "../../common/constants/featuresEnabled";
+import { featuresEnabled } from "../../common/constants/featuresEnabled";
 import SearchPageSegmentedControl from "./SearchPageSegmentedControl";
 import SearchPageMapView from "./SearchPageMapView";
 import SearchPageListView from "./SearchPageListView";
@@ -299,7 +297,9 @@ export const INITIAL_STATE = {
 
 function SearchPage(props: SearchPageProps) {
     const config = Cache.getItem("config");
-    const [useMapView] = useState(config.featuresEnabled?.includes(featuresEnabled.LOCATIONSERVICES));
+    const [useMapView] = useState(
+        config.featuresEnabled?.includes(featuresEnabled.LOCATIONSERVICES)
+    );
     const { databaseId } = useParams();
     const [state, dispatch] = useReducer(searchReducer, { ...INITIAL_STATE, databaseId });
 

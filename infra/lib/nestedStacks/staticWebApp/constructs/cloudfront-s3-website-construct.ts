@@ -188,7 +188,7 @@ export class CloudFrontS3WebSiteConstruct extends Construct {
                 },
             ],
             defaultRootObject: "index.html",
-            webAclId: props.webAcl,
+            webAclId: props.webAcl != "" ? props.webAcl : undefined,
             minimumProtocolVersion: cloudfront.SecurityPolicyProtocol.TLS_V1_2_2021, // Required by security
             enableLogging: true,
             logBucket: accessLogsBucket,

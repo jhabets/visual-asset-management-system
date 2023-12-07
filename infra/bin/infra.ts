@@ -27,59 +27,98 @@ if (config.enableCdkNag) {
     Aspects.of(app).add(new AwsSolutionsChecks({ verbose: true }));
 }
 
-//Deploy web access firewall to us-east-1 for cloudfront or in-region for non-cloudfront (ALB) deployments
-const wafRegion = config.app.useAlb.enabled ? config.env.region : "us-east-1";
-const wafScope = config.app.useAlb.enabled ? WAFScope.REGIONAL : WAFScope.CLOUDFRONT;
-
-//The web access firewall
-const wafStackName = `${config.name}-waf-${
-    config.app.baseStackName || process.env.DEPLOYMENT_ENV || "dev"
-}`;
-const cfWafStack = new CfWafStack(app, wafStackName, {
-    stackName: wafStackName,
-    env: {
-        account: config.env.account,
-        region: wafRegion,
-    },
-    wafScope: wafScope,
-});
-
-//Core VAMS Stack
+//Core VAMS stack stackname
 const vamsCoreStackName = `${config.name}-core-${
     config.app.baseStackName || process.env.DEMO_LABEL || "dev"
 }`;
 config.env.coreStackName = vamsCoreStackName;
-const coreVamsStack = new CoreVAMSStack(app, vamsCoreStackName, {
-    stackName: vamsCoreStackName,
-    env: {
-        account: config.env.account,
-        region: config.env.region,
-    },
-    ssmWafArnParameterName: cfWafStack.ssmWafArnParameterName,
-    ssmWafArnParameterRegion: cfWafStack.region,
-    ssmWafArn: cfWafStack.wafArn,
-    config: config,
-});
 
-coreVamsStack.addDependency(cfWafStack);
+// let ssmWafArn: string = "";
 
-//Stack level NAG supressions
-if (config.app.govCloud) {
-    // Enable checks for NIST 800-53 R5
-    // TODO: RE-ENABLE WHEN WORKING THROUGH ISSUES
-    // Aspects.of(app).add(new NIST80053R5Checks({verbose: true}));
+//Deploy with WAF?
+if (config.app.useWaf) {
+    //Deploy web access firewall to us-east-1 for cloudfront or in-region for non-cloudfront (ALB) deployments
+    const wafRegion = config.app.useAlb.enabled ? config.env.region : "us-east-1";
+    const wafScope = config.app.useAlb.enabled ? WAFScope.REGIONAL : WAFScope.CLOUDFRONT;
 
-    // Feature check suppression
-    NagSuppressions.addStackSuppressions(
-        coreVamsStack,
-        [
-            {
-                id: "AwsSolutions-COG3",
-                reason: "Cognito AdvancedSecurityMode feature does not exist",
-            },
-        ],
-        true
-    );
+    //Web access firewall stackname
+    const wafStackName = `${config.name}-waf-${
+        config.app.baseStackName || process.env.DEPLOYMENT_ENV || "dev"
+    }`;
+
+    //WAF Stack
+    const cfWafStack = new CfWafStack(app, wafStackName, {
+        stackName: wafStackName,
+        env: {
+            account: config.env.account,
+            region: wafRegion,
+        },
+        wafScope: wafScope,
+    });
+
+    // ssmWafArn = cfWafStack.wafArn;
+
+    //Core VAMS Stack
+    const coreVamsStack = new CoreVAMSStack(app, vamsCoreStackName, {
+        stackName: vamsCoreStackName,
+        env: {
+            account: config.env.account,
+            region: config.env.region,
+        },
+        ssmWafArn: cfWafStack.wafArn,
+        config: config,
+    });
+
+    coreVamsStack.addDependency(cfWafStack);
+
+    //Stack level NAG supressions
+    if (config.app.govCloud) {
+        // Enable checks for NIST 800-53 R5
+        // TODO: RE-ENABLE WHEN WORKING THROUGH ISSUES
+        // Aspects.of(app).add(new NIST80053R5Checks({verbose: true}));
+
+        // Feature check suppression
+        NagSuppressions.addStackSuppressions(
+            coreVamsStack,
+            [
+                {
+                    id: "AwsSolutions-COG3",
+                    reason: "Cognito AdvancedSecurityMode feature does not exist in GovCloud",
+                },
+            ],
+            true
+        );
+    }
+} //No Waf
+else {
+    const coreVamsStack = new CoreVAMSStack(app, vamsCoreStackName, {
+        stackName: vamsCoreStackName,
+        env: {
+            account: config.env.account,
+            region: config.env.region,
+        },
+        ssmWafArn: "",
+        config: config,
+    });
+
+    //Stack level NAG supressions
+    if (config.app.govCloud) {
+        // Enable checks for NIST 800-53 R5
+        // TODO: RE-ENABLE WHEN WORKING THROUGH ISSUES
+        // Aspects.of(app).add(new NIST80053R5Checks({verbose: true}));
+
+        // Feature check suppression
+        NagSuppressions.addStackSuppressions(
+            coreVamsStack,
+            [
+                {
+                    id: "AwsSolutions-COG3",
+                    reason: "Cognito AdvancedSecurityMode feature does not exist in GovCloud",
+                },
+            ],
+            true
+        );
+    }
 }
 
 app.synth();

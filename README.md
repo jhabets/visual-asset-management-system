@@ -31,6 +31,7 @@ Sample use cases that have leveraged early iterations of VAMS include:
 ## Architecture Overview
 
 ![VAMS Architecture](./VAMS_Architecture.jpg)
+![VAMS Configuration Architecture](./diagrams/Commercial-GovCloud-VAMS_Architecture.png)
 
 ## 3D Asset Types Supported for In-Browser Viewing
 
@@ -162,8 +163,9 @@ Some configuration options can be overriden at time of deployment with either en
 -   `app.baseStackName` | default: prod | #Base stack stage environment name to use when creating full CDK stack name.
 -   `app.stagingBucketName` | default: NULL | #Staging bucket for transfering assets between deployment. If null, no staging bucket will be created.
 -   `app.adminEmailAddress` | default: adminEmail@example.com | #Administrator email address to use for the initial super admin account.
--   `app.useFips` | default: false | #Feature to use FIPS compliant AWS partition endpoints. Must combine with AWS CLI FIPS Environment variable `AWS_USE_FIPS_ENDPOINT`.
 
+-   `app.useWaf` | default: true | #Feature to turn use of Amazon Web Application Firewall on/off for VAMS deployment. This is used for Cloudfront or ALB + API Gateway attachment points. Warning: We reccomend you keep this on unless your organization has other firewalls in-use.
+-   `app.useFips` | default: false | #Feature to use FIPS compliant AWS partition endpoints. Must combine with AWS CLI FIPS Environment variable `AWS_USE_FIPS_ENDPOINT`.
 -   `app.govCloud.enabled` | default: false | #Feature to deploy to the AWS GovCloud partition. Will automatically turn VAMS features on/off based on service support (see below on additional configuration notes).
 
 -   `app.useGlobalVpc.enabled` | default: false | #Will create a global VPC to use for various configuration feature options. Using an ALB, OpenSearch Provisioned, or the Point Cloud Visualization Pipeline will force this setting to true. All options under this section only apply if this setting is set/force to 'true'.

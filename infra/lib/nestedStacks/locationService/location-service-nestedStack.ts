@@ -3,18 +3,18 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as cdk from "aws-cdk-lib";
 import * as iam from "aws-cdk-lib/aws-iam";
 import { aws_location, Stack, NestedStack } from "aws-cdk-lib";
 import { Construct } from "constructs";
 
-interface LocatioServiceConstructProps {
-}
+type LocationServiceConstructProps = cdk.StackProps;
 
 export class LocationServiceNestedStack extends NestedStack {
     map: aws_location.CfnMap;
     mapStreets: aws_location.CfnMap;
 
-    constructor(scope: Construct, id: string, props: LocatioServiceConstructProps) {
+    constructor(scope: Construct, id: string, props: LocationServiceConstructProps) {
         super(scope, id);
 
         // const ssmLocationServiceArn = new ssm.StringParameter(this, "ssmLocationServiceArn", {

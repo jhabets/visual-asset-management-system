@@ -227,9 +227,7 @@ const FedLoginBox: React.FC<LoginProps> = ({ onLogin, onLocal }) => {
     );
 };
 
-type AuthProps = {
-
-};
+type AuthProps = {};
 
 const VAMSAuth: React.FC<AuthProps> = (props) => {
     const [state, setState] = useState<any>({

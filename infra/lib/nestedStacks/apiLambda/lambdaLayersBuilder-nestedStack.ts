@@ -8,7 +8,8 @@ import { Construct } from "constructs";
 import * as cdk from "aws-cdk-lib";
 import { NestedStack } from "aws-cdk-lib";
 import { LAMBDA_PYTHON_RUNTIME } from "../../../config/config";
-import * as pylambda from "@aws-cdk/aws-lambda-python-alpha";
+//import * as pylambda from "@aws-cdk/aws-lambda-python-alpha";
+import * as lambda from "aws-cdk-lib/aws-lambda";
 
 export type LambdaLayersBuilderNestedStackProps = cdk.StackProps;
 
@@ -18,42 +19,62 @@ export type LambdaLayersBuilderNestedStackProps = cdk.StackProps;
 const defaultProps: Partial<LambdaLayersBuilderNestedStackProps> = {};
 
 export class LambdaLayersBuilderNestedStack extends NestedStack {
-    public lambdaCommonBaseLayer: pylambda.PythonLayerVersion;
-    public lambdaCommonServiceSDKLayer: pylambda.PythonLayerVersion;
+    public lambdaCommonBaseLayer: lambda.LayerVersion;
+    public lambdaCommonServiceSDKLayer: lambda.LayerVersion;
 
     constructor(parent: Construct, name: string, props: LambdaLayersBuilderNestedStackProps) {
         super(parent, name);
 
         props = { ...defaultProps, ...props };
 
-        //Todo: Implement post-local bundling command execution to reduce and remove unwatnted lambda layer library files (*boto*, __pycache__, tests)
-
         //Deploy Common Base Lambda Layer
-        this.lambdaCommonBaseLayer = new pylambda.PythonLayerVersion(this, "VAMSLayerBase", {
+        this.lambdaCommonBaseLayer = new lambda.LayerVersion(this, 'VAMSLayerBase', {
             layerVersionName: "vams_layer_base",
-            entry: "../backend/lambdaLayers/base",
+            code: lambda.Code.fromAsset("../backend/lambdaLayers/base", {
+                bundling: {
+                  image: LAMBDA_PYTHON_RUNTIME.bundlingImage,
+                  user: 'root',
+                  command: [
+                    'bash', '-c',
+                    this.layerBundlingCommand()
+                  ],
+                },
+              }),
             compatibleRuntimes: [LAMBDA_PYTHON_RUNTIME],
             removalPolicy: cdk.RemovalPolicy.DESTROY,
-            bundling: {},
-        });
+          });
 
-        //Deploy Common Service SDK Lambda Layer
-        this.lambdaCommonServiceSDKLayer = new pylambda.PythonLayerVersion(
-            this,
-            "VAMSLayerServiceSDK",
-            {
-                layerVersionName: "vams_layer_servicesdk",
-                entry: "../backend/lambdaLayers/serviceSDK",
-                compatibleRuntimes: [LAMBDA_PYTHON_RUNTIME],
-                removalPolicy: cdk.RemovalPolicy.DESTROY,
-                bundling: {},
-            }
-        );
+          //Deploy Common Service SDK Lambda Layer
+          this.lambdaCommonServiceSDKLayer = new lambda.LayerVersion(this, 'VAMSLayerServiceSDK', {
+            layerVersionName: "vams_layer_servicesdk",
+            code: lambda.Code.fromAsset("../backend/lambdaLayers/serviceSDK", {
+                bundling: {
+                  image: LAMBDA_PYTHON_RUNTIME.bundlingImage,
+                  user: 'root',
+                  command: [
+                    'bash', '-c',
+                    this.layerBundlingCommand()
+                  ],
+                },
+              }),
+            compatibleRuntimes: [LAMBDA_PYTHON_RUNTIME],
+            removalPolicy: cdk.RemovalPolicy.DESTROY,
+          });
     }
 
-    afterBundling(inputDir: string, outputDir: string): string[] {
-        return [
-            `cd ${outputDir} && find . -type d -name __pycache__ -prune -exec rm -rf {} \; && find . -type d -name tests -prune -exec rm -rf {} \; && find . -type d -name *boto* -prune -exec rm -rf {} \;`,
-        ];
+    layerBundlingCommand(): string {
+        //Command to install layer dependencies from poetry files and remove unneeded cache, tests, and boto libraries (automatically comes with lambda python container base)
+        //Note: The removals drastically reduce layer sizes
+        return new Array(
+            'pip install --upgrade pip',
+            'pip install poetry',
+            'poetry export --without-hashes --format=requirements.txt > requirements.txt',
+            'pip install -r requirements.txt -t /asset-output/python',
+            'rsync -rLv ./ /asset-output/python',
+            'cd /asset-output',
+            'find . -type d -name __pycache__ -prune -exec rm -rf {} +',
+            'find . -type d -name tests -prune -exec rm -rf {} +',
+            //'find . -type d -name *boto* -prune -exec rm -rf {} +' //Exclude for now to not break version dependency chain
+        ).join(" && ");
     }
 }

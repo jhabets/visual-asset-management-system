@@ -1,0 +1,16 @@
+[tool.poetry]
+name = "servicesdk"
+version = "0.1.0"
+description = ""
+authors = ["Kurt Scheuringer <scheurik@amazon.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+stepfunctions = "2.3.0"
+sagemaker = "2.142.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

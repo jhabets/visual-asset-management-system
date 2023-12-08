@@ -30,7 +30,6 @@ Sample use cases that have leveraged early iterations of VAMS include:
 
 ## Architecture Overview
 
-![VAMS Architecture](./VAMS_Architecture.jpg)
 ![VAMS Configuration Architecture](./diagrams/Commercial-GovCloud-VAMS_Architecture.png)
 
 ## 3D Asset Types Supported for In-Browser Viewing

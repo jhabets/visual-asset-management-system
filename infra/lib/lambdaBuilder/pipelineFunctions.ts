@@ -33,7 +33,7 @@ export function buildCreatePipelineFunction(
     const name = "createPipeline";
     const newPipelineLambdaRole = createRoleToAttachToLambdaPipelines(scope, assetBucket);
     const newPipelineSubnetIds = buildPipelineLambdaSubnetIds(scope, subnets, config);
-    const newPipelineLambdaSecurityGroup = buildPipelineLambdaSecurityGroup(scope, vpc);
+    const newPipelineLambdaSecurityGroup = buildPipelineLambdaSecurityGroup(scope, vpc, config);
     const createPipelineFunction = new lambda.Function(scope, name, {
         code: lambda.Code.fromAsset(path.join(__dirname, `../../../backend/backend`)),
         handler: `handlers.pipelines.${name}.lambda_handler`,
@@ -65,7 +65,7 @@ export function buildCreatePipelineFunction(
             ECR_DKR_ENDPOINT: Service("ECR_DKR").Endpoint,
             LAMBDA_PYTHON_VERSION: LAMBDA_PYTHON_RUNTIME.name,
             SUBNET_IDS: newPipelineSubnetIds, //Determines if we put the pipeline lambdas in a VPC or not
-            SECURITYGROUP_IDS: newPipelineLambdaSecurityGroup.securityGroupId, //used if subnet IDs are passed in
+            SECURITYGROUP_IDS: newPipelineLambdaSecurityGroup? newPipelineLambdaSecurityGroup.securityGroupId : "", //used if subnet IDs are passed in
         },
     });
     enablePipelineFunction.grantInvoke(createPipelineFunction);
@@ -305,15 +305,20 @@ export function buildEnablePipelineFunction(
 
 export function buildPipelineLambdaSecurityGroup(
     scope: Construct,
-    vpc: ec2.IVpc
-): ec2.ISecurityGroup {
-    const pipelineLambdaSecurityGroup = new ec2.SecurityGroup(scope, "VPCeSecurityGroup", {
-        vpc: vpc,
-        allowAllOutbound: true,
-        description: "VPC Endpoints Security Group",
-    });
+    vpc: ec2.IVpc,
+    config: Config.Config
+): ec2.ISecurityGroup | undefined {
+    if (config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas) {
+        const pipelineLambdaSecurityGroup = new ec2.SecurityGroup(scope, "VPCeSecurityGroup", {
+            vpc: vpc,
+            allowAllOutbound: true,
+            description: "VPC Endpoints Security Group",
+        });
 
-    return pipelineLambdaSecurityGroup;
+        return pipelineLambdaSecurityGroup;
+    } else {
+        return undefined;
+    }
 }
 
 export function buildPipelineLambdaSubnetIds(

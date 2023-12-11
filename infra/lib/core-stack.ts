@@ -104,6 +104,11 @@ export class CoreVAMSStack extends cdk.Stack {
             this.vpceSecurityGroup = vpcBuilderNestedStack.vpceSecurityGroup;
             this.subnetsPrivate = vpcBuilderNestedStack.privateSubnets;
             this.subnetsPublic = vpcBuilderNestedStack.publicSubnets;
+
+            const vpcIdOutput = new cdk.CfnOutput(this, "VpcIdOutput", {
+                value: this.vpc.vpcId,
+                description: "VPC ID created or used by VAMS deployment",
+            });
         }
 
         //Deploy Storage Resources (nested stack)
@@ -340,11 +345,6 @@ export class CoreVAMSStack extends cdk.Stack {
         const artefactsBucketOutput = new cdk.CfnOutput(this, "ArtefactsS3BucketNameOutput", {
             value: storageResourcesNestedStack.storageResources.s3.artefactsBucket.bucketName,
             description: "S3 bucket for template notebooks",
-        });
-
-        const vpcIdOutput = new cdk.CfnOutput(this, "VpcIdOutput", {
-            value: this.vpc.vpcId,
-            description: "VPC ID created or used by VAMS deployment",
         });
 
         //Add tags to stack

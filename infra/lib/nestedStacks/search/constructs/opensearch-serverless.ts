@@ -52,13 +52,14 @@ export class OpensearchServerlessConstruct extends Construct {
         this.useVPCEndpoint =
             props.config.app.useGlobalVpc.enabled && props.config.app.useGlobalVpc.useForAllLambdas;
 
-        const subNetIDsVPCe = props.vpc.selectSubnets({
-            subnets: props.subnets,
-        }).subnetIds;
-
         //Create Open Search VPC endpoint if we are using a VPC for all our lambda functions
         //Note: Ignoring addVpcEndpoint configuration on purpose as this is required to create to attach to a collection network security policy. must create at this juncture
         if (this.useVPCEndpoint) {
+
+            const subNetIDsVPCe = props.vpc.selectSubnets({
+                subnets: props.subnets,
+            }).subnetIds;
+
             const aossVPCESecurityGroup = new ec2.SecurityGroup(this, "AossVPCESecurityGroup", {
                 vpc: props.vpc,
                 allowAllOutbound: true, //allows all output on endpoint to the service

@@ -9,7 +9,6 @@ import { Service } from "../../../helper/service-helper";
 import { NagSuppressions } from "cdk-nag";
 import { CfnOutput, CustomResource } from "aws-cdk-lib";
 import * as cr from "aws-cdk-lib/custom-resources";
-import * as njslambda from "aws-cdk-lib/aws-lambda-nodejs";
 import * as path from "path";
 import { LAMBDA_NODE_RUNTIME } from "../../../../config/config";
 import { Port, SecurityGroup, Vpc } from "aws-cdk-lib/aws-ec2";
@@ -143,21 +142,14 @@ export class OpensearchProvisionedConstruct extends Construct {
         this.domain = osDomain;
         this.domainEndpoint = "https://" + osDomain.domainEndpoint;
 
-        const schemaDeploy = new njslambda.NodejsFunction(
-            this,
-            "OpensearchProvisionedDeploySchema",
-            {
-                entry: path.join(__dirname, "./schemaDeploy/deployschemaprovisioned.ts"),
-                handler: "handler",
-                bundling: {
-                    externalModules: ["aws-sdk"],
-                },
-                runtime: LAMBDA_NODE_RUNTIME,
-                vpc: props.vpc,
-                vpcSubnets: { subnets: props.subnets },
-                //Note: This schema deploy resource must run in the VPC in order to communicate with the AOS provisioned running in the VPC.
-            }
-        );
+        const schemaDeploy = new lambda.Function(this, "OpensearchProvisionedDeploySchema", {
+            runtime: LAMBDA_NODE_RUNTIME,
+            handler: "deployschemaprovisioned.handler",
+            code: lambda.Code.fromAsset(path.join(__dirname, "./schemaDeploy/provisioned")),
+            vpc: props.vpc,
+            vpcSubnets: { subnets: props.subnets },
+            //Note: This schema deploy resource must run in the VPC in order to communicate with the AOS provisioned running in the VPC.
+        });
 
         schemaDeploy.addToRolePolicy(
             new cdk.aws_iam.PolicyStatement({

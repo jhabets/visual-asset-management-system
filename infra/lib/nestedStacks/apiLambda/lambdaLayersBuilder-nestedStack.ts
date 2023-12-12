@@ -32,7 +32,12 @@ export class LambdaLayersBuilderNestedStack extends NestedStack {
             layerVersionName: "vams_layer_base",
             code: lambda.Code.fromAsset("../backend/lambdaLayers/base", {
                 bundling: {
-                  image: LAMBDA_PYTHON_RUNTIME.bundlingImage,
+                  image: cdk.DockerImage.fromBuild("./config/docker", {
+                    file: "Dockerfile-customDependencyBuildConfig",
+                    buildArgs: {
+                      IMAGE: LAMBDA_PYTHON_RUNTIME.bundlingImage.image
+                    }
+                  }),
                   user: 'root',
                   command: [
                     'bash', '-c',

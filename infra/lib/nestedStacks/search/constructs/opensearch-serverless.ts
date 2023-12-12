@@ -7,7 +7,6 @@ import * as cdk from "aws-cdk-lib";
 import { Construct } from "constructs";
 import * as aoss from "aws-cdk-lib/aws-opensearchserverless";
 import * as cr from "aws-cdk-lib/custom-resources";
-import * as njslambda from "aws-cdk-lib/aws-lambda-nodejs";
 import * as path from "path";
 import { CustomResource, Names, NestedStack } from "aws-cdk-lib";
 import * as iam from "aws-cdk-lib/aws-iam";
@@ -97,21 +96,13 @@ export class OpensearchServerlessConstruct extends Construct {
             this.vpcEndpointAOSS = cfnVpcEndpoint;
         }
 
-        const schemaDeploy = new njslambda.NodejsFunction(
-            this,
-            "OpensearchServerlessDeploySchema",
-            {
-                entry: path.join(__dirname, "./schemaDeploy/deployschemaserverless.ts"),
-                handler: "handler",
-                bundling: {
-                    externalModules: ["aws-sdk"],
-                },
-                runtime: LAMBDA_NODE_RUNTIME,
-                vpc: this.useVPCEndpoint ? props.vpc : undefined,
-                vpcSubnets: this.useVPCEndpoint ? { subnets: props.subnets } : undefined,
-                //Note: This schema deploy resource must run in the VPC in order to communicate with the AOSS and associated VPC Endpoint.
-            }
-        );
+        const schemaDeploy = new lambda.Function(this, "OpensearchServerlessDeploySchema", {
+            runtime: LAMBDA_NODE_RUNTIME,
+            handler: "deployschemaserverless.handler",
+            code: lambda.Code.fromAsset(path.join(__dirname, "./schemaDeploy/serverless")),
+            vpc: this.useVPCEndpoint ? props.vpc : undefined,
+            vpcSubnets: this.useVPCEndpoint ? { subnets: props.subnets } : undefined,
+        });
 
         schemaDeploy.addToRolePolicy(
             new cdk.aws_iam.PolicyStatement({

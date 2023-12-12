@@ -34,7 +34,7 @@ export function getConfig(app: cdk.App): Config {
     console.log("Node Version: ", LAMBDA_NODE_RUNTIME.name);
 
     //Main Variables (Parameter fall-back chain: context -> config file -> environment variables -> other fallback)
-    config.env.account = <string>(config.env.account || process.env.CDK_DEFAULT_ACCOUNT);
+    config.env.account = <string>(app.node.tryGetContext("account") || config.env.account || process.env.CDK_DEFAULT_ACCOUNT);
     config.env.region = <string>(
         (app.node.tryGetContext("region") ||
             config.env.region ||

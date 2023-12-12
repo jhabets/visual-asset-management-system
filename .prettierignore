@@ -9,3 +9,4 @@ backend/.venv
 web/customInstalls/potree/source
 web/public/potree_libs
 *.yaml
+*.patch

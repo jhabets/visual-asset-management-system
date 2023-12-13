@@ -61,6 +61,7 @@ export function buildOpenPipelineFunction(
     assetVisualizerBucket: s3.Bucket,
     pipelineStateMachine: sfn.StateMachine,
     allowedPipelineInputExtensions: string,
+    config: Config.Config,
     vpc: ec2.IVpc,
     subnets: ec2.ISubnet[]
 ): lambda.Function {
@@ -76,8 +77,14 @@ export function buildOpenPipelineFunction(
         layers: [lambdaCommonBaseLayer],
         timeout: Duration.minutes(5),
         memorySize: 256,
-        vpc: vpc, //open pipeline always in VPC
-        vpcSubnets: vpcSubnets,
+        vpc:
+            config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
+                ? vpc
+                : undefined, //Use VPC when flagged to use for all lambdas
+        vpcSubnets:
+            config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
+                ? { subnets: subnets }
+                : undefined,
         environment: {
             SOURCE_BUCKET_NAME: assetBucket.bucketName,
             DEST_BUCKET_NAME: assetVisualizerBucket.bucketName,
@@ -96,6 +103,7 @@ export function buildOpenPipelineFunction(
 export function buildConstructPipelineFunction(
     scope: Construct,
     lambdaCommonBaseLayer: LayerVersion,
+    config: Config.Config,
     vpc: ec2.IVpc,
     subnets: ec2.ISubnet[],
     pipelineSecurityGroups: ec2.ISecurityGroup[]
@@ -112,9 +120,18 @@ export function buildConstructPipelineFunction(
         layers: [lambdaCommonBaseLayer],
         timeout: Duration.minutes(5),
         memorySize: 128,
-        vpc: vpc, //construct pipeline always in VPC
-        vpcSubnets: vpcSubnets,
-        securityGroups: pipelineSecurityGroups,
+        vpc:
+            config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
+                ? vpc
+                : undefined, //Use VPC when flagged to use for all lambdas
+        vpcSubnets:
+            config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
+                ? { subnets: subnets }
+                : undefined,
+        securityGroups: 
+            config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
+                ? pipelineSecurityGroups
+                : undefined,
     });
 
     return fun;
@@ -125,6 +142,7 @@ export function buildPipelineEndFunction(
     lambdaCommonBaseLayer: LayerVersion,
     assetBucket: s3.Bucket,
     assetVisualizerBucket: s3.Bucket,
+    config: Config.Config,
     vpc: ec2.IVpc,
     subnets: ec2.ISubnet[],
     pipelineSecurityGroups: ec2.ISecurityGroup[]
@@ -141,9 +159,18 @@ export function buildPipelineEndFunction(
         layers: [lambdaCommonBaseLayer],
         timeout: Duration.minutes(5),
         memorySize: 256,
-        vpc: vpc, //Pipeline end always in VPC
-        vpcSubnets: vpcSubnets,
-        securityGroups: pipelineSecurityGroups,
+        vpc:
+            config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
+                ? vpc
+                : undefined, //Use VPC when flagged to use for all lambdas
+        vpcSubnets:
+            config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
+                ? { subnets: subnets }
+                : undefined,
+        securityGroups: 
+            config.app.useGlobalVpc.enabled && config.app.useGlobalVpc.useForAllLambdas
+                ? pipelineSecurityGroups
+                : undefined,
         environment: {
             SOURCE_BUCKET_NAME: assetBucket.bucketName,
             DEST_BUCKET_NAME: assetVisualizerBucket.bucketName,

@@ -208,6 +208,7 @@ export class VisualizationPipelineConstruct extends NestedStack {
         const constructPipelineFunction = buildConstructPipelineFunction(
             this,
             props.lambdaCommonBaseLayer,
+            props.config,
             props.vpc,
             props.visualizerPipelineSubnets,
             props.visualizerPipelineSecurityGroups
@@ -241,6 +242,7 @@ export class VisualizationPipelineConstruct extends NestedStack {
             props.lambdaCommonBaseLayer,
             props.storage.s3.assetBucket,
             props.storage.s3.assetVisualizerBucket,
+            props.config,
             props.vpc,
             props.visualizerPipelineSubnets,
             props.visualizerPipelineSecurityGroups
@@ -385,6 +387,7 @@ export class VisualizationPipelineConstruct extends NestedStack {
             props.storage.s3.assetVisualizerBucket,
             pipelineStateMachine,
             allowedInputFileExtensions,
+            props.config,
             props.vpc,
             props.visualizerPipelineSubnets
         );

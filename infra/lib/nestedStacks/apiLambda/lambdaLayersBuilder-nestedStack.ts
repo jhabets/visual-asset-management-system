@@ -49,12 +49,17 @@ export class LambdaLayersBuilderNestedStack extends NestedStack {
             removalPolicy: cdk.RemovalPolicy.DESTROY,
           });
 
-          //Deploy Common Service SDK Lambda Layer
+          //Deploy Common Service SDK Lambda Layer ../backend/lambdaLayers/serviceSDK
           this.lambdaCommonServiceSDKLayer = new lambda.LayerVersion(this, 'VAMSLayerServiceSDK', {
             layerVersionName: "vams_layer_servicesdk",
             code: lambda.Code.fromAsset("../backend/lambdaLayers/serviceSDK", {
-                bundling: {
-                  image: LAMBDA_PYTHON_RUNTIME.bundlingImage,
+              bundling: {
+                image: cdk.DockerImage.fromBuild("./config/docker", {
+                  file: "Dockerfile-customDependencyBuildConfig",
+                  buildArgs: {
+                    IMAGE: LAMBDA_PYTHON_RUNTIME.bundlingImage.image
+                  }
+                }),
                   user: 'root',
                   command: [
                     'bash', '-c',

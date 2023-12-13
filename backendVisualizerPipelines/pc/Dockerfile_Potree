@@ -12,7 +12,7 @@ RUN apk add --no-cache git cmake make gcc g++ libtbb-dev && \
     git clone --depth 1 https://github.com/potree/PotreeConverter /PotreeConverter
 
 # Copy a git patch for the local CMakeLists.txt so we can override compiler settings
-COPY ./vams-potree-build.patch /PotreeConverter
+COPY ./PotreeConverter-Fork_af4666fa.patch /PotreeConverter/vams-potree-build.patch
 
 # Potree Converter Commit Hash Reset && Apply the git patch 
 WORKDIR /PotreeConverter

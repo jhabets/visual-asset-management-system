@@ -93,6 +93,8 @@ VAMS Codebase is changing frequently and we recommend you checkout the stable re
 
 You can identify stable releases by their tag. Fetch the tags `git fetch --all --tags` and then `git checkout tags/TAG` or `git checkout -b TAG tags/TAG` where TAG is the actual desired tag. A list of tags is found by running `git tag --list` or on the [releases page](https://github.com/awslabs/visual-asset-management-system/releases).
 
+Note: If you are running behind a HTTPS SSL proxy that requires network nodes to have a custom SSL certificate, head to the [CDK SSL Deploy in the developer guide](./DeveloperGuide.md#CDK-Deploy-with-Custom-SSL-Cert-Proxy) to learn more.
+
 1. `cd ./web && nvm use` - make sure you're node version matches the project. Make sure Docker daemon is running.
 
 2. `yarn install` - make sure you install the packages required by the web app (Take note, `npm install` does not result in a working build of the application - please use yarn).

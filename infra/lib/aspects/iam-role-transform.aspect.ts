@@ -73,15 +73,20 @@ export class IamRoleTransform implements cdk.IAspect {
     public getRoleName(resource: IConstruct): string {
         const roleRef = resource as iam.Role;
         const originalName = roleRef.roleName;
-        const accountId =
-            "-" +
-            cdk.Stack.of(resource).account.toString() +
+        const deploymentIdentifierId =
+            // "-" +
+            // cdk.Stack.of(resource).account.toString() +
             "-" +
             cdk.Stack.of(resource).region.toString();
         const uniqueResourceName = cdk.Names.uniqueResourceName(resource, {
             maxLength: 40 - this.prefix.length,
         });
 
-        return this.prefix + uniqueResourceName + accountId;
+        const returnNameRaw = this.prefix + uniqueResourceName + deploymentIdentifierId;
+
+        if(returnNameRaw.length <= 63)
+            return returnNameRaw;
+        else
+            return returnNameRaw.substring(0,63);
     }
 }

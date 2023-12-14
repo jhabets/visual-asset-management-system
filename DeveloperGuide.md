@@ -64,11 +64,12 @@ Please note, depending on what changes are in flight, VAMS may not be available 
 
 SAML authentication enables you to provision access to your VAMS instance using your organization's federated identity provider such as Auth0, Active Directory, or Google Workspace.
 
-You need your SAML metadata url, and then you can fill out the required information in `infra/lib/saml-config.ts`.
+If the configuration file `/infra/config/config.json` set `AuthProvider.UseCognito.UseSaml` to `true` to enable, `false` for disabled
+
+You need your SAML metadata url, and then you can fill out the required information in `infra/config/saml-config.ts`.
 
 The required information is as follows:
 
--   `samlEnabled` must be set to `true`.
 -   `name` identifies the name of your identity provider.
 -   `cognitoDomainPrefix` is a DNS compatible, globally unique string used as a subdomain of cognito's signon url.
 -   `metadataContent` is a url of your SAML metadata. This can also point to a local file if `metadataType` is changed to `cognito.UserPoolIdentityProviderSamlMetadataType.FILE`.
@@ -80,8 +81,6 @@ The following stack outputs are required by your identity provider to establish 
 -   SAML IdP Response URL
 -   SP urn / Audience URI / SP entity ID
 -   CloudFrontDistributionUrl for the list of callback urls. Include this url with and without a single trailing slack (e.g., https://example.com and https://example.com/)
-
-SAML may be disabled in your stack by setting `samlEnabled` to false and deploying the stack.
 
 ### Role Based Authorization Policy
 
@@ -194,6 +193,29 @@ def determine_vams_roles(event):
 ```
 
 This new `determine_vams_roles` can replace the existing function in `pretokengen.py`. Once the file is saved, you can update the stack by running `cdk deploy` to deploy the new version of the function.
+
+### Local Docker Builds - Custom Build Settings
+
+If you are needing to add custom settings to your local docker builds, such as adding custom SSL CA certificates to get through HTTPS proxies, modify the following docker build files:
+
+1. `/infra/config/dockerDockerfile-customDependencyBuildConfig` - Docker file for all local packaging environments such as Lambda Layers and/or Custom Resources. Add extra lines to end of file.
+2. `/backendVisualizerPipelines/pc/Dockerfile_PDAL` - Docker file for Visualizer Pipeline container for PointClouds - PDAL Stage. Add extra lines above any package install or downloads.
+3. `/backendVisualizerPipelines/pc/Dockerfile_Potree` - Docker file for Visualizer Pipeline container for PointClouds - PotreeConverter Stage. Add extra lines above any package install or downloads.
+
+### CDK Deploy with Custom SSL Cert Proxy
+
+If you need to deploy VAMS CDK using custom SSL certificates due to internal organization HTTPS proxy requirements, follow the below instructions.
+
+1. Download to your host machine the .pem certificate that is valid for your HTTPS proxy to a specific path
+2. Set the following environments variables to the file path in step 1: `$AWS_CA_BUNDLE` and `$NODE_EXTRA_CA_CERTS`
+3. Modify the Dockerbuild files specified and instructed in ![Local Docker BUilds](#Local-Docker-Builds---Custom-Build-Settings) and add the following lines (for Python PIP installs) below. Update `/local/OShost/path/Combined.pem` to the local host path relative to the Dockerfile location.
+
+```
+COPY /local/OShost/path/Combined.pem /var/task/Combined.crt
+RUN pip config set global.cert /var/task/Combined.crt
+```
+
+4. You may need to add additional environment variables to allow using the ceritificate to be used for for `apk install` or `apt-get` system actions.
 
 #### Web Development
 

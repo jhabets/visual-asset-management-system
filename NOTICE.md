@@ -1,6 +1,6 @@
 Amazon VAMS
 
-Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+Copyright 2023 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 
 ---
 
@@ -46,6 +46,7 @@ Javascript Libraries:
 | typescript               | typescript@4.4.4                                                     | Apache-2.0              |
 | web-vitals               | web-vitals@1.1.2                                                     | Apache-2.0              |
 | online-3d-viewer         | [online-3d-viewer@0.8.22](https://github.com/kovacsv/Online3DViewer) | MIT                     |
+| PotreeViewer             | [potree@develop-latest](https://github.com/potree/potree)            | BSD-2-Clause            |
 | pickr                    | [pickr@1.8.2](https://github.com/Simonwep/pickr)                     | MIT                     |
 | draco                    | [draco@1.5.6](https://github.com/google/draco)                       | Apache-2.0              |
 | rhino3dm                 | [rhino3dm@7.15.0](https://github.com/mcneel/rhino3dm)                | MIT                     |
@@ -86,3 +87,10 @@ Python Libraries
 | zipp                | 3.8.1     | MIT License                          |
 | certifi             | 2022.6.15 | Mozilla Public License 2.0 (MPL 2.0) |
 | protobuf3-to-dict   | 0.1.5     | Public Domain                        |
+
+Other Libraries
+
+| Name            | Version                                                                      | Licenses     |
+| :-------------- | :--------------------------------------------------------------------------- | :----------- |
+| PDAL            | [pdal@master-latest] (https://github.com/PDAL/PDAL)                          | BSD          |
+| PotreeConverter | [potreeconverter@develop-latest] (https://github.com/potree/PotreeConverter) | BSD-2-Clause |
